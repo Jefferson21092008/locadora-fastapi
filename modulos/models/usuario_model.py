@@ -44,7 +44,7 @@ class UsuarioModel(Base):
             name="ck_usuarios_role",
         ),
         CheckConstraint(
-            "ativo IN (0, 1)",
+            "ativo IN (TRUE, FALSE)",
             name="ck_usuarios_ativo",
         ),
     )

@@ -39,18 +39,24 @@ class ClienteModel(Base):
     )
 
     usuario: Mapped[str] = mapped_column(
-        String(
-            100,
-            collation="NOCASE",
+        String(100).with_variant(
+            String(
+                100,
+                collation="NOCASE",
+            ),
+            "sqlite",
         ),
         nullable=False,
         unique=True,
     )
 
     email: Mapped[str] = mapped_column(
-        String(
-            255,
-            collation="NOCASE",
+        String(255).with_variant(
+            String(
+                255,
+                collation="NOCASE",
+            ),
+            "sqlite",
         ),
         nullable=False,
         unique=True,
