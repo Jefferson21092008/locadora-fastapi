@@ -53,6 +53,7 @@ schema.
 - Alembic;
 - SQLite e PostgreSQL;
 - Psycopg 3;
+- Docker e Docker Compose;
 - Pydantic;
 - PyJWT;
 - python-dotenv;
@@ -127,7 +128,11 @@ Locadora/
 │       ├── README.md
 │       └── migrar_json_sqlite.py
 ├── tests/
+├── .dockerignore
+├── .env.docker.example
 ├── alembic.ini
+├── compose.yaml
+├── Dockerfile
 ├── .env.example
 ├── .gitignore
 ├── carros.py
@@ -255,6 +260,80 @@ python -m uvicorn api.main:app --reload
 O Alembic usa `render_as_batch` somente no SQLite. No PostgreSQL são emitidas
 as operações nativas do banco. A migration inicial também mantém `NOCASE`
 somente no SQLite e cria o índice parcial de manutenção ativa nos dois bancos.
+
+## Docker Compose
+
+O ambiente Docker executa três serviços coordenados:
+
+1. `db` inicia o PostgreSQL 18 e aguarda o banco ficar saudável;
+2. `migrate` executa `alembic upgrade head` e termina;
+3. `api` inicia a FastAPI somente depois das migrations concluírem.
+
+O PostgreSQL instalado diretamente no Windows continua usando a porta `5432`.
+O PostgreSQL do Docker é publicado apenas em `127.0.0.1:5433`, evitando
+conflito entre os dois ambientes.
+
+Crie o arquivo privado de configuração:
+
+```bat
+copy .env.docker.example .env.docker
+notepad .env.docker
+```
+
+Substitua todos os valores de exemplo. Use senhas diferentes das utilizadas
+no PostgreSQL do Windows e no GitHub. Para gerar valores seguros que também
+podem ser usados dentro da URL de conexão:
+
+```bat
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+Execute esse comando separadamente para `POSTGRES_PASSWORD`,
+`LOCADORA_ADMIN_SENHA` e `LOCADORA_JWT_SECRET`. Não envie o arquivo
+`.env.docker` ao GitHub; ele está protegido no `.gitignore` e no
+`.dockerignore`.
+
+Valide a configuração antes de criar containers:
+
+```bat
+docker compose --env-file .env.docker config --quiet
+```
+
+Construa a imagem e inicie todo o ambiente:
+
+```bat
+docker compose --env-file .env.docker up --build
+```
+
+Em outro terminal, consulte o estado e os logs:
+
+```bat
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker logs api
+```
+
+Endereços da aplicação:
+
+- frontend: `http://127.0.0.1:8000/app/`;
+- Swagger: `http://127.0.0.1:8000/docs`;
+- status: `http://127.0.0.1:8000/status`.
+
+Para encerrar os containers preservando os dados:
+
+```bat
+docker compose --env-file .env.docker down
+```
+
+O comando abaixo também apaga definitivamente o volume e todos os dados do
+PostgreSQL do Docker. Use-o somente quando quiser reiniciar o banco do zero:
+
+```bat
+docker compose --env-file .env.docker down --volumes
+```
+
+No PostgreSQL 18, o volume é montado em `/var/lib/postgresql`, conforme a
+estrutura atual da imagem oficial. A API é executada por um usuário Linux sem
+privilégios administrativos e não utiliza `--reload` dentro do container.
 
 ## Migrations com Alembic
 
@@ -404,12 +483,12 @@ python -m pytest
 Estado verificado desta versão:
 
 ```text
-403 passed, 4 skipped
+407 passed, 4 skipped
 ```
 
 Esse resultado ocorre sem a URL do banco PostgreSQL de teste. Quando
 `LOCADORA_TEST_DATABASE_URL` está configurada, os quatro testes ignorados são
-executados e a suíte completa coleta 407 testes.
+executados e a suíte completa coleta 411 testes.
 
 Os testes cobrem domínio, Services, Repositories SQLAlchemy, transações,
 Container, autenticação, recuperação de senha e endpoints FastAPI.
@@ -458,4 +537,5 @@ qualquer banco diferente de `locadora_test` e qualquer usuário diferente de
 - Git e GitHub: concluídos e em evolução;
 - PostgreSQL e Psycopg: concluídos;
 - testes de integração com PostgreSQL: concluídos;
-- Docker, CI/CD e deploy: planejados.
+- Docker e Docker Compose: concluídos;
+- CI/CD e deploy: planejados.
