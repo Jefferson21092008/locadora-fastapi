@@ -71,3 +71,23 @@ def test_compose_executa_migration_antes_da_api():
         '"127.0.0.1:${POSTGRES_PORT:-5433}:5432"'
         in conteudo
     )
+
+def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
+    conteudo = ler_arquivo(
+        ".env.docker.example"
+    )
+
+    variaveis_obrigatorias = (
+        "POSTGRES_DB",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_PORT",
+        "LOCADORA_ADMIN_USUARIO",
+        "LOCADORA_ADMIN_SENHA",
+        "LOCADORA_JWT_SECRET",
+        "API_PORT",
+    )
+
+    for variavel in variaveis_obrigatorias:
+        assert f"{variavel}=" in conteudo
+        assert f"{variavel}=\n" not in conteudo
