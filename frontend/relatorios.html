@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Relatórios operacionais e financeiros da Locadora.">
+    <title>Relatórios | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item" href="/app/clientes.html">Clientes</a>
+                <a class="nav-item" href="/app/manutencoes.html">Manutenções</a>
+                <a class="nav-item nav-item--active" href="/app/relatorios.html" aria-current="page">Relatórios</a>
+            </nav>
+
+            <p class="sidebar__note">Compare receitas, custos e resultados para acompanhar o desempenho da locadora.</p>
+        </aside>
+
+        <main class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Análise administrativa</p>
+                    <h1>Relatórios</h1>
+                    <p>Acompanhe os resultados operacionais e financeiros da locadora.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <label class="select-field report-limit-field" for="report-limit">
+                        <span class="sr-only">Quantidade de posições nos rankings</span>
+                        <select id="report-limit">
+                            <option value="5">Top 5</option>
+                            <option value="10" selected>Top 10</option>
+                            <option value="20">Top 20</option>
+                        </select>
+                    </label>
+                    <button id="refresh-reports-button" class="secondary-button" type="button">Atualizar</button>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="reports-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <div id="reports-loading" class="loading-state report-loading" role="status">
+                <span class="loading-state__spinner" aria-hidden="true"></span>
+                <span>Carregando relatórios...</span>
+            </div>
+
+            <div id="reports-content" hidden>
+                <section class="financial-summary" aria-labelledby="financial-summary-title">
+                    <div class="section-heading report-section-heading">
+                        <div>
+                            <p class="eyebrow">Financeiro</p>
+                            <h2 id="financial-summary-title">Resultado acumulado</h2>
+                        </div>
+                    </div>
+
+                    <div class="financial-summary__grid">
+                        <article class="financial-card">
+                            <span>Receita de aluguéis</span>
+                            <strong id="report-revenue">—</strong>
+                            <small>aluguéis registrados e finalizados</small>
+                        </article>
+                        <article class="financial-card financial-card--cost">
+                            <span>Custos de manutenção</span>
+                            <strong id="report-maintenance-cost">—</strong>
+                            <small>serviços finalizados na frota</small>
+                        </article>
+                        <article id="report-result-card" class="financial-card financial-card--result">
+                            <span>Resultado bruto</span>
+                            <strong id="report-gross-result">—</strong>
+                            <small>receita menos custos de manutenção</small>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="report-operational" aria-labelledby="operational-summary-title">
+                    <div class="section-heading report-section-heading">
+                        <div>
+                            <p class="eyebrow">Operação</p>
+                            <h2 id="operational-summary-title">Resumo atual</h2>
+                        </div>
+                    </div>
+
+                    <div class="fleet-overview fleet-overview--four">
+                        <article>
+                            <span>Clientes ativos</span>
+                            <strong id="report-active-clients">—</strong>
+                        </article>
+                        <article>
+                            <span>Veículos ativos</span>
+                            <strong id="report-active-vehicles">—</strong>
+                        </article>
+                        <article>
+                            <span>Aluguéis ativos</span>
+                            <strong id="report-active-rentals">—</strong>
+                        </article>
+                        <article>
+                            <span>Aluguéis finalizados</span>
+                            <strong id="report-finished-rentals">—</strong>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="reports-grid" aria-label="Indicadores detalhados">
+                    <article class="report-panel">
+                        <div class="report-panel__header">
+                            <div>
+                                <p class="eyebrow">Receita</p>
+                                <h2>Faturamento por tipo</h2>
+                            </div>
+                            <strong id="report-total-collected" class="report-panel__total">—</strong>
+                        </div>
+                        <div id="revenue-by-type" class="report-bars"></div>
+                    </article>
+
+                    <article class="report-panel">
+                        <div class="report-panel__header">
+                            <div>
+                                <p class="eyebrow">Ranking</p>
+                                <h2>Veículos mais alugados</h2>
+                            </div>
+                        </div>
+                        <ol id="top-vehicles" class="ranking-list"></ol>
+                    </article>
+
+                    <article class="report-panel">
+                        <div class="report-panel__header">
+                            <div>
+                                <p class="eyebrow">Relacionamento</p>
+                                <h2>Clientes que mais alugam</h2>
+                            </div>
+                        </div>
+                        <ol id="top-customers" class="ranking-list"></ol>
+                    </article>
+
+                    <article class="report-panel">
+                        <div class="report-panel__header">
+                            <div>
+                                <p class="eyebrow">Oficina</p>
+                                <h2>Custos por veículo</h2>
+                            </div>
+                        </div>
+                        <div id="maintenance-costs" class="report-compact-list"></div>
+                    </article>
+                </section>
+
+                <section class="report-table-panel" aria-labelledby="vehicle-results-title">
+                    <div class="fleet-toolbar report-table-toolbar">
+                        <div>
+                            <p class="eyebrow">Rentabilidade</p>
+                            <h2 id="vehicle-results-title">Resultado por veículo</h2>
+                        </div>
+
+                        <label class="search-field" for="report-vehicle-search">
+                            <span class="sr-only">Buscar veículo no relatório</span>
+                            <input id="report-vehicle-search" type="search" placeholder="Buscar por modelo, tipo ou ID">
+                        </label>
+                    </div>
+
+                    <div class="report-table-scroll">
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Veículo</th>
+                                    <th scope="col">Aluguéis</th>
+                                    <th scope="col">Receita</th>
+                                    <th scope="col">Manutenções</th>
+                                    <th scope="col">Custos</th>
+                                    <th scope="col">Resultado bruto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vehicle-results"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="vehicle-results-empty" class="report-empty" hidden>
+                        Nenhum veículo encontrado para esta busca.
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="/app/js/relatorios.js"></script>
+</body>
+</html>

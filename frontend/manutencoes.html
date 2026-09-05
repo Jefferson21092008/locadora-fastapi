@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Controle de manutenções da frota da Locadora.">
+    <title>Manutenções | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item" href="/app/clientes.html">Clientes</a>
+                <a class="nav-item nav-item--active" href="/app/manutencoes.html" aria-current="page">Manutenções</a>
+                <a class="nav-item" href="/app/relatorios.html">Relatórios</a>
+            </nav>
+
+            <p class="sidebar__note">Registre serviços, acompanhe veículos parados e consulte o histórico da frota.</p>
+        </aside>
+
+        <main class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Gestão de frota</p>
+                    <h1>Manutenções</h1>
+                    <p>Acompanhe os serviços em andamento e o histórico de custos.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="new-maintenance-button" class="primary-button primary-button--compact" type="button">
+                        <span>Nova manutenção</span>
+                        <span aria-hidden="true">+</span>
+                    </button>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="maintenances-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-overview fleet-overview--four" aria-label="Resumo das manutenções">
+                <article>
+                    <span>Total</span>
+                    <strong id="maintenances-summary-total">—</strong>
+                </article>
+                <article>
+                    <span>Em andamento</span>
+                    <strong id="maintenances-summary-active">—</strong>
+                </article>
+                <article>
+                    <span>Finalizadas</span>
+                    <strong id="maintenances-summary-finished">—</strong>
+                </article>
+                <article>
+                    <span>Custo finalizado</span>
+                    <strong id="maintenances-summary-cost">—</strong>
+                </article>
+            </section>
+
+            <section class="fleet-content" aria-labelledby="maintenances-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Oficina</p>
+                        <h2 id="maintenances-list-title">Histórico de serviços</h2>
+                    </div>
+
+                    <div class="fleet-filters">
+                        <label class="search-field" for="maintenance-search">
+                            <span class="sr-only">Buscar manutenção</span>
+                            <input id="maintenance-search" type="search" placeholder="Buscar por veículo, motivo ou ID">
+                        </label>
+
+                        <label class="select-field" for="maintenance-status-filter">
+                            <span class="sr-only">Filtrar por status</span>
+                            <select id="maintenance-status-filter">
+                                <option value="todos">Todos os status</option>
+                                <option value="ativa">Em andamento</option>
+                                <option value="finalizada">Finalizadas</option>
+                            </select>
+                        </label>
+
+                        <button id="refresh-maintenances-button" class="secondary-button" type="button">Atualizar</button>
+                    </div>
+                </div>
+
+                <div id="maintenances-loading" class="loading-state" role="status">
+                    <span class="loading-state__spinner" aria-hidden="true"></span>
+                    <span>Carregando manutenções...</span>
+                </div>
+
+                <div id="maintenances-empty" class="empty-state" hidden>
+                    <strong>Nenhuma manutenção encontrada</strong>
+                    <p id="maintenances-empty-text">Altere a busca ou o filtro para visualizar outros resultados.</p>
+                </div>
+
+                <div id="maintenances-list" class="maintenances-list" aria-live="polite"></div>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="maintenance-dialog" class="modal">
+        <form id="maintenance-form" class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p class="eyebrow">Entrada na oficina</p>
+                    <h2>Abrir manutenção</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-maintenance-dialog aria-label="Fechar formulário">×</button>
+            </div>
+
+            <div class="form-grid">
+                <div class="field field--wide">
+                    <label for="maintenance-vehicle">Veículo disponível</label>
+                    <select id="maintenance-vehicle" required>
+                        <option value="">Selecione um veículo</option>
+                    </select>
+                    <small>Somente veículos disponíveis podem entrar em manutenção.</small>
+                </div>
+
+                <div class="field field--wide">
+                    <label for="maintenance-reason">Motivo ou serviço necessário</label>
+                    <textarea id="maintenance-reason" minlength="3" maxlength="300" rows="5" required></textarea>
+                    <small>Descreva o problema, a revisão ou o reparo que será realizado.</small>
+                </div>
+            </div>
+
+            <div id="maintenance-form-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-maintenance-dialog>Cancelar</button>
+                <button id="save-maintenance-button" class="primary-button primary-button--compact" type="submit">
+                    <span>Abrir manutenção</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="finish-maintenance-dialog" class="modal modal--small">
+        <form id="finish-maintenance-form" class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p class="eyebrow">Saída da oficina</p>
+                    <h2 id="finish-maintenance-title">Finalizar manutenção</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-finish-maintenance aria-label="Fechar formulário">×</button>
+            </div>
+
+            <p id="finish-maintenance-description" class="modal__description"></p>
+
+            <div class="field">
+                <label for="maintenance-cost">Custo total (R$)</label>
+                <input id="maintenance-cost" type="number" min="0" step="0.01" required>
+            </div>
+
+            <div id="finish-maintenance-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-finish-maintenance>Cancelar</button>
+                <button id="confirm-finish-maintenance" class="primary-button primary-button--compact" type="submit">
+                    <span>Finalizar serviço</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <script type="module" src="/app/js/manutencoes.js"></script>
+</body>
+</html>

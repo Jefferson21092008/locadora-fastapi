@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Acesso ao sistema de gerenciamento da Locadora.">
+    <title>Entrar | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="login-page">
+    <main class="login-shell">
+        <section class="login-intro" aria-labelledby="intro-title">
+            <a class="brand brand--light" href="/app/" aria-label="Página inicial da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <div class="login-intro__content">
+                <p class="eyebrow eyebrow--light">Gestão de frota</p>
+                <h1 id="intro-title">Sua operação em um só lugar.</h1>
+                <p>
+                    Acompanhe veículos, clientes, aluguéis e manutenções com
+                    informações atualizadas pela API da Locadora.
+                </p>
+            </div>
+
+            <div class="system-note">
+                <span class="system-note__dot" aria-hidden="true"></span>
+                <span>Frontend conectado à FastAPI</span>
+            </div>
+        </section>
+
+        <section class="login-panel" aria-labelledby="login-title">
+            <div class="login-card">
+                <div class="login-card__heading">
+                    <p class="eyebrow">Acesso ao sistema</p>
+                    <h2 id="login-title">Bem-vindo de volta</h2>
+                    <p>Entre com o usuário e a senha cadastrados na Locadora.</p>
+                </div>
+
+                <form id="login-form" class="login-form" novalidate>
+                    <div class="field">
+                        <label for="usuario">Usuário</label>
+                        <input
+                            id="usuario"
+                            name="usuario"
+                            type="text"
+                            autocomplete="username"
+                            maxlength="100"
+                            required
+                            autofocus
+                        >
+                        <span class="field__hint">Use seu nome de usuário, não o e-mail.</span>
+                    </div>
+
+                    <div class="field">
+                        <div class="field__label-row">
+                            <label for="senha">Senha</label>
+                            <button id="toggle-password" class="text-button" type="button" aria-controls="senha">
+                                Mostrar
+                            </button>
+                        </div>
+                        <input
+                            id="senha"
+                            name="senha"
+                            type="password"
+                            autocomplete="current-password"
+                            maxlength="128"
+                            required
+                        >
+                    </div>
+
+                    <div id="login-message" class="form-message" role="status" aria-live="polite"></div>
+
+                    <button id="login-button" class="primary-button" type="submit">
+                        <span>Entrar</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+
+                <p class="login-card__footer">
+                    <a href="/app/esqueci-senha.html">Esqueci minha senha</a>
+                    <span aria-hidden="true">·</span>
+                    Ainda não tem uma conta? <a href="/app/cadastro.html">Cadastre-se</a>.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/app/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Solicitação de recuperação de senha da Locadora.">
+    <title>Recuperar senha | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="login-page">
+    <main class="login-shell auth-flow-shell">
+        <section class="login-intro auth-flow-intro" aria-labelledby="recovery-intro-title">
+            <a class="brand brand--light" href="/app/" aria-label="Voltar para o login da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <div class="login-intro__content">
+                <p class="eyebrow eyebrow--light">Recuperação de acesso</p>
+                <h1 id="recovery-intro-title">Volte para sua conta.</h1>
+                <p>
+                    Solicite um token temporário e escolha uma nova senha com segurança.
+                </p>
+            </div>
+
+            <div class="system-note">
+                <span class="system-note__dot" aria-hidden="true"></span>
+                <span>Token válido por 15 minutos</span>
+            </div>
+        </section>
+
+        <section class="login-panel" aria-labelledby="recovery-title">
+            <div class="login-card auth-flow-card">
+                <div class="auth-step" aria-label="Etapa 1 de 2">Etapa 1 de 2</div>
+
+                <div class="login-card__heading">
+                    <p class="eyebrow">Esqueci minha senha</p>
+                    <h2 id="recovery-title">Solicite seu token</h2>
+                    <p>Informe o mesmo nome de usuário utilizado para entrar na Locadora.</p>
+                </div>
+
+                <form id="forgot-password-form" class="login-form" novalidate>
+                    <div class="field">
+                        <label for="recovery-user">Usuário</label>
+                        <input
+                            id="recovery-user"
+                            name="usuario"
+                            type="text"
+                            autocomplete="username"
+                            minlength="1"
+                            maxlength="100"
+                            required
+                            autofocus
+                        >
+                        <span class="field__hint">Por segurança, a resposta não confirma se a conta existe.</span>
+                    </div>
+
+                    <div id="forgot-password-message" class="form-message" role="status" aria-live="polite"></div>
+
+                    <button id="forgot-password-button" class="primary-button" type="submit">
+                        <span>Enviar instruções</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+
+                <div class="auth-help">
+                    <strong>Já recebeu o token?</strong>
+                    <p>Ele pode ser utilizado uma única vez para criar uma nova senha.</p>
+                    <a href="/app/redefinir-senha.html">Ir para a redefinição</a>
+                </div>
+
+                <p class="login-card__footer">
+                    Lembrou a senha? <a href="/app/">Voltar para o login</a>.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/app/js/esqueci-senha.js"></script>
+</body>
+</html>

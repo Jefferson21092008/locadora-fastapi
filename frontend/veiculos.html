@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Consulta e gerenciamento da frota da Locadora.">
+    <title>Veículos | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item nav-item--active" href="/app/veiculos.html" aria-current="page">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+            </nav>
+
+            <p class="sidebar__note">Consulte a frota e acompanhe a situação operacional de cada veículo.</p>
+        </aside>
+
+        <main class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Gestão de frota</p>
+                    <h1>Veículos</h1>
+                    <p>Consulte valores, quilometragem e disponibilidade da frota.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="new-vehicle-button" class="primary-button primary-button--compact admin-only" type="button" hidden>
+                        <span>Novo veículo</span>
+                        <span aria-hidden="true">+</span>
+                    </button>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="vehicles-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-overview" aria-label="Resumo da frota">
+                <article>
+                    <span>Total</span>
+                    <strong id="summary-total">—</strong>
+                </article>
+                <article>
+                    <span>Disponíveis</span>
+                    <strong id="summary-disponivel">—</strong>
+                </article>
+                <article>
+                    <span>Alugados</span>
+                    <strong id="summary-alugado">—</strong>
+                </article>
+                <article>
+                    <span>Manutenção</span>
+                    <strong id="summary-manutencao">—</strong>
+                </article>
+                <article>
+                    <span>Desativados</span>
+                    <strong id="summary-desativado">—</strong>
+                </article>
+            </section>
+
+            <section class="fleet-content" aria-labelledby="fleet-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Inventário</p>
+                        <h2 id="fleet-list-title">Frota cadastrada</h2>
+                    </div>
+
+                    <div class="fleet-filters">
+                        <label class="search-field" for="vehicle-search">
+                            <span class="sr-only">Buscar veículo</span>
+                            <input id="vehicle-search" type="search" placeholder="Buscar por modelo, tipo ou ID">
+                        </label>
+
+                        <label class="select-field" for="status-filter">
+                            <span class="sr-only">Filtrar por status</span>
+                            <select id="status-filter">
+                                <option value="todos">Todos os status</option>
+                                <option value="disponivel">Disponíveis</option>
+                                <option value="alugado">Alugados</option>
+                                <option value="manutencao">Em manutenção</option>
+                                <option value="desativado">Desativados</option>
+                            </select>
+                        </label>
+
+                        <button id="refresh-vehicles-button" class="secondary-button" type="button">Atualizar</button>
+                    </div>
+                </div>
+
+                <div id="vehicles-loading" class="loading-state" role="status">
+                    <span class="loading-state__spinner" aria-hidden="true"></span>
+                    <span>Carregando veículos...</span>
+                </div>
+
+                <div id="vehicles-empty" class="empty-state" hidden>
+                    <strong>Nenhum veículo encontrado</strong>
+                    <p>Altere a busca ou o filtro para visualizar outros resultados.</p>
+                </div>
+
+                <div id="vehicles-grid" class="vehicles-grid" aria-live="polite"></div>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="vehicle-dialog" class="modal">
+        <form id="vehicle-form" class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p id="vehicle-dialog-eyebrow" class="eyebrow">Cadastro</p>
+                    <h2 id="vehicle-dialog-title">Novo veículo</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-vehicle-dialog aria-label="Fechar formulário">×</button>
+            </div>
+
+            <input id="vehicle-id" type="hidden">
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="vehicle-type">Tipo</label>
+                    <select id="vehicle-type" required>
+                        <option value="carro">Carro</option>
+                        <option value="moto">Moto</option>
+                        <option value="caminhao">Caminhão</option>
+                        <option value="bicicleta">Bicicleta</option>
+                    </select>
+                </div>
+
+                <div class="field field--wide">
+                    <label for="vehicle-model">Modelo</label>
+                    <input id="vehicle-model" type="text" minlength="2" maxlength="100" required>
+                </div>
+
+                <div class="field">
+                    <label for="vehicle-year">Ano</label>
+                    <input id="vehicle-year" type="number" min="1886" required>
+                </div>
+
+                <div class="field">
+                    <label for="vehicle-daily-rate">Diária (R$)</label>
+                    <input id="vehicle-daily-rate" type="number" min="0.01" step="0.01" required>
+                </div>
+
+                <div class="field">
+                    <label for="vehicle-km-rate">Preço por km (R$)</label>
+                    <input id="vehicle-km-rate" type="number" min="0" step="0.01" required>
+                </div>
+            </div>
+
+            <div id="vehicle-form-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-vehicle-dialog>Cancelar</button>
+                <button id="save-vehicle-button" class="primary-button primary-button--compact" type="submit">
+                    <span>Salvar veículo</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="status-dialog" class="modal modal--small">
+        <div class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p class="eyebrow">Confirmar alteração</p>
+                    <h2 id="status-dialog-title">Alterar veículo</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-status-dialog aria-label="Fechar confirmação">×</button>
+            </div>
+
+            <p id="status-dialog-text" class="modal__description"></p>
+
+            <div id="status-form-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-status-dialog>Cancelar</button>
+                <button id="confirm-status-button" class="primary-button primary-button--compact" type="button">
+                    <span>Confirmar</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <script type="module" src="/app/js/veiculos.js"></script>
+</body>
+</html>

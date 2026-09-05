@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Gerenciamento de clientes da Locadora.">
+    <title>Clientes | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item nav-item--active" href="/app/clientes.html" aria-current="page">Clientes</a>
+                <a class="nav-item" href="/app/manutencoes.html">Manutenções</a>
+                <a class="nav-item" href="/app/relatorios.html">Relatórios</a>
+            </nav>
+
+            <p class="sidebar__note">Consulte os cadastros e controle o acesso dos clientes ao sistema.</p>
+        </aside>
+
+        <main class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Administração</p>
+                    <h1>Clientes</h1>
+                    <p>Consulte os cadastros e gerencie o acesso de cada conta.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="clients-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-overview fleet-overview--three" aria-label="Resumo dos clientes">
+                <article>
+                    <span>Total</span>
+                    <strong id="clients-summary-total">—</strong>
+                </article>
+                <article>
+                    <span>Ativos</span>
+                    <strong id="clients-summary-active">—</strong>
+                </article>
+                <article>
+                    <span>Desativados</span>
+                    <strong id="clients-summary-inactive">—</strong>
+                </article>
+            </section>
+
+            <section class="fleet-content" aria-labelledby="clients-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Cadastros</p>
+                        <h2 id="clients-list-title">Clientes cadastrados</h2>
+                    </div>
+
+                    <div class="fleet-filters">
+                        <label class="search-field" for="client-search">
+                            <span class="sr-only">Buscar cliente</span>
+                            <input id="client-search" type="search" placeholder="Buscar por nome, usuário, e-mail ou ID">
+                        </label>
+
+                        <label class="select-field" for="client-status-filter">
+                            <span class="sr-only">Filtrar por situação</span>
+                            <select id="client-status-filter">
+                                <option value="todos">Todos os cadastros</option>
+                                <option value="ativo">Ativos</option>
+                                <option value="desativado">Desativados</option>
+                            </select>
+                        </label>
+
+                        <button id="refresh-clients-button" class="secondary-button" type="button">Atualizar</button>
+                    </div>
+                </div>
+
+                <div id="clients-loading" class="loading-state" role="status">
+                    <span class="loading-state__spinner" aria-hidden="true"></span>
+                    <span>Carregando clientes...</span>
+                </div>
+
+                <div id="clients-empty" class="empty-state" hidden>
+                    <strong>Nenhum cliente encontrado</strong>
+                    <p id="clients-empty-text">Altere a busca ou o filtro para visualizar outros resultados.</p>
+                </div>
+
+                <div id="clients-grid" class="clients-grid" aria-live="polite"></div>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="client-status-dialog" class="modal modal--small">
+        <div class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p class="eyebrow">Confirmar alteração</p>
+                    <h2 id="client-status-title">Alterar cliente</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-client-status aria-label="Fechar confirmação">×</button>
+            </div>
+
+            <p id="client-status-description" class="modal__description"></p>
+
+            <div id="client-status-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-client-status>Cancelar</button>
+                <button id="confirm-client-status" class="primary-button primary-button--compact" type="button">
+                    <span>Confirmar</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <script type="module" src="/app/js/clientes.js"></script>
+</body>
+</html>

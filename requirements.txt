@@ -1,0 +1,9 @@
+pytest==9.1.1
+python-dotenv
+fastapi==0.141.1
+uvicorn==0.52.4
+httpx
+httpx2==2.12.0
+PyJWT
+SQLAlchemy==2.0.52
+alembic==1.19.1

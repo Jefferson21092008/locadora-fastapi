@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Visão geral da operação da Locadora.">
+    <title>Painel | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item nav-item--active" href="/app/dashboard.html" aria-current="page">
+                    Visão geral
+                </a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+            </nav>
+
+            <p class="sidebar__note">Acompanhe os principais números e acesse as áreas da operação.</p>
+        </aside>
+
+        <main class="dashboard-main">
+            <header class="dashboard-header">
+                <div>
+                    <p class="eyebrow">Visão geral</p>
+                    <h1>Olá, <span id="current-username">usuário</span>.</h1>
+                    <p>Acompanhe os principais números da operação.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="dashboard-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="metrics" aria-labelledby="metrics-title">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Agora</p>
+                        <h2 id="metrics-title">Resumo da locadora</h2>
+                    </div>
+                    <button id="refresh-button" class="secondary-button" type="button">Atualizar dados</button>
+                </div>
+
+                <div class="metrics-grid">
+                    <article class="metric-card">
+                        <span class="metric-card__index" aria-hidden="true">01</span>
+                        <p>Clientes</p>
+                        <strong id="metric-clientes">—</strong>
+                        <span>cadastrados</span>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-card__index" aria-hidden="true">02</span>
+                        <p>Veículos</p>
+                        <strong id="metric-veiculos">—</strong>
+                        <span>na frota</span>
+                    </article>
+
+                    <article class="metric-card">
+                        <span class="metric-card__index" aria-hidden="true">03</span>
+                        <p>Aluguéis</p>
+                        <strong id="metric-alugueis">—</strong>
+                        <span>registrados</span>
+                    </article>
+
+                    <article class="metric-card metric-card--accent">
+                        <span class="metric-card__index" aria-hidden="true">04</span>
+                        <p>Manutenções</p>
+                        <strong id="metric-manutencoes">—</strong>
+                        <span>registradas</span>
+                    </article>
+                </div>
+            </section>
+
+            <section class="connection-card" aria-labelledby="connection-title">
+                <div>
+                    <span class="connection-card__dot" aria-hidden="true"></span>
+                    <div>
+                        <h2 id="connection-title">API conectada</h2>
+                        <p>Os números acima vêm diretamente do endpoint <code>/status</code>.</p>
+                    </div>
+                </div>
+                <a href="/docs" target="_blank" rel="noreferrer">Abrir documentação da API</a>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="/app/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Cadastro de clientes da Locadora.">
+    <title>Criar conta | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="login-page register-page">
+    <main class="login-shell register-shell">
+        <section class="login-intro register-intro" aria-labelledby="register-intro-title">
+            <a class="brand brand--light" href="/app/" aria-label="Voltar para o login da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <div class="login-intro__content">
+                <p class="eyebrow eyebrow--light">Sua conta</p>
+                <h1 id="register-intro-title">Escolha, alugue e acompanhe.</h1>
+                <p>
+                    Crie seu acesso para consultar a frota, acompanhar os prazos
+                    e devolver seus veículos pelo sistema.
+                </p>
+            </div>
+
+            <div class="system-note">
+                <span class="system-note__dot" aria-hidden="true"></span>
+                <span>Cadastro protegido pela API</span>
+            </div>
+        </section>
+
+        <section class="login-panel register-panel" aria-labelledby="register-title">
+            <div class="login-card register-card">
+                <div class="login-card__heading">
+                    <p class="eyebrow">Novo cliente</p>
+                    <h2 id="register-title">Crie sua conta</h2>
+                    <p>Preencha seus dados para acessar os serviços da Locadora.</p>
+                </div>
+
+                <form id="register-form" class="login-form" novalidate>
+                    <div class="form-grid register-form-grid">
+                        <div class="field field--wide">
+                            <label for="register-name">Nome completo</label>
+                            <input
+                                id="register-name"
+                                name="nome"
+                                type="text"
+                                autocomplete="name"
+                                minlength="2"
+                                maxlength="100"
+                                required
+                                autofocus
+                            >
+                        </div>
+
+                        <div class="field">
+                            <label for="register-user">Usuário</label>
+                            <input
+                                id="register-user"
+                                name="usuario"
+                                type="text"
+                                autocomplete="username"
+                                minlength="3"
+                                maxlength="30"
+                                pattern="[A-Za-z0-9_.-]+"
+                                required
+                            >
+                            <span class="field__hint">Letras, números, ponto, hífen ou underline.</span>
+                        </div>
+
+                        <div class="field">
+                            <label for="register-email">E-mail</label>
+                            <input
+                                id="register-email"
+                                name="email"
+                                type="email"
+                                autocomplete="email"
+                                minlength="5"
+                                maxlength="254"
+                                required
+                            >
+                        </div>
+
+                        <div class="field">
+                            <div class="field__label-row">
+                                <label for="register-password">Senha</label>
+                                <button id="toggle-register-password" class="text-button" type="button" aria-controls="register-password register-password-confirmation">
+                                    Mostrar
+                                </button>
+                            </div>
+                            <input
+                                id="register-password"
+                                name="senha"
+                                type="password"
+                                autocomplete="new-password"
+                                minlength="8"
+                                maxlength="128"
+                                required
+                            >
+                            <span class="field__hint">Use pelo menos uma letra e um número.</span>
+                        </div>
+
+                        <div class="field">
+                            <label for="register-password-confirmation">Confirme a senha</label>
+                            <input
+                                id="register-password-confirmation"
+                                name="confirmacao_senha"
+                                type="password"
+                                autocomplete="new-password"
+                                minlength="8"
+                                maxlength="128"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div id="register-message" class="form-message" role="status" aria-live="polite"></div>
+
+                    <button id="register-button" class="primary-button" type="submit">
+                        <span>Criar conta</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+
+                <p class="login-card__footer">
+                    Já possui uma conta? <a href="/app/">Voltar para o login</a>.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/app/js/cadastro.js"></script>
+</body>
+</html>

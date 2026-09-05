@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Redefinição de senha da Locadora.">
+    <title>Definir nova senha | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="login-page">
+    <main class="login-shell auth-flow-shell">
+        <section class="login-intro auth-flow-intro" aria-labelledby="reset-intro-title">
+            <a class="brand brand--light" href="/app/" aria-label="Voltar para o login da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <div class="login-intro__content">
+                <p class="eyebrow eyebrow--light">Nova credencial</p>
+                <h1 id="reset-intro-title">Proteja seu acesso.</h1>
+                <p>
+                    Use o token recebido por e-mail e defina uma senha diferente da atual.
+                </p>
+            </div>
+
+            <div class="system-note">
+                <span class="system-note__dot" aria-hidden="true"></span>
+                <span>Token de uso único</span>
+            </div>
+        </section>
+
+        <section class="login-panel" aria-labelledby="reset-title">
+            <div class="login-card auth-flow-card">
+                <div class="auth-step" aria-label="Etapa 2 de 2">Etapa 2 de 2</div>
+
+                <div class="login-card__heading">
+                    <p class="eyebrow">Redefinição</p>
+                    <h2 id="reset-title">Crie uma nova senha</h2>
+                    <p>Copie o token recebido por e-mail e informe sua nova senha.</p>
+                </div>
+
+                <form id="reset-password-form" class="login-form" novalidate>
+                    <div class="field">
+                        <label for="recovery-token">Token de recuperação</label>
+                        <input
+                            id="recovery-token"
+                            name="token"
+                            type="text"
+                            autocomplete="one-time-code"
+                            maxlength="512"
+                            spellcheck="false"
+                            required
+                            autofocus
+                        >
+                        <span class="field__hint">O token expira em 15 minutos e não pode ser reutilizado.</span>
+                    </div>
+
+                    <div class="field">
+                        <div class="field__label-row">
+                            <label for="new-password">Nova senha</label>
+                            <button id="toggle-new-password" class="text-button" type="button" aria-controls="new-password new-password-confirmation">
+                                Mostrar
+                            </button>
+                        </div>
+                        <input
+                            id="new-password"
+                            name="nova_senha"
+                            type="password"
+                            autocomplete="new-password"
+                            minlength="8"
+                            maxlength="128"
+                            required
+                        >
+                        <span class="field__hint">Use pelo menos oito caracteres, uma letra e um número.</span>
+                    </div>
+
+                    <div class="field">
+                        <label for="new-password-confirmation">Confirme a nova senha</label>
+                        <input
+                            id="new-password-confirmation"
+                            name="confirmacao_senha"
+                            type="password"
+                            autocomplete="new-password"
+                            minlength="8"
+                            maxlength="128"
+                            required
+                        >
+                    </div>
+
+                    <div id="reset-password-message" class="form-message" role="status" aria-live="polite"></div>
+
+                    <button id="reset-password-button" class="primary-button" type="submit">
+                        <span>Redefinir senha</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </form>
+
+                <p class="login-card__footer login-card__footer--split">
+                    <a href="/app/esqueci-senha.html">Solicitar outro token</a>
+                    <a href="/app/">Voltar para o login</a>
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/app/js/redefinir-senha.js"></script>
+</body>
+</html>

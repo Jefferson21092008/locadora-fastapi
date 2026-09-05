@@ -1,0 +1,11 @@
+As migrations registram o histórico de alterações do banco da Locadora.
+
+Crie uma nova revisão com:
+
+    python -m alembic revision --autogenerate -m "descricao"
+
+Atualize o banco com:
+
+    python -m alembic upgrade head
+
+Revise sempre o arquivo gerado antes de executar a migration.

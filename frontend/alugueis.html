@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Acompanhamento e operações de aluguel da Locadora.">
+    <title>Aluguéis | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item nav-item--active" href="/app/alugueis.html" aria-current="page">Aluguéis</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+            </nav>
+
+            <p class="sidebar__note">Acompanhe prazos, devoluções e o histórico dos veículos alugados.</p>
+        </aside>
+
+        <main class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p id="rentals-eyebrow" class="eyebrow">Minha jornada</p>
+                    <h1>Aluguéis</h1>
+                    <p id="rentals-description">Consulte seus aluguéis e acompanhe as datas de devolução.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="new-rental-button" class="primary-button primary-button--compact" type="button" hidden>
+                        <span>Novo aluguel</span>
+                        <span aria-hidden="true">+</span>
+                    </button>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="rentals-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-overview fleet-overview--four" aria-label="Resumo dos aluguéis">
+                <article>
+                    <span>Total</span>
+                    <strong id="rentals-summary-total">—</strong>
+                </article>
+                <article>
+                    <span>Ativos</span>
+                    <strong id="rentals-summary-active">—</strong>
+                </article>
+                <article>
+                    <span>Finalizados</span>
+                    <strong id="rentals-summary-finished">—</strong>
+                </article>
+                <article>
+                    <span>Com prazo vencido</span>
+                    <strong id="rentals-summary-late">—</strong>
+                </article>
+            </section>
+
+            <section class="fleet-content" aria-labelledby="rentals-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Movimentações</p>
+                        <h2 id="rentals-list-title">Meus aluguéis</h2>
+                    </div>
+
+                    <div class="fleet-filters">
+                        <label class="search-field" for="rental-search">
+                            <span class="sr-only">Buscar aluguel</span>
+                            <input id="rental-search" type="search" placeholder="Buscar por veículo, cliente ou ID">
+                        </label>
+
+                        <label class="select-field" for="rental-status-filter">
+                            <span class="sr-only">Filtrar por status</span>
+                            <select id="rental-status-filter">
+                                <option value="todos">Todos os status</option>
+                                <option value="ativo">Ativos</option>
+                                <option value="finalizado">Finalizados</option>
+                            </select>
+                        </label>
+
+                        <button id="refresh-rentals-button" class="secondary-button" type="button">Atualizar</button>
+                    </div>
+                </div>
+
+                <div id="rentals-loading" class="loading-state" role="status">
+                    <span class="loading-state__spinner" aria-hidden="true"></span>
+                    <span>Carregando aluguéis...</span>
+                </div>
+
+                <div id="rentals-empty" class="empty-state" hidden>
+                    <strong>Nenhum aluguel encontrado</strong>
+                    <p id="rentals-empty-text">Altere a busca ou o filtro para visualizar outros resultados.</p>
+                </div>
+
+                <div id="rentals-list" class="rentals-list" aria-live="polite"></div>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="rental-dialog" class="modal">
+        <form id="rental-form" class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p class="eyebrow">Nova reserva</p>
+                    <h2>Alugar um veículo</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-rental-dialog aria-label="Fechar formulário">×</button>
+            </div>
+
+            <div class="form-grid">
+                <div class="field field--wide">
+                    <label for="rental-vehicle">Veículo disponível</label>
+                    <select id="rental-vehicle" required>
+                        <option value="">Selecione um veículo</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="rental-days">Quantidade de dias</label>
+                    <input id="rental-days" type="number" min="1" step="1" value="1" required>
+                </div>
+
+                <div id="license-years-field" class="field">
+                    <label for="license-years">Anos de habilitação</label>
+                    <input id="license-years" type="number" min="0" step="1" required>
+                </div>
+            </div>
+
+            <div id="rental-estimate" class="rental-estimate" hidden>
+                <div>
+                    <span>Diária</span>
+                    <strong id="rental-daily-rate">—</strong>
+                </div>
+                <div>
+                    <span>Valor inicial</span>
+                    <strong id="rental-estimated-total">—</strong>
+                </div>
+                <p>O valor da quilometragem será acrescentado na devolução.</p>
+            </div>
+
+            <div id="rental-form-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-rental-dialog>Cancelar</button>
+                <button id="save-rental-button" class="primary-button primary-button--compact" type="submit">
+                    <span>Confirmar aluguel</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="return-dialog" class="modal">
+        <form id="return-form" class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p class="eyebrow">Encerrar aluguel</p>
+                    <h2 id="return-dialog-title">Devolver veículo</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-return-dialog aria-label="Fechar formulário">×</button>
+            </div>
+
+            <input id="return-vehicle-id" type="hidden">
+
+            <p id="return-dialog-description" class="modal__description"></p>
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="return-distance">Quilômetros rodados</label>
+                    <input id="return-distance" type="number" min="0" step="0.1" required>
+                </div>
+
+                <div class="field">
+                    <label for="payment-method">Forma de pagamento</label>
+                    <select id="payment-method" required>
+                        <option value="1">Dinheiro — 10% de desconto</option>
+                        <option value="2">Pix — 15% de desconto</option>
+                        <option value="3">Débito — 5% de desconto</option>
+                        <option value="4">Crédito à vista</option>
+                        <option value="5">Crédito parcelado</option>
+                        <option value="6">Boleto — 5% de desconto</option>
+                        <option value="7">Transferência — 5% de desconto</option>
+                    </select>
+                </div>
+
+                <div id="installments-field" class="field field--wide" hidden>
+                    <label for="payment-installments">Quantidade de parcelas</label>
+                    <select id="payment-installments">
+                        <option value="2">2 parcelas</option>
+                        <option value="3">3 parcelas</option>
+                        <option value="4">4 parcelas</option>
+                        <option value="5">5 parcelas</option>
+                        <option value="6">6 parcelas</option>
+                        <option value="7">7 parcelas</option>
+                        <option value="8">8 parcelas</option>
+                        <option value="9">9 parcelas</option>
+                        <option value="10">10 parcelas</option>
+                        <option value="11">11 parcelas</option>
+                        <option value="12">12 parcelas</option>
+                    </select>
+                    <small>Até 2x sem juros; de 3x a 6x, 10%; acima de 6x, 20%.</small>
+                </div>
+            </div>
+
+            <div id="return-form-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-return-dialog>Cancelar</button>
+                <button id="confirm-return-button" class="primary-button primary-button--compact" type="submit">
+                    <span>Concluir devolução</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <script type="module" src="/app/js/alugueis.js"></script>
+</body>
+</html>
