@@ -14,7 +14,6 @@ from sqlalchemy.engine import (
 )
 from sqlalchemy.exc import (
     IntegrityError,
-    OperationalError,
 )
 
 from modulos.container import (
@@ -89,44 +88,34 @@ def recriar_schema_public(database_url):
     )
 
     try:
-        try:
-            with engine.begin() as conexao:
-                banco_atual = conexao.scalar(
-                    text(
-                        "SELECT current_database()"
-                    )
+        with engine.begin() as conexao:
+            banco_atual = conexao.scalar(
+                text(
+                    "SELECT current_database()"
                 )
-                usuario_atual = conexao.scalar(
-                    text(
-                        "SELECT current_user"
-                    )
+            )
+            usuario_atual = conexao.scalar(
+                text(
+                    "SELECT current_user"
+                )
+            )
+
+            if (
+                banco_atual
+                != "locadora_test"
+                or usuario_atual
+                != "locadora_app"
+            ):
+                pytest.fail(
+                    "A conexão real não corresponde ao banco "
+                    "locadora_test e ao usuário locadora_app."
                 )
 
-                if (
-                    banco_atual
-                    != "locadora_test"
-                    or usuario_atual
-                    != "locadora_app"
-                ):
-                    pytest.fail(
-                        "A conexão real não corresponde ao banco "
-                        "locadora_test e ao usuário locadora_app.",
-                        pytrace=False,
-                    )
-
-                conexao.exec_driver_sql(
-                    "DROP SCHEMA IF EXISTS public CASCADE"
-                )
-                conexao.exec_driver_sql(
-                    "CREATE SCHEMA public"
-                )
-
-        except OperationalError:
-            pytest.fail(
-                "Não foi possível conectar ao PostgreSQL. "
-                "Confira o serviço, o usuário, a senha e a URL "
-                "de LOCADORA_TEST_DATABASE_URL.",
-                pytrace=False,
+            conexao.exec_driver_sql(
+                "DROP SCHEMA IF EXISTS public CASCADE"
+            )
+            conexao.exec_driver_sql(
+                "CREATE SCHEMA public"
             )
 
     finally:

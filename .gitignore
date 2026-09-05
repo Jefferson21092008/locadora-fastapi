@@ -13,7 +13,6 @@ __pycache__/
 
 # Variáveis de ambiente
 .env
-.env.docker
 
 # Banco local
 dados/*.db
