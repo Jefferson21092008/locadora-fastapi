@@ -19,7 +19,7 @@ CLI / FastAPI
       ↓
  SQLAlchemy ORM
       ↓
-    SQLite
+SQLite / PostgreSQL
 ```
 
 `BancoDados`, `GerenciadorDados`, coleções em memória e arquivos JSON não
@@ -51,7 +51,8 @@ schema.
 - FastAPI e Uvicorn;
 - SQLAlchemy 2;
 - Alembic;
-- SQLite;
+- SQLite e PostgreSQL;
+- Psycopg 3;
 - Pydantic;
 - PyJWT;
 - python-dotenv;
@@ -183,6 +184,12 @@ No Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
 ```
 
+No Prompt de Comando do Windows:
+
+```bat
+.venv\Scripts\activate
+```
+
 Instale as dependências:
 
 ```bash
@@ -198,6 +205,9 @@ LOCADORA_JWT_SECRET=coloque_uma_chave_secreta_forte_aqui
 LOCADORA_DATABASE_URL=sqlite:///dados/locadora.db
 ```
 
+Se `LOCADORA_DATABASE_URL` não for informada, a aplicação continua usando o
+SQLite local. Isso mantém o projeto simples para estudos e testes rápidos.
+
 As configurações de SMTP são opcionais, mas necessárias para enviar e-mails de
 recuperação de senha.
 
@@ -206,6 +216,45 @@ Nunca envie o arquivo `.env` real ao GitHub. Ele já está listado no
 
 A aplicação valida na inicialização se `LOCADORA_ADMIN_SENHA` e
 `LOCADORA_JWT_SECRET` foram configuradas.
+
+## PostgreSQL
+
+O mesmo código da aplicação funciona com SQLite e PostgreSQL. Para usar o
+PostgreSQL em desenvolvimento, configure no `.env`:
+
+```env
+LOCADORA_DATABASE_URL=postgresql+psycopg://locadora_app:SUA_SENHA@localhost:5432/locadora_dev
+LOCADORA_TEST_DATABASE_URL=postgresql+psycopg://locadora_app:SUA_SENHA@localhost:5432/locadora_test
+```
+
+Use a senha real apenas no `.env`, nunca no `.env.example`, em commits ou em
+mensagens. Se a senha contiver caracteres especiais como `@`, `:`, `/`, `#`
+ou `%`, eles precisam ser codificados para uso dentro da URL.
+
+O projeto separa os bancos por finalidade:
+
+- `locadora_dev`: dados usados ao executar a aplicação;
+- `locadora_test`: banco descartável usado somente nos testes de integração.
+
+Os dois bancos devem pertencer ao usuário limitado `locadora_app`. A aplicação
+não deve se conectar como o superusuário `postgres`.
+
+Depois de configurar a URL de desenvolvimento, aplique o schema:
+
+```bat
+python -m alembic upgrade head
+python -m alembic current
+```
+
+Inicie a API normalmente:
+
+```bat
+python -m uvicorn api.main:app --reload
+```
+
+O Alembic usa `render_as_batch` somente no SQLite. No PostgreSQL são emitidas
+as operações nativas do banco. A migration inicial também mantém `NOCASE`
+somente no SQLite e cria o índice parcial de manutenção ativa nos dois bancos.
 
 ## Migrations com Alembic
 
@@ -355,11 +404,27 @@ python -m pytest
 Estado verificado desta versão:
 
 ```text
-402 passed
+403 passed, 4 skipped
 ```
+
+Esse resultado ocorre sem a URL do banco PostgreSQL de teste. Quando
+`LOCADORA_TEST_DATABASE_URL` está configurada, os quatro testes ignorados são
+executados e a suíte completa coleta 407 testes.
 
 Os testes cobrem domínio, Services, Repositories SQLAlchemy, transações,
 Container, autenticação, recuperação de senha e endpoints FastAPI.
+
+Os testes PostgreSQL são ignorados quando
+`LOCADORA_TEST_DATABASE_URL` não está configurada. Com a variável presente,
+execute:
+
+```bat
+python -m pytest tests\test_postgresql_integracao.py -q
+```
+
+Esses testes apagam e recriam o schema `public`. Por segurança, eles recusam
+qualquer banco diferente de `locadora_test` e qualquer usuário diferente de
+`locadora_app`. Nunca use a URL de `locadora_dev` nessa variável.
 
 ## Segurança
 
@@ -389,7 +454,8 @@ Container, autenticação, recuperação de senha e endpoints FastAPI.
 - relatórios operacionais, rankings e resultados financeiros no frontend: concluídos;
 - recuperação e redefinição de senha no frontend: concluídas;
 - revisão final de integração e acabamento do frontend: concluída;
-- material completo de revisão do projeto: próximo passo;
-- Git e GitHub: planejados;
-- PostgreSQL: planejado;
+- material completo de revisão do projeto: concluído;
+- Git e GitHub: concluídos e em evolução;
+- PostgreSQL e Psycopg: concluídos;
+- testes de integração com PostgreSQL: concluídos;
 - Docker, CI/CD e deploy: planejados.

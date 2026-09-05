@@ -50,11 +50,11 @@ class VeiculoModel(Base):
             name="ck_veiculos_status",
         ),
         CheckConstraint(
-            "disponivel IN (0, 1)",
+            "disponivel IN (TRUE, FALSE)",
             name="ck_veiculos_disponivel",
         ),
         CheckConstraint(
-            "ativo IN (0, 1)",
+            "ativo IN (TRUE, FALSE)",
             name="ck_veiculos_ativo",
         ),
     )

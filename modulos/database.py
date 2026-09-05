@@ -12,6 +12,9 @@ from sqlalchemy import (
     event,
     text,
 )
+from sqlalchemy.engine import (
+    make_url,
+)
 
 from sqlalchemy.orm import (
     sessionmaker,
@@ -40,10 +43,13 @@ def criar_engine_sqlalchemy(
     database_url,
 ):
     argumentos_conexao = {}
+    backend = (
+        make_url(
+            database_url
+        ).get_backend_name()
+    )
 
-    if database_url.startswith(
-        "sqlite"
-    ):
+    if backend == "sqlite":
         argumentos_conexao[
             "check_same_thread"
         ] = False
@@ -55,9 +61,7 @@ def criar_engine_sqlalchemy(
         ),
     )
 
-    if database_url.startswith(
-        "sqlite"
-    ):
+    if backend == "sqlite":
         @event.listens_for(
             engine,
             "connect",
@@ -134,6 +138,9 @@ class BancoSQLAlchemy:
                 "%%",
             ),
         )
+        configuracao.attributes[
+            "database_url_override"
+        ] = self.database_url
 
         with self.engine.connect() as conexao:
             configuracao.attributes[

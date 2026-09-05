@@ -40,7 +40,7 @@ class TokenRecuperacaoModel(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "usado IN (0, 1)",
+            "usado IN (TRUE, FALSE)",
             name="ck_tokens_recuperacao_usado",
         ),
         Index(

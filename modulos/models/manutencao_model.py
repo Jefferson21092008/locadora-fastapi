@@ -49,6 +49,9 @@ class ManutencaoModel(Base):
             sqlite_where=text(
                 "status = 'ativa'"
             ),
+            postgresql_where=text(
+                "status = 'ativa'"
+            ),
         ),
     )
 

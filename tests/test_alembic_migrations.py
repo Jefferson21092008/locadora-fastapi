@@ -43,6 +43,9 @@ def criar_configuracao(
         "sqlalchemy.url",
         database_url,
     )
+    configuracao.attributes[
+        "database_url_override"
+    ] = database_url
     return configuracao
 
 

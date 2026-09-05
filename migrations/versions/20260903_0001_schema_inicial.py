@@ -32,6 +32,24 @@ TABELAS_APLICACAO = {
 }
 
 
+def _string_case_insensitive(
+    tamanho,
+):
+    """
+    Usa NOCASE somente no SQLite.
+
+    O PostgreSQL não possui essa collation por padrão. As buscas
+    continuam case-insensitive porque os repositories usam lower().
+    """
+    return sa.String(tamanho).with_variant(
+        sa.String(
+            tamanho,
+            collation="NOCASE",
+        ),
+        "sqlite",
+    )
+
+
 def _criar_schema() -> None:
     op.create_table(
         "usuarios",
@@ -42,7 +60,7 @@ def _criar_schema() -> None:
         sa.Column("ativo", sa.Boolean(), nullable=False),
         sa.Column("criado_em", sa.String(40), nullable=False),
         sa.CheckConstraint(
-            "ativo IN (0, 1)",
+            "ativo IN (TRUE, FALSE)",
             name="ck_usuarios_ativo",
         ),
         sa.CheckConstraint(
@@ -77,7 +95,7 @@ def _criar_schema() -> None:
             name="ck_veiculos_ano",
         ),
         sa.CheckConstraint(
-            "ativo IN (0, 1)",
+            "ativo IN (TRUE, FALSE)",
             name="ck_veiculos_ativo",
         ),
         sa.CheckConstraint(
@@ -85,7 +103,7 @@ def _criar_schema() -> None:
             name="ck_veiculos_diaria",
         ),
         sa.CheckConstraint(
-            "disponivel IN (0, 1)",
+            "disponivel IN (TRUE, FALSE)",
             name="ck_veiculos_disponivel",
         ),
         sa.CheckConstraint(
@@ -111,18 +129,12 @@ def _criar_schema() -> None:
         sa.Column("nome", sa.String(150), nullable=False),
         sa.Column(
             "usuario",
-            sa.String(
-                100,
-                collation="NOCASE",
-            ),
+            _string_case_insensitive(100),
             nullable=False,
         ),
         sa.Column(
             "email",
-            sa.String(
-                255,
-                collation="NOCASE",
-            ),
+            _string_case_insensitive(255),
             nullable=False,
         ),
         sa.Column("senha_hash", sa.Text(), nullable=False),
@@ -259,6 +271,9 @@ def _criar_schema() -> None:
         sqlite_where=sa.text(
             "status = 'ativa'"
         ),
+        postgresql_where=sa.text(
+            "status = 'ativa'"
+        ),
     )
 
     op.create_table(
@@ -271,7 +286,7 @@ def _criar_schema() -> None:
         sa.Column("criado_em", sa.String(40), nullable=False),
         sa.Column("usado_em", sa.String(40), nullable=True),
         sa.CheckConstraint(
-            "usado IN (0, 1)",
+            "usado IN (TRUE, FALSE)",
             name="ck_tokens_recuperacao_usado",
         ),
         sa.ForeignKeyConstraint(

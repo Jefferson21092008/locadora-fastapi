@@ -65,3 +65,33 @@ def test_configuracao_aceita_variaveis_obrigatorias(
         configuracao.jwt_secret
         == "segredo-de-teste"
     )
+
+
+def test_configuracao_aceita_url_postgresql(
+    monkeypatch,
+):
+    database_url = (
+        "postgresql+psycopg://"
+        "locadora_app:senha@"
+        "localhost:5432/locadora_dev"
+    )
+
+    monkeypatch.setenv(
+        "LOCADORA_ADMIN_SENHA",
+        "senha-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_JWT_SECRET",
+        "segredo-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_DATABASE_URL",
+        database_url,
+    )
+
+    configuracao = Configuracao()
+
+    assert (
+        configuracao.database_url
+        == database_url
+    )

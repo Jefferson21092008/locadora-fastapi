@@ -6,6 +6,9 @@ from sqlalchemy import (
     engine_from_config,
     pool,
 )
+from sqlalchemy.engine import (
+    make_url,
+)
 
 from modulos.config import (
     DATABASE_URL_PADRAO,
@@ -23,13 +26,22 @@ if config.config_file_name is not None:
     )
 
 database_url = (
-    os.getenv(
+    config.attributes.get(
+        "database_url_override"
+    )
+    or os.getenv(
         "LOCADORA_DATABASE_URL"
     )
     or config.get_main_option(
         "sqlalchemy.url"
     )
     or DATABASE_URL_PADRAO
+)
+
+database_backend = (
+    make_url(
+        database_url
+    ).get_backend_name()
 )
 
 config.set_main_option(
@@ -52,7 +64,10 @@ def run_migrations_offline() -> None:
             "paramstyle": "named",
         },
         compare_type=True,
-        render_as_batch=True,
+        render_as_batch=(
+            database_backend
+            == "sqlite"
+        ),
     )
 
     with context.begin_transaction():
