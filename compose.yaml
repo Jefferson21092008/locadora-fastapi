@@ -1,0 +1,65 @@
+name: locadora
+
+x-locadora-environment: &locadora-environment
+  LOCADORA_ADMIN_USUARIO: ${LOCADORA_ADMIN_USUARIO:-admin}
+  LOCADORA_ADMIN_SENHA: ${LOCADORA_ADMIN_SENHA:?Defina LOCADORA_ADMIN_SENHA no arquivo .env.docker}
+  LOCADORA_JWT_SECRET: ${LOCADORA_JWT_SECRET:?Defina LOCADORA_JWT_SECRET no arquivo .env.docker}
+  LOCADORA_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-locadora_app}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env.docker}@db:5432/${POSTGRES_DB:-locadora}
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-locadora}
+      POSTGRES_USER: ${POSTGRES_USER:-locadora_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env.docker}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - locadora_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  migrate:
+    image: locadora-api:local
+    build:
+      context: .
+    environment: *locadora-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    restart: "no"
+
+  api:
+    image: locadora-api:local
+    build:
+      context: .
+    environment: *locadora-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/status', timeout=3)
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    init: true
+    restart: unless-stopped
+
+volumes:
+  locadora_postgres_data:
