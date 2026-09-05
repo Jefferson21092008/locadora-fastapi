@@ -1,5 +1,7 @@
 # Locadora API
 
+[![CI](https://github.com/Jefferson21092008/locadora-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/Jefferson21092008/locadora-fastapi/actions/workflows/ci.yml)
+
 Sistema de gerenciamento de locadora de veículos desenvolvido em Python. O
 mesmo domínio e as mesmas regras de negócio atendem uma interface de linha de
 comando, uma API REST com FastAPI e um frontend em HTML, CSS e JavaScript.
@@ -54,6 +56,7 @@ schema.
 - SQLite e PostgreSQL;
 - Psycopg 3;
 - Docker e Docker Compose;
+- GitHub Actions;
 - Pydantic;
 - PyJWT;
 - python-dotenv;
@@ -335,6 +338,25 @@ No PostgreSQL 18, o volume é montado em `/var/lib/postgresql`, conforme a
 estrutura atual da imagem oficial. A API é executada por um usuário Linux sem
 privilégios administrativos e não utiliza `--reload` dentro do container.
 
+## Integração contínua
+
+O workflow `.github/workflows/ci.yml` executa automaticamente em Pull Requests
+destinados à `main` e depois de cada push integrado nessa branch. Ele também
+pode ser iniciado manualmente pela aba **Actions** do GitHub.
+
+O pipeline possui dois jobs independentes:
+
+1. `Testes Python e PostgreSQL` instala as dependências, valida o ambiente com
+   `pip check`, inicia um PostgreSQL 18 temporário, aplica as migrations do
+   Alembic e executa toda a suíte com pytest;
+2. `Construção da imagem Docker` valida o arquivo Compose e confirma que a
+   imagem da API pode ser construída.
+
+As senhas presentes no workflow são credenciais descartáveis usadas somente
+dentro do runner temporário. Elas não são as senhas de desenvolvimento ou
+produção e não exigem configuração em **GitHub Secrets**.
+
+
 ## Migrations com Alembic
 
 A migration inicial funciona em dois cenários:
@@ -483,7 +505,7 @@ python -m pytest
 Estado verificado desta versão:
 
 ```text
-407 passed, 4 skipped
+412 passed, 4 skipped
 ```
 
 Esse resultado ocorre sem a URL do banco PostgreSQL de teste. Quando
@@ -538,4 +560,5 @@ qualquer banco diferente de `locadora_test` e qualquer usuário diferente de
 - PostgreSQL e Psycopg: concluídos;
 - testes de integração com PostgreSQL: concluídos;
 - Docker e Docker Compose: concluídos;
-- CI/CD e deploy: planejados.
+- integração contínua com GitHub Actions: concluída;
+- deploy: planejado.
