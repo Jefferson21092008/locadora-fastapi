@@ -53,8 +53,8 @@ jobs:
           python-version: "3.14"
           cache: pip
           cache-dependency-path: |
-          requirements.txt
-          requirements-dev.txt
+            requirements.txt
+            requirements-dev.txt
 
       - name: Instalar dependências
         run: |
