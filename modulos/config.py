@@ -26,6 +26,41 @@ DATABASE_URL_PADRAO = (
 )
 
 
+def normalizar_database_url(
+    database_url,
+):
+    """
+    Adapta URLs PostgreSQL comuns para o driver
+    psycopg 3 usado pelo projeto.
+
+    Provedores como o Neon normalmente entregam
+    a conexão como ``postgresql://...``. O SQLAlchemy
+    precisa de ``postgresql+psycopg://...`` para usar
+    o pacote ``psycopg`` instalado em requirements.txt.
+    """
+    database_url = str(
+        database_url
+    ).strip()
+
+    if database_url.startswith(
+        "postgres://"
+    ):
+        return (
+            "postgresql+psycopg://"
+            + database_url[len("postgres://") :]
+        )
+
+    if database_url.startswith(
+        "postgresql://"
+    ):
+        return (
+            "postgresql+psycopg://"
+            + database_url[len("postgresql://") :]
+        )
+
+    return database_url
+
+
 class Configuracao:
     """
     Centraliza configurações da aplicação
@@ -59,10 +94,12 @@ class Configuracao:
         # ============================================================
 
         self.database_url = (
-            os.getenv(
-                "LOCADORA_DATABASE_URL"
+            normalizar_database_url(
+                os.getenv(
+                    "LOCADORA_DATABASE_URL"
+                )
+                or DATABASE_URL_PADRAO
             )
-            or DATABASE_URL_PADRAO
         )
 
         # ============================================================

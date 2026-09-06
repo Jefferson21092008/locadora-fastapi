@@ -54,11 +54,21 @@ def criar_engine_sqlalchemy(
             "check_same_thread"
         ] = False
 
-    engine = create_engine(
-        database_url,
-        connect_args=(
+    argumentos_engine = {
+        "connect_args": (
             argumentos_conexao
         ),
+        "pool_pre_ping": True,
+    }
+
+    if backend == "postgresql":
+        argumentos_engine[
+            "pool_recycle"
+        ] = 300
+
+    engine = create_engine(
+        database_url,
+        **argumentos_engine,
     )
 
     if backend == "sqlite":

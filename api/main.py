@@ -233,6 +233,28 @@ app.mount(
 
 
 @app.get(
+    "/health",
+    include_in_schema=False,
+)
+def health(
+    container: Container = Depends(
+        get_container
+    ),
+):
+    """
+    Health check usado pelo Render.
+
+    Além de confirmar que a API respondeu,
+    valida uma consulta simples ao banco.
+    """
+    container.banco_sqlalchemy.testar_conexao()
+
+    return {
+        "status": "ok"
+    }
+
+
+@app.get(
     "/",
     tags=["Sistema"],
     summary="Verificar a API",
