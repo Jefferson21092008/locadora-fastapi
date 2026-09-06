@@ -24,7 +24,6 @@ from modulos.repositories.aluguel_repository import (
 )
 from modulos.veiculos import (
     Carro,
-    StatusVeiculo,
 )
 
 

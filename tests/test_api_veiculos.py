@@ -1,5 +1,4 @@
 from types import SimpleNamespace
-from types import SimpleNamespace
 
 import pytest
 
@@ -596,23 +595,6 @@ def test_cliente_nao_pode_cadastrar_veiculo(
     assert (
         response.status_code
         == 403
-    )
-
-def criar_token_cliente():
-    usuario = SimpleNamespace(
-        id=2,
-        usuario="cliente",
-        ativo=True,
-        role=SimpleNamespace(
-            value="cliente"
-        ),
-    )
-
-    return criar_token_acesso(
-        usuario=usuario,
-        secret=(
-            "chave-super-secreta-para-testes"
-        ),
     )
 
 def criar_token_cliente():

@@ -86,12 +86,10 @@ def criar_service():
         ),
     )
 
-    admin = (
-        auth_service.criar_usuario(
-            nome_usuario="admin",
-            senha="admin123",
-            role=Role.ADMIN,
-        )
+    auth_service.criar_usuario(
+        nome_usuario="admin",
+        senha="admin123",
+        role=Role.ADMIN,
     )
 
     return AdminService(
