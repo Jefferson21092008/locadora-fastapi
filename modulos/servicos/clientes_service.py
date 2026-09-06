@@ -365,6 +365,120 @@ class ClienteService:
         )
 
     # ================================================================
+    # NOME DE USUÁRIO
+    # ================================================================
+
+    def renomear_usuario(
+        self,
+        cliente,
+        novo_usuario,
+        senha_atual,
+    ):
+        conta = (
+            self.buscar_conta_do_cliente(
+                cliente
+            )
+        )
+
+        if conta is None:
+            raise RecursoNaoEncontrado(
+                "Conta de usuário "
+                "não encontrada."
+            )
+
+        if not conta.ativo:
+            raise RegraDeNegocio(
+                "Usuário desativado."
+            )
+
+        if not conta.validar_senha(
+            senha_atual
+        ):
+            raise RegraDeNegocio(
+                "Senha atual incorreta."
+            )
+
+        novo_usuario = str(
+            novo_usuario
+        ).strip()
+
+        valido, mensagem = (
+            Usuario.validar_nome_usuario(
+                novo_usuario
+            )
+        )
+
+        if not valido:
+            raise RegraDeNegocio(
+                mensagem
+            )
+
+        if (
+            novo_usuario.lower()
+            == conta.usuario.lower()
+        ):
+            raise RegraDeNegocio(
+                "O novo usuário deve ser "
+                "diferente do atual."
+            )
+
+        usuario_existente = (
+            self.auth_service
+            .buscar_por_usuario(
+                novo_usuario
+            )
+        )
+
+        if usuario_existente is not None:
+            raise RegraDeNegocio(
+                "Esse usuário já existe."
+            )
+
+        cliente_existente = (
+            self.buscar_por_usuario(
+                novo_usuario
+            )
+        )
+
+        if cliente_existente is not None:
+            raise RegraDeNegocio(
+                "Esse usuário já está cadastrado."
+            )
+
+        usuario_anterior = (
+            conta.usuario
+        )
+
+        cliente_usuario_anterior = (
+            cliente.usuario
+        )
+
+        try:
+            (
+                self.cliente_repository
+                .renomear_usuario_com_conta(
+                    usuario_id=conta.id,
+                    novo_usuario=novo_usuario,
+                )
+            )
+
+        except Exception:
+            conta.usuario = (
+                usuario_anterior
+            )
+
+            cliente.usuario = (
+                cliente_usuario_anterior
+            )
+
+            raise
+
+        conta.usuario = novo_usuario
+        cliente.usuario = novo_usuario
+
+        return cliente
+
+    # ================================================================
     # SENHA
     # ================================================================
 

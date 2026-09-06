@@ -65,6 +65,46 @@ class LoginRequest(BaseModel):
 
         return valor
 
+class AlterarUsuarioRequest(
+    BaseModel
+):
+    novo_usuario: str = Field(
+        min_length=3,
+        max_length=100,
+        description=(
+            "Novo nome de usuário "
+            "da conta."
+        ),
+        examples=[
+            "joao.silva"
+        ],
+    )
+
+    senha_atual: str = Field(
+        min_length=1,
+        max_length=128,
+        description=(
+            "Senha atual utilizada "
+            "para confirmar a alteração."
+        ),
+    )
+
+    @field_validator(
+        "novo_usuario",
+        mode="before",
+    )
+    @classmethod
+    def limpar_novo_usuario(
+        cls,
+        valor,
+    ):
+        if isinstance(
+            valor,
+            str,
+        ):
+            return valor.strip()
+
+        return valor
 
 # ================================================================
 # TOKEN
