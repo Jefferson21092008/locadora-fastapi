@@ -9,11 +9,23 @@ services:
     healthCheckPath: /health
     autoDeployTrigger: checksPass
     envVars:
-      - key: LOCADORA_DATABASE_URL
-        sync: false
       - key: LOCADORA_ADMIN_USUARIO
         value: admin
+
       - key: LOCADORA_ADMIN_SENHA
         sync: false
+
       - key: LOCADORA_JWT_SECRET
         generateValue: true
+
+      - key: LOCADORA_DATABASE_URL
+        sync: false
+
+      - key: LOCADORA_BREVO_API_KEY
+        sync: false
+
+      - key: LOCADORA_EMAIL_REMETENTE
+        sync: false
+
+      - key: LOCADORA_PUBLIC_URL
+        value: https://locadora-fastapi.onrender.com

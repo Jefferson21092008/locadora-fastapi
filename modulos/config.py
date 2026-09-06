@@ -103,31 +103,23 @@ class Configuracao:
         )
 
         # ============================================================
-        # E-MAIL / SMTP
+        # E-MAIL / BREVO
         # ============================================================
 
-        self.email_smtp_host = os.getenv(
-            "LOCADORA_EMAIL_SMTP_HOST"
-        )
-
-        self.email_smtp_port = int(
-            os.getenv(
-                "LOCADORA_EMAIL_SMTP_PORT",
-                "587",
-            )
-        )
-
-        self.email_usuario = os.getenv(
-            "LOCADORA_EMAIL_USUARIO"
-        )
-
-        self.email_senha = os.getenv(
-            "LOCADORA_EMAIL_SENHA"
+        self.brevo_api_key = os.getenv(
+            "LOCADORA_BREVO_API_KEY"
         )
 
         self.email_remetente = os.getenv(
             "LOCADORA_EMAIL_REMETENTE"
-        ) or self.email_usuario
+        )
+
+        self.public_url = (
+            os.getenv(
+                "LOCADORA_PUBLIC_URL"
+            )
+            or "http://127.0.0.1:8000"
+        ).strip().rstrip("/")
 
         # ============================================================
         # VALIDAÇÕES OBRIGATÓRIAS
@@ -157,10 +149,8 @@ class Configuracao:
     ):
         return all(
             (
-                self.email_smtp_host,
-                self.email_smtp_port,
-                self.email_usuario,
-                self.email_senha,
+                self.brevo_api_key,
                 self.email_remetente,
+                self.public_url,
             )
         )
