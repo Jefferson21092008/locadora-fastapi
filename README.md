@@ -536,12 +536,12 @@ python -m pytest
 Estado verificado desta versão:
 
 ```text
-417 passed, 4 skipped
+422 passed, 4 skipped
 ```
 
 Esse resultado ocorre sem a URL do banco PostgreSQL de teste. Quando
 `LOCADORA_TEST_DATABASE_URL` está configurada, os quatro testes ignorados são
-executados e a suíte completa coleta 421 testes.
+executados e a suíte completa coleta 426 testes.
 
 Os testes cobrem domínio, Services, Repositories SQLAlchemy, transações,
 Container, autenticação, recuperação de senha e endpoints FastAPI.
@@ -594,4 +594,46 @@ qualquer banco diferente de `locadora_test` e qualquer usuário diferente de
 - integração contínua com GitHub Actions: concluída;
 - proteção da branch principal: concluída;
 - lint, auditoria de dependências e Dependabot: concluídos;
-- deploy: planejado.
+- deploy Render + Neon: preparado;
+- publicação online: pendente de provisionar Neon e Render.
+
+## Deploy — Render + Neon
+
+A configuração de produção usa um único Web Service no Render, com o frontend
+servido pela própria FastAPI, e PostgreSQL persistente no Neon.
+
+O arquivo `render.yaml` configura:
+
+- runtime Docker no plano gratuito;
+- região `virginia`;
+- migrations Alembic antes da inicialização do Uvicorn;
+- porta fornecida pelo Render por `PORT`;
+- health check em `/health` com consulta ao banco;
+- deploy automático somente depois que os checks da branch passam;
+- URL do banco e senha inicial do administrador como segredos;
+- geração automática do segredo JWT pelo Render.
+
+Para reduzir a latência entre aplicação e banco, crie o projeto do Neon em
+**AWS US East 1 (N. Virginia)** e use a conexão pooled. Copie a connection
+string entregue pelo Neon para `LOCADORA_DATABASE_URL`. URLs começando com
+`postgresql://` ou `postgres://` são normalizadas automaticamente para o driver
+`psycopg` 3 usado pelo projeto.
+
+No primeiro Blueprint do Render, informe:
+
+```text
+LOCADORA_DATABASE_URL=<connection string pooled do Neon>
+LOCADORA_ADMIN_SENHA=<senha forte para o admin inicial>
+```
+
+`LOCADORA_ADMIN_USUARIO` permanece como `admin` e `LOCADORA_JWT_SECRET` é
+gerado automaticamente pelo Render.
+
+### Recuperação de senha no Render Free
+
+O fluxo atual usa SMTP. O plano gratuito do Render bloqueia conexões de saída
+nas portas SMTP 25, 465 e 587, portanto o Gmail SMTP configurado na porta 587
+não funciona nesse ambiente. O restante da aplicação funciona normalmente sem
+as variáveis SMTP; para habilitar recuperação de senha em produção, use um
+provedor de e-mail por API HTTPS ou um serviço SMTP acessível em uma porta
+permitida.

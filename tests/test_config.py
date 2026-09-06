@@ -95,3 +95,33 @@ def test_configuracao_aceita_url_postgresql(
         configuracao.database_url
         == database_url
     )
+
+
+def test_configuracao_normaliza_url_neon_para_psycopg(
+    monkeypatch,
+):
+    monkeypatch.setenv(
+        "LOCADORA_ADMIN_SENHA",
+        "senha-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_JWT_SECRET",
+        "segredo-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_DATABASE_URL",
+        (
+            "postgresql://usuario:senha@"
+            "ep-exemplo-pooler.us-east-1.aws.neon.tech/"
+            "neondb?sslmode=require"
+        ),
+    )
+
+    configuracao = Configuracao()
+
+    assert configuracao.database_url.startswith(
+        "postgresql+psycopg://"
+    )
+    assert "sslmode=require" in (
+        configuracao.database_url
+    )

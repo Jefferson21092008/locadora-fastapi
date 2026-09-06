@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: locadora-fastapi
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: >-
+      /bin/sh -c 'python -m alembic upgrade head &&
+      exec python -m uvicorn api.main:app --host 0.0.0.0
+      --port "${PORT:-10000}"'
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: LOCADORA_DATABASE_URL
+        sync: false
+      - key: LOCADORA_ADMIN_USUARIO
+        value: admin
+      - key: LOCADORA_ADMIN_SENHA
+        sync: false
+      - key: LOCADORA_JWT_SECRET
+        generateValue: true
