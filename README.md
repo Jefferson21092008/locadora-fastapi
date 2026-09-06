@@ -2,32 +2,38 @@
 
 [![CI](https://github.com/Jefferson21092008/locadora-fastapi/actions/workflows/ci.yml/badge.svg)](https://github.com/Jefferson21092008/locadora-fastapi/actions/workflows/ci.yml)
 
-Sistema de gerenciamento de locadora de veículos desenvolvido em Python. O
-mesmo domínio e as mesmas regras de negócio atendem uma interface de linha de
-comando, uma API REST com FastAPI e um frontend em HTML, CSS e JavaScript.
+Sistema de gerenciamento de locadora de veículos desenvolvido em Python. O mesmo domínio e as mesmas regras de negócio atendem uma interface de linha de comando, uma API REST com FastAPI e um frontend em HTML, CSS e JavaScript.
+
+## Aplicação online
+
+- **Frontend:** https://locadora-fastapi.onrender.com/app/
+- **API:** https://locadora-fastapi.onrender.com
+- **Swagger:** https://locadora-fastapi.onrender.com/docs
+- **Health check:** https://locadora-fastapi.onrender.com/health
+
+A aplicação está publicada no **Render**, usa **PostgreSQL no Neon** e envia e-mails transacionais de recuperação de senha pela **API HTTPS da Brevo**.
 
 ## Estado atual
 
-A migração da persistência antiga foi concluída. O sistema usa exclusivamente:
+A migração da persistência antiga foi concluída. O fluxo principal da aplicação é:
 
 ```text
-CLI / FastAPI
-      ↓
-   Container
-      ↓
-   Services
-      ↓
- Repositories
-      ↓
- SQLAlchemy ORM
-      ↓
+CLI / FastAPI / Frontend
+        ↓
+     Container
+        ↓
+      Services
+        ↓
+   Repositories
+        ↓
+  SQLAlchemy ORM
+        ↓
 SQLite / PostgreSQL
 ```
 
-`BancoDados`, `GerenciadorDados`, coleções em memória e arquivos JSON não
-fazem mais parte do fluxo da aplicação. O `BancoSQLAlchemy` centraliza o
-Engine e a fábrica de sessões. O Alembic controla a criação e a evolução do
-schema.
+`BancoDados`, `GerenciadorDados`, coleções em memória e arquivos JSON não fazem mais parte do fluxo principal. O `BancoSQLAlchemy` centraliza o Engine e a fábrica de sessões. O Alembic controla a criação e a evolução do schema.
+
+O projeto está validado localmente e em produção, com frontend, API, autenticação, banco PostgreSQL, migrations, recuperação de senha e alteração de nome de usuário funcionando de ponta a ponta.
 
 ## Funcionalidades
 
@@ -38,17 +44,24 @@ schema.
 - abertura e finalização de manutenções;
 - relatórios administrativos e financeiros;
 - autenticação JWT com perfis de administrador e cliente;
-- recuperação de senha por e-mail;
+- recuperação de senha por e-mail via Brevo API;
 - tokens temporários, de uso único e armazenados por hash;
+- alteração do nome de usuário pelo próprio cliente, com confirmação da senha atual;
+- prevenção de nomes de usuário duplicados;
+- atualização transacional do nome de usuário nas tabelas relacionadas;
 - CLI e API REST usando a mesma camada de negócio;
 - frontend responsivo com login JWT e painel conectado à API;
 - transações e rollback em operações compostas;
 - documentação OpenAPI/Swagger;
-- testes unitários e de integração.
+- health check para produção;
+- migrations automáticas no deploy;
+- testes unitários e de integração;
+- integração contínua com GitHub Actions;
+- auditoria de dependências e atualizações automatizadas com Dependabot.
 
 ## Tecnologias
 
-- Python;
+- Python 3.14;
 - HTML, CSS e JavaScript;
 - FastAPI e Uvicorn;
 - SQLAlchemy 2;
@@ -56,6 +69,9 @@ schema.
 - SQLite e PostgreSQL;
 - Psycopg 3;
 - Docker e Docker Compose;
+- Render;
+- Neon;
+- Brevo Transactional Email API;
 - GitHub Actions;
 - Ruff;
 - pip-audit;
@@ -64,13 +80,16 @@ schema.
 - PyJWT;
 - python-dotenv;
 - pytest;
-- HTTPX para os testes da API;
-- SMTP / smtplib.
+- HTTPX para testes da API e integração HTTPS com a Brevo.
 
 ## Estrutura
 
 ```text
 Locadora/
+├── .github/
+│   ├── workflows/
+│   │   └── ci.yml
+│   └── dependabot.yml
 ├── api/
 │   ├── routers/
 │   ├── schemas/
@@ -136,50 +155,41 @@ Locadora/
 ├── tests/
 ├── .dockerignore
 ├── .env.docker.example
-├── alembic.ini
-├── compose.yaml
-├── Dockerfile
 ├── .env.example
 ├── .gitignore
+├── alembic.ini
 ├── carros.py
+├── compose.yaml
+├── Dockerfile
 ├── README.md
+├── render.yaml
+├── requirements-dev.txt
 └── requirements.txt
 ```
 
-O diretório `scripts/legacy/` preserva apenas o histórico da antiga migração
-dos arquivos JSON para SQLite. Ele não participa da execução atual da
-aplicação e pode ser removido futuramente quando esse histórico não for mais
-necessário.
+O diretório `scripts/legacy/` preserva apenas o histórico da antiga migração dos arquivos JSON para SQLite. Ele não participa da execução atual da aplicação e pode ser removido futuramente quando esse histórico não for mais necessário.
 
 ### Entidades
 
-Os arquivos de domínio em `modulos/` representam clientes, veículos,
-aluguéis, manutenções, usuários e pagamentos. Eles concentram regras próprias
-do domínio e não executam SQL.
+Os arquivos de domínio em `modulos/` representam clientes, veículos, aluguéis, manutenções, usuários e pagamentos. Eles concentram regras próprias do domínio e não executam SQL.
 
 ### Models
 
-Os Models em `modulos/models/` descrevem as tabelas do banco com o ORM do
-SQLAlchemy. Eles ficam separados das entidades para que a regra de negócio não
-dependa da persistência.
+Os Models em `modulos/models/` descrevem as tabelas do banco com o ORM do SQLAlchemy. Eles ficam separados das entidades para que a regra de negócio não dependa da persistência.
 
 ### Repositories
 
-Os Repositories recebem `BancoSQLAlchemy`, abrem sessões e convertem Models
-ORM em entidades de domínio. Eles são a única camada que consulta ou altera o
-banco.
+Os Repositories recebem `BancoSQLAlchemy`, abrem sessões e convertem Models ORM em entidades de domínio. Eles são a camada responsável por consultar e alterar o banco.
+
+Operações compostas, como cadastro de cliente com conta ou alteração do nome de usuário, são executadas de forma transacional para evitar estados inconsistentes.
 
 ### Services
 
-Os Services executam as regras de negócio e dependem apenas dos contratos
-oferecidos pelos Repositories. Eles não conhecem SQLite, SQLAlchemy, HTTP ou a
-interface de terminal.
+Os Services executam as regras de negócio e dependem dos contratos oferecidos pelos Repositories. Eles não precisam conhecer detalhes de SQLite, PostgreSQL, SQLAlchemy, HTTP ou interface de terminal.
 
 ### Container
 
-O `Container` monta uma única infraestrutura de banco, aplica as migrations
-pendentes, cria os Repositories, injeta-os nos Services e compartilha a mesma
-aplicação entre a CLI e a API.
+O `Container` monta a infraestrutura, cria os Repositories, injeta-os nos Services e compartilha as dependências necessárias entre CLI e API.
 
 ## Configuração
 
@@ -201,19 +211,21 @@ No Prompt de Comando do Windows:
 .venv\Scripts\activate
 ```
 
-Instale as dependências:
+Instale as dependências da aplicação:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-Para desenvolvimento, testes e verificações de qualidade, instale também:
+Para desenvolvimento, testes e verificações de qualidade:
 
 ```bash
 python -m pip install -r requirements-dev.txt
 ```
 
-Copie `.env.example` para `.env` e configure pelo menos:
+Copie `.env.example` para `.env` e configure as variáveis necessárias.
+
+Exemplo mínimo para desenvolvimento local:
 
 ```env
 LOCADORA_ADMIN_USUARIO=admin
@@ -222,39 +234,41 @@ LOCADORA_JWT_SECRET=coloque_uma_chave_secreta_forte_aqui
 LOCADORA_DATABASE_URL=sqlite:///dados/locadora.db
 ```
 
-Se `LOCADORA_DATABASE_URL` não for informada, a aplicação continua usando o
-SQLite local. Isso mantém o projeto simples para estudos e testes rápidos.
+Para habilitar recuperação de senha por e-mail:
 
-As configurações de SMTP são opcionais, mas necessárias para enviar e-mails de
-recuperação de senha.
+```env
+LOCADORA_BREVO_API_KEY=sua_chave_da_brevo
+LOCADORA_EMAIL_REMETENTE=seu_remetente_verificado
+LOCADORA_PUBLIC_URL=http://127.0.0.1:8000
+```
 
-Nunca envie o arquivo `.env` real ao GitHub. Ele já está listado no
-`.gitignore`.
+Em produção, `LOCADORA_PUBLIC_URL` deve apontar para a URL pública da aplicação:
 
-A aplicação valida na inicialização se `LOCADORA_ADMIN_SENHA` e
-`LOCADORA_JWT_SECRET` foram configuradas.
+```env
+LOCADORA_PUBLIC_URL=https://locadora-fastapi.onrender.com
+```
+
+Nunca envie o arquivo `.env` real ao GitHub. Ele está listado no `.gitignore`.
+
+A aplicação valida na inicialização os segredos obrigatórios, como a senha do administrador e o segredo JWT.
 
 ## PostgreSQL
 
-O mesmo código da aplicação funciona com SQLite e PostgreSQL. Para usar o
-PostgreSQL em desenvolvimento, configure no `.env`:
+O mesmo código da aplicação funciona com SQLite e PostgreSQL.
+
+Para PostgreSQL local em desenvolvimento:
 
 ```env
 LOCADORA_DATABASE_URL=postgresql+psycopg://locadora_app:SUA_SENHA@localhost:5432/locadora_dev
 LOCADORA_TEST_DATABASE_URL=postgresql+psycopg://locadora_app:SUA_SENHA@localhost:5432/locadora_test
 ```
 
-Use a senha real apenas no `.env`, nunca no `.env.example`, em commits ou em
-mensagens. Se a senha contiver caracteres especiais como `@`, `:`, `/`, `#`
-ou `%`, eles precisam ser codificados para uso dentro da URL.
+Use as senhas reais somente no `.env`. Se a senha contiver caracteres especiais reservados em URL, eles precisam ser codificados.
 
 O projeto separa os bancos por finalidade:
 
 - `locadora_dev`: dados usados ao executar a aplicação;
-- `locadora_test`: banco descartável usado somente nos testes de integração.
-
-Os dois bancos devem pertencer ao usuário limitado `locadora_app`. A aplicação
-não deve se conectar como o superusuário `postgres`.
+- `locadora_test`: banco descartável usado somente nos testes de integração PostgreSQL.
 
 Depois de configurar a URL de desenvolvimento, aplique o schema:
 
@@ -263,15 +277,15 @@ python -m alembic upgrade head
 python -m alembic current
 ```
 
-Inicie a API normalmente:
+Inicie a API:
 
 ```bat
 python -m uvicorn api.main:app --reload
 ```
 
-O Alembic usa `render_as_batch` somente no SQLite. No PostgreSQL são emitidas
-as operações nativas do banco. A migration inicial também mantém `NOCASE`
-somente no SQLite e cria o índice parcial de manutenção ativa nos dois bancos.
+O Alembic usa `render_as_batch` somente no SQLite. No PostgreSQL são emitidas operações nativas do banco.
+
+URLs do tipo `postgresql://...` ou `postgres://...` são normalizadas pelo projeto para o driver `psycopg` 3 quando necessário.
 
 ## Docker Compose
 
@@ -281,9 +295,7 @@ O ambiente Docker executa três serviços coordenados:
 2. `migrate` executa `alembic upgrade head` e termina;
 3. `api` inicia a FastAPI somente depois das migrations concluírem.
 
-O PostgreSQL instalado diretamente no Windows continua usando a porta `5432`.
-O PostgreSQL do Docker é publicado apenas em `127.0.0.1:5433`, evitando
-conflito entre os dois ambientes.
+O PostgreSQL instalado diretamente no Windows pode continuar usando a porta `5432`. O PostgreSQL do Docker é publicado em `127.0.0.1:5433`, evitando conflito entre os dois ambientes.
 
 Crie o arquivo privado de configuração:
 
@@ -292,111 +304,87 @@ copy .env.docker.example .env.docker
 notepad .env.docker
 ```
 
-Substitua todos os valores de exemplo. Use senhas diferentes das utilizadas
-no PostgreSQL do Windows e no GitHub. Para gerar valores seguros que também
-podem ser usados dentro da URL de conexão:
-
-```bat
-python -c "import secrets; print(secrets.token_urlsafe(32))"
-```
-
-Execute esse comando separadamente para `POSTGRES_PASSWORD`,
-`LOCADORA_ADMIN_SENHA` e `LOCADORA_JWT_SECRET`. Não envie o arquivo
-`.env.docker` ao GitHub; ele está protegido no `.gitignore` e no
-`.dockerignore`.
-
-Valide a configuração antes de criar containers:
+Valide a configuração:
 
 ```bat
 docker compose --env-file .env.docker config --quiet
 ```
 
-Construa a imagem e inicie todo o ambiente:
+Construa a imagem e inicie o ambiente:
 
 ```bat
 docker compose --env-file .env.docker up --build
 ```
 
-Em outro terminal, consulte o estado e os logs:
+Consulte estado e logs:
 
 ```bat
 docker compose --env-file .env.docker ps
 docker compose --env-file .env.docker logs api
 ```
 
-Endereços da aplicação:
+Endereços locais:
 
 - frontend: `http://127.0.0.1:8000/app/`;
 - Swagger: `http://127.0.0.1:8000/docs`;
-- status: `http://127.0.0.1:8000/status`.
+- status: `http://127.0.0.1:8000/status`;
+- health check: `http://127.0.0.1:8000/health`.
 
-Para encerrar os containers preservando os dados:
+Para encerrar preservando os dados:
 
 ```bat
 docker compose --env-file .env.docker down
 ```
 
-O comando abaixo também apaga definitivamente o volume e todos os dados do
-PostgreSQL do Docker. Use-o somente quando quiser reiniciar o banco do zero:
+Para apagar também o volume e reiniciar o banco do zero:
 
 ```bat
 docker compose --env-file .env.docker down --volumes
 ```
 
-No PostgreSQL 18, o volume é montado em `/var/lib/postgresql`, conforme a
-estrutura atual da imagem oficial. A API é executada por um usuário Linux sem
-privilégios administrativos e não utiliza `--reload` dentro do container.
+A API é executada no container por um usuário Linux sem privilégios administrativos e não utiliza `--reload` em produção.
 
 ## Integração contínua
 
-O workflow `.github/workflows/ci.yml` executa automaticamente em Pull Requests
-destinados à `main` e depois de cada push integrado nessa branch. Ele também
-pode ser iniciado manualmente pela aba **Actions** do GitHub.
+O workflow `.github/workflows/ci.yml` executa automaticamente em Pull Requests destinados à `main` e após mudanças integradas nessa branch. Também pode ser iniciado manualmente pela aba **Actions** do GitHub.
 
-O pipeline possui dois jobs independentes:
+O pipeline valida, entre outros pontos:
 
-1. `Testes Python e PostgreSQL` instala as dependências, valida o ambiente com
-   `pip check`, analisa o código com Ruff, audita vulnerabilidades conhecidas,
-   inicia um PostgreSQL 18 temporário, aplica as migrations do Alembic e
-   executa toda a suíte com pytest;
-2. `Construção da imagem Docker` valida o arquivo Compose e confirma que a
-   imagem da API pode ser construída.
+1. dependências com `pip check`;
+2. qualidade do código com Ruff;
+3. vulnerabilidades conhecidas com `pip-audit`;
+4. migrations Alembic;
+5. integração com PostgreSQL temporário;
+6. suíte de testes com pytest;
+7. construção da imagem Docker;
+8. configuração Docker Compose.
 
-As senhas presentes no workflow são credenciais descartáveis usadas somente
-dentro do runner temporário. Elas não são as senhas de desenvolvimento ou
-produção e não exigem configuração em **GitHub Secrets**.
+As credenciais usadas pelo PostgreSQL temporário do CI são descartáveis e não correspondem às credenciais de produção.
 
 ## Qualidade e segurança das dependências
 
-As ferramentas usadas somente no desenvolvimento ficam em
-`requirements-dev.txt`, sem aumentar a imagem Docker de produção.
-
-Verificar erros de código com Ruff:
+Verificar o código com Ruff:
 
 ```bash
 python -m ruff check .
 ```
 
-Auditar as dependências da aplicação em busca de vulnerabilidades conhecidas:
+Auditar as dependências:
 
 ```bash
 python -m pip_audit -r requirements.txt --progress-spinner off
 ```
 
-O arquivo `.github/dependabot.yml` verifica semanalmente as dependências
-Python e mensalmente as Actions e imagens Docker. Quando encontra uma nova
-versão, o Dependabot abre um Pull Request que ainda precisa passar pelos mesmos
-checks obrigatórios da `main`.
+O arquivo `.github/dependabot.yml` verifica atualizações de dependências Python, GitHub Actions e imagens Docker. Pull Requests criados pelo Dependabot precisam passar pelos mesmos checks da `main`.
 
 ## Migrations com Alembic
 
 A migration inicial funciona em dois cenários:
 
 - cria todas as tabelas quando o banco está vazio;
-- reconhece o schema SQLite legado, recria as tabelas no formato dos Models e
-  preserva os registros existentes.
+- reconhece o schema SQLite legado, recria tabelas no formato atual e preserva os registros existentes.
 
-O banco incluído nesta versão já está na revisão:
+Revisão atual validada:
 
 ```text
 20260903_0001 (head)
@@ -420,7 +408,7 @@ Desfazer a migration mais recente:
 python -m alembic downgrade -1
 ```
 
-Gerar uma nova migration depois de alterar os Models:
+Gerar uma nova migration:
 
 ```bash
 python -m alembic revision --autogenerate -m "descricao da alteracao"
@@ -432,10 +420,9 @@ Verificar se Models e banco estão sincronizados:
 python -m alembic check
 ```
 
-O `migrations/env.py` conecta o Alembic ao `Base.metadata`, lê
-`LOCADORA_DATABASE_URL` e ativa `render_as_batch` para alterações
-compatíveis com SQLite. Toda migration gerada automaticamente deve ser revisada
-antes da execução.
+O `migrations/env.py` conecta o Alembic ao `Base.metadata`, lê `LOCADORA_DATABASE_URL`, normaliza URLs PostgreSQL para Psycopg 3 e ativa `render_as_batch` quando necessário para SQLite.
+
+Toda migration gerada automaticamente deve ser revisada antes da execução.
 
 ## Execução
 
@@ -451,22 +438,22 @@ python carros.py
 python -m uvicorn api.main:app --reload
 ```
 
-Endereços padrão:
+Endereços locais padrão:
 
 - API: `http://127.0.0.1:8000`
 - Frontend: `http://127.0.0.1:8000/app/`
 - Swagger: `http://127.0.0.1:8000/docs`
 - OpenAPI: `http://127.0.0.1:8000/openapi.json`
+- Health: `http://127.0.0.1:8000/health`
 
 ## Frontend
 
-O frontend é servido pela própria FastAPI. Por isso, não abra os arquivos HTML
-diretamente pelo explorador: inicie o Uvicorn e acesse `/app/` pelo navegador.
+O frontend é servido pela própria FastAPI. Não abra os arquivos HTML diretamente pelo explorador; inicie o Uvicorn e acesse `/app/` pelo navegador.
 
 Os módulos implementados possuem:
 
 - tela de login responsiva;
-- integração real com `POST /auth/login`;
+- integração com `POST /auth/login`;
 - armazenamento do JWT em `sessionStorage`;
 - validação da sessão com `GET /auth/me`;
 - redirecionamento de usuários sem autenticação;
@@ -482,25 +469,28 @@ Os módulos implementados possuem:
 - busca, filtro de status e acompanhamento de prazos;
 - criação de aluguel com estimativa inicial das diárias;
 - devolução com quilometragem, pagamento e parcelamento;
-- visão administrativa de todos os contratos e clientes;
+- visão administrativa de contratos e clientes;
 - cadastro público de novas contas de cliente;
 - busca e filtros de clientes para administradores;
 - desativação e reativação de contas de cliente;
-- navegação administrativa escondida de contas comuns;
 - painel administrativo de manutenções com busca, filtros e indicadores;
 - abertura e finalização de manutenções integradas ao estado da frota;
 - histórico de serviços, quilometragem e custos por veículo;
 - painel administrativo com resumos operacionais e financeiros;
-- rankings de veículos e clientes com limite configurável;
-- comparação do faturamento por tipo e dos custos de manutenção;
+- rankings de veículos e clientes;
+- comparação de faturamento e custos de manutenção;
 - consulta do resultado bruto individual de cada veículo;
 - solicitação pública de recuperação de senha por nome de usuário;
-- redefinição com token temporário, confirmação e validação da nova senha;
+- redefinição de senha por link temporário enviado por e-mail;
+- integração com Brevo via HTTPS para e-mail transacional;
 - respostas de recuperação que não revelam se uma conta existe;
-- tratamento de credenciais inválidas e falha de conexão.
+- alteração do nome de usuário pelo próprio cliente;
+- confirmação da senha atual antes da alteração do nome de usuário;
+- atualização imediata do nome exibido no painel;
+- manutenção da sessão após a alteração do nome de usuário;
+- tratamento de credenciais inválidas e falhas de conexão.
 
-Como o frontend e a API usam a mesma origem, essa etapa não precisa liberar
-CORS. As telas reutilizam as funções centralizadas em `frontend/js/api.js`.
+Como frontend e API usam a mesma origem, não é necessário liberar CORS para o fluxo atual. As telas reutilizam as funções centralizadas em `frontend/js/api.js`.
 
 ## Autenticação
 
@@ -519,121 +509,230 @@ Em caso de sucesso, a API retorna um JWT:
 }
 ```
 
-Nas rotas protegidas, envie:
+Nas rotas protegidas:
 
 ```http
 Authorization: Bearer SEU_TOKEN
 ```
+
+Consultar o usuário autenticado:
+
+```text
+GET /auth/me
+```
+
+Alterar o nome de usuário de uma conta de cliente:
+
+```text
+PATCH /auth/me/usuario
+```
+
+A alteração exige a senha atual, rejeita nomes já utilizados e atualiza os registros relacionados de forma transacional.
+
+## Recuperação de senha
+
+O fluxo de recuperação funciona da seguinte forma:
+
+```text
+Usuário solicita recuperação
+        ↓
+FastAPI gera token temporário
+        ↓
+Token é armazenado de forma segura
+        ↓
+Brevo API envia e-mail por HTTPS
+        ↓
+Usuário abre o link de redefinição
+        ↓
+Nova senha é validada e salva
+```
+
+Variáveis usadas:
+
+```env
+LOCADORA_BREVO_API_KEY=segredo
+LOCADORA_EMAIL_REMETENTE=remetente_verificado
+LOCADORA_PUBLIC_URL=https://locadora-fastapi.onrender.com
+```
+
+A chave da Brevo nunca deve ser versionada. O remetente precisa estar verificado na plataforma da Brevo.
+
+O uso da API HTTPS resolve a limitação do Render Free, que bloqueia conexões SMTP tradicionais nas portas comuns.
 
 ## Testes
 
 Execute toda a suíte:
 
 ```bash
-python -m pytest
+python -m pytest -q
 ```
 
-Estado verificado desta versão:
+Estado final validado desta versão:
 
 ```text
-422 passed, 4 skipped
+444 passed
 ```
 
-Esse resultado ocorre sem a URL do banco PostgreSQL de teste. Quando
-`LOCADORA_TEST_DATABASE_URL` está configurada, os quatro testes ignorados são
-executados e a suíte completa coleta 426 testes.
+Os testes cobrem:
 
-Os testes cobrem domínio, Services, Repositories SQLAlchemy, transações,
-Container, autenticação, recuperação de senha e endpoints FastAPI.
+- entidades de domínio;
+- Services;
+- Repositories SQLAlchemy;
+- transações e rollback;
+- Container;
+- autenticação JWT;
+- recuperação de senha;
+- Brevo API com mocks;
+- alteração de nome de usuário;
+- persistência da alteração em `usuarios` e `clientes`;
+- continuidade do JWT após a renomeação;
+- bloqueio de nome de usuário duplicado;
+- frontend;
+- endpoints FastAPI;
+- migrations;
+- integração PostgreSQL.
 
-Os testes PostgreSQL são ignorados quando
-`LOCADORA_TEST_DATABASE_URL` não está configurada. Com a variável presente,
-execute:
+Os testes PostgreSQL dependem de `LOCADORA_TEST_DATABASE_URL`. O banco configurado nessa variável deve ser exclusivamente descartável para testes.
+
+Exemplo:
 
 ```bat
 python -m pytest tests\test_postgresql_integracao.py -q
 ```
 
-Esses testes apagam e recriam o schema `public`. Por segurança, eles recusam
-qualquer banco diferente de `locadora_test` e qualquer usuário diferente de
-`locadora_app`. Nunca use a URL de `locadora_dev` nessa variável.
+Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TEST_DATABASE_URL` para o banco de produção ou para um banco com dados importantes.
 
 ## Segurança
 
 - senhas novas usam PBKDF2-HMAC-SHA256 com salt aleatório;
 - hashes SHA-256 antigos são aceitos apenas para compatibilidade;
 - tokens de recuperação são aleatórios e apenas seu hash é persistido;
-- tokens expiram, são de uso único e invalidam solicitações anteriores;
+- tokens de recuperação expiram, são de uso único e invalidam solicitações anteriores;
 - respostas de login e recuperação evitam revelar se uma conta existe;
 - permissões são verificadas por perfil;
-- segredos e credenciais ficam em variáveis de ambiente.
+- alteração de nome de usuário exige autenticação e senha atual;
+- nomes de usuário duplicados são rejeitados;
+- operações compostas usam transações e rollback;
+- segredos e credenciais ficam em variáveis de ambiente;
+- `.env` e `.env.docker` não são versionados;
+- container de produção executa com usuário sem privilégios administrativos;
+- dependências são auditadas com `pip-audit`;
+- Dependabot acompanha atualizações de dependências e ferramentas.
 
 ## Trilha do projeto
 
-- POO e domínio: concluído;
-- arquitetura em camadas: concluído;
-- Repository Pattern e injeção de dependência: concluído;
-- FastAPI, Pydantic, JWT e OpenAPI: concluído;
-- migração completa para SQLAlchemy: concluída;
-- testes automatizados: concluído e em evolução;
-- Alembic e migrations: concluído;
-- frontend com HTML, CSS e JavaScript: concluído;
-- login, sessão JWT e painel inicial: concluídos;
-- consulta e gerenciamento da frota no frontend: concluídos;
-- criação, devolução e acompanhamento de aluguéis no frontend: concluídos;
-- cadastro e gerenciamento de clientes no frontend: concluídos;
-- abertura, finalização e acompanhamento de manutenções no frontend: concluídos;
-- relatórios operacionais, rankings e resultados financeiros no frontend: concluídos;
-- recuperação e redefinição de senha no frontend: concluídas;
-- revisão final de integração e acabamento do frontend: concluída;
-- material completo de revisão do projeto: concluído;
-- Git e GitHub: concluídos e em evolução;
-- PostgreSQL e Psycopg: concluídos;
-- testes de integração com PostgreSQL: concluídos;
-- Docker e Docker Compose: concluídos;
-- integração contínua com GitHub Actions: concluída;
-- proteção da branch principal: concluída;
-- lint, auditoria de dependências e Dependabot: concluídos;
-- deploy Render + Neon: preparado;
-- publicação online: pendente de provisionar Neon e Render.
+- POO e domínio: **concluído**;
+- arquitetura em camadas: **concluída**;
+- Repository Pattern e injeção de dependência: **concluídos**;
+- FastAPI, Pydantic, JWT e OpenAPI: **concluídos**;
+- migração completa para SQLAlchemy: **concluída**;
+- testes automatizados: **concluídos e em evolução**;
+- Alembic e migrations: **concluídos**;
+- frontend com HTML, CSS e JavaScript: **concluído**;
+- login, sessão JWT e painel: **concluídos**;
+- gerenciamento da frota no frontend: **concluído**;
+- criação, devolução e acompanhamento de aluguéis: **concluídos**;
+- cadastro e gerenciamento de clientes: **concluídos**;
+- manutenções: **concluídas**;
+- relatórios operacionais e financeiros: **concluídos**;
+- recuperação e redefinição de senha: **concluídas e validadas em produção**;
+- envio de e-mail via Brevo API: **concluído e validado em produção**;
+- alteração de nome de usuário: **concluída e validada em produção**;
+- Git e GitHub: **concluídos e em uso contínuo**;
+- PostgreSQL e Psycopg 3: **concluídos**;
+- integração PostgreSQL: **concluída**;
+- Docker e Docker Compose: **concluídos**;
+- GitHub Actions: **concluído**;
+- proteção da branch principal: **concluída**;
+- Ruff, pip-audit e Dependabot: **concluídos**;
+- deploy Render + Neon: **concluído**;
+- publicação online: **concluída**.
 
 ## Deploy — Render + Neon
 
-A configuração de produção usa um único Web Service no Render, com o frontend
-servido pela própria FastAPI, e PostgreSQL persistente no Neon.
+A produção usa um único Web Service no Render. O frontend é servido pela própria FastAPI e o PostgreSQL persistente fica no Neon.
 
-O arquivo `render.yaml` configura:
+O arquivo `render.yaml` configura o serviço com:
 
-- runtime Docker no plano gratuito;
+- runtime Docker;
+- plano gratuito;
 - região `virginia`;
-- migrations Alembic antes da inicialização do Uvicorn;
-- porta fornecida pelo Render por `PORT`;
-- health check em `/health` com consulta ao banco;
-- deploy automático somente depois que os checks da branch passam;
-- URL do banco e senha inicial do administrador como segredos;
-- geração automática do segredo JWT pelo Render.
+- health check em `/health`;
+- deploy automático após checks aprovados;
+- variáveis de ambiente de produção;
+- segredo JWT gerado pelo Render;
+- secrets sensíveis cadastrados fora do Git.
 
-Para reduzir a latência entre aplicação e banco, crie o projeto do Neon em
-**AWS US East 1 (N. Virginia)** e use a conexão pooled. Copie a connection
-string entregue pelo Neon para `LOCADORA_DATABASE_URL`. URLs começando com
-`postgresql://` ou `postgres://` são normalizadas automaticamente para o driver
-`psycopg` 3 usado pelo projeto.
-
-No primeiro Blueprint do Render, informe:
+O `Dockerfile` inicia o container executando primeiro:
 
 ```text
-LOCADORA_DATABASE_URL=<connection string pooled do Neon>
-LOCADORA_ADMIN_SENHA=<senha forte para o admin inicial>
+python -m alembic upgrade head
 ```
 
-`LOCADORA_ADMIN_USUARIO` permanece como `admin` e `LOCADORA_JWT_SECRET` é
-gerado automaticamente pelo Render.
+e depois inicia o Uvicorn em `0.0.0.0` usando a porta fornecida pela variável `PORT` do Render.
 
-### Recuperação de senha no Render Free
+### Neon
 
-O fluxo atual usa SMTP. O plano gratuito do Render bloqueia conexões de saída
-nas portas SMTP 25, 465 e 587, portanto o Gmail SMTP configurado na porta 587
-não funciona nesse ambiente. O restante da aplicação funciona normalmente sem
-as variáveis SMTP; para habilitar recuperação de senha em produção, use um
-provedor de e-mail por API HTTPS ou um serviço SMTP acessível em uma porta
-permitida.
+O projeto Neon foi configurado na região compatível com o serviço do Render para reduzir latência.
+
+A produção utiliza uma **connection string direta** do Neon em `LOCADORA_DATABASE_URL`, adequada ao uso atual com SQLAlchemy, Psycopg 3 e Alembic.
+
+Exemplo conceitual:
+
+```text
+LOCADORA_DATABASE_URL=postgresql://USUARIO:SENHA@HOST/neondb?sslmode=require
+```
+
+A URL real nunca deve ser colocada no README, em commits ou mensagens públicas.
+
+### Variáveis do Render
+
+Principais variáveis de produção:
+
+```text
+LOCADORA_ADMIN_USUARIO=admin
+LOCADORA_ADMIN_SENHA=<segredo>
+LOCADORA_JWT_SECRET=<gerado pelo Render>
+LOCADORA_DATABASE_URL=<segredo do Neon>
+LOCADORA_BREVO_API_KEY=<segredo da Brevo>
+LOCADORA_EMAIL_REMETENTE=<remetente verificado>
+LOCADORA_PUBLIC_URL=https://locadora-fastapi.onrender.com
+```
+
+### E-mail no Render Free
+
+O Render Free bloqueia SMTP tradicional em portas comuns. Por isso, a aplicação não depende mais de Gmail SMTP ou `smtplib` em produção.
+
+A recuperação de senha usa a **Brevo Transactional Email API via HTTPS**, permitindo que o fluxo funcione normalmente no Render Free.
+
+Esse fluxo já foi validado em produção:
+
+```text
+solicitação de recuperação
+        ↓
+e-mail recebido
+        ↓
+link de redefinição aberto
+        ↓
+senha alterada
+        ↓
+login com a nova senha realizado com sucesso
+```
+
+## Produção validada
+
+A versão online foi testada manualmente após o deploy com sucesso para:
+
+- health check;
+- login de administrador;
+- login de cliente;
+- escrita e persistência no PostgreSQL Neon;
+- recuperação de senha por e-mail;
+- redefinição de senha;
+- login após redefinição;
+- alteração do nome de usuário de cliente;
+- bloqueio do login com o nome antigo;
+- login com o novo nome de usuário;
+- persistência da alteração no banco.
+
+**Status atual: projeto concluído, publicado e funcional em produção.**
