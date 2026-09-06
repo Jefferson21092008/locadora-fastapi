@@ -32,12 +32,16 @@ def test_render_usa_docker_free_e_health_check():
     assert "autoDeployTrigger: checksPass" in conteudo
 
 
-def test_render_executa_migration_e_usa_port_da_plataforma():
-    conteudo = ler_render_yaml()
+def test_docker_executa_migration_e_usa_port_da_plataforma():
+    conteudo = (
+        BASE_DIR
+        .joinpath("Dockerfile")
+        .read_text(encoding="utf-8")
+    )
 
     assert "python -m alembic upgrade head" in conteudo
     assert "--host 0.0.0.0" in conteudo
-    assert '${PORT:-10000}' in conteudo
+    assert "${PORT:-10000}" in conteudo
 
 
 def test_render_nao_versiona_segredos():
