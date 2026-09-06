@@ -57,6 +57,9 @@ schema.
 - Psycopg 3;
 - Docker e Docker Compose;
 - GitHub Actions;
+- Ruff;
+- pip-audit;
+- Dependabot;
 - Pydantic;
 - PyJWT;
 - python-dotenv;
@@ -204,6 +207,12 @@ Instale as dependências:
 python -m pip install -r requirements.txt
 ```
 
+Para desenvolvimento, testes e verificações de qualidade, instale também:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
 Copie `.env.example` para `.env` e configure pelo menos:
 
 ```env
@@ -347,8 +356,9 @@ pode ser iniciado manualmente pela aba **Actions** do GitHub.
 O pipeline possui dois jobs independentes:
 
 1. `Testes Python e PostgreSQL` instala as dependências, valida o ambiente com
-   `pip check`, inicia um PostgreSQL 18 temporário, aplica as migrations do
-   Alembic e executa toda a suíte com pytest;
+   `pip check`, analisa o código com Ruff, audita vulnerabilidades conhecidas,
+   inicia um PostgreSQL 18 temporário, aplica as migrations do Alembic e
+   executa toda a suíte com pytest;
 2. `Construção da imagem Docker` valida o arquivo Compose e confirma que a
    imagem da API pode ser construída.
 
@@ -356,6 +366,27 @@ As senhas presentes no workflow são credenciais descartáveis usadas somente
 dentro do runner temporário. Elas não são as senhas de desenvolvimento ou
 produção e não exigem configuração em **GitHub Secrets**.
 
+## Qualidade e segurança das dependências
+
+As ferramentas usadas somente no desenvolvimento ficam em
+`requirements-dev.txt`, sem aumentar a imagem Docker de produção.
+
+Verificar erros de código com Ruff:
+
+```bash
+python -m ruff check .
+```
+
+Auditar as dependências da aplicação em busca de vulnerabilidades conhecidas:
+
+```bash
+python -m pip_audit -r requirements.txt --progress-spinner off
+```
+
+O arquivo `.github/dependabot.yml` verifica semanalmente as dependências
+Python e mensalmente as Actions e imagens Docker. Quando encontra uma nova
+versão, o Dependabot abre um Pull Request que ainda precisa passar pelos mesmos
+checks obrigatórios da `main`.
 
 ## Migrations com Alembic
 
@@ -505,12 +536,12 @@ python -m pytest
 Estado verificado desta versão:
 
 ```text
-412 passed, 4 skipped
+417 passed, 4 skipped
 ```
 
 Esse resultado ocorre sem a URL do banco PostgreSQL de teste. Quando
 `LOCADORA_TEST_DATABASE_URL` está configurada, os quatro testes ignorados são
-executados e a suíte completa coleta 411 testes.
+executados e a suíte completa coleta 421 testes.
 
 Os testes cobrem domínio, Services, Repositories SQLAlchemy, transações,
 Container, autenticação, recuperação de senha e endpoints FastAPI.
@@ -561,4 +592,6 @@ qualquer banco diferente de `locadora_test` e qualquer usuário diferente de
 - testes de integração com PostgreSQL: concluídos;
 - Docker e Docker Compose: concluídos;
 - integração contínua com GitHub Actions: concluída;
+- proteção da branch principal: concluída;
+- lint, auditoria de dependências e Dependabot: concluídos;
 - deploy: planejado.

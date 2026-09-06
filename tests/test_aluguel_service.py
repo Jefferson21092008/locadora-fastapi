@@ -741,14 +741,14 @@ def test_devolucao_adiciona_quilometragem_ao_veiculo():
 
     assert carro.quilometragem == 0
 
-    aluguel = aluguel_service.alugar(
+    aluguel_service.alugar(
         cliente=cliente,
         id_veiculo=carro.id,
         dias=2,
         anos_habilitacao=5,
     )
 
-    resultado = aluguel_service.devolver(
+    aluguel_service.devolver(
         cliente=cliente,
         id_veiculo=carro.id,
         km=250,
