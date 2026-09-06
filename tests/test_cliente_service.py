@@ -86,6 +86,7 @@ class ClienteRepositoryFake:
         self.clientes = []
         self.proximo_id = 1
         self.falhar_status = False
+        self.falhar_renomeacao = False
 
     def buscar_por_id(
         self,
@@ -200,6 +201,41 @@ class ClienteRepositoryFake:
             usuario.ativo = bool(
                 ativo
             )
+
+    def renomear_usuario_com_conta(
+        self,
+        usuario_id,
+        novo_usuario,
+    ):
+        if self.falhar_renomeacao:
+            raise RuntimeError(
+                "Falha simulada na renomeação."
+            )
+
+        cliente = (
+            self.buscar_por_usuario_id(
+                usuario_id
+            )
+        )
+
+        usuario = (
+            self.usuario_repository
+            .buscar_por_id(
+                usuario_id
+            )
+        )
+
+        if (
+            cliente is None
+            or usuario is None
+        ):
+            raise RuntimeError(
+                "Cliente ou usuário "
+                "não encontrado."
+            )
+
+        cliente.usuario = novo_usuario
+        usuario.usuario = novo_usuario
 
     def listar(self):
         return list(
@@ -793,3 +829,104 @@ def test_service_exige_aluguel_repository():
             ),
             aluguel_repository=None,
         )
+
+def test_renomear_usuario():
+    service = criar_service()
+    cliente = cadastrar_cliente(
+        service
+    )
+
+    resultado = service.renomear_usuario(
+        cliente=cliente,
+        novo_usuario="lucas.novo",
+        senha_atual="lucas123",
+    )
+
+    conta = (
+        service.buscar_conta_do_cliente(
+            cliente
+        )
+    )
+
+    assert resultado is cliente
+    assert cliente.usuario == "lucas.novo"
+    assert conta.usuario == "lucas.novo"
+
+    assert (
+        service.login(
+            "lucas.novo",
+            "lucas123",
+        )
+        is cliente
+    )
+
+
+def test_renomear_usuario_rejeita_senha_errada():
+    service = criar_service()
+    cliente = cadastrar_cliente(
+        service
+    )
+
+    with pytest.raises(
+        RegraDeNegocio
+    ) as erro:
+        service.renomear_usuario(
+            cliente=cliente,
+            novo_usuario="lucas.novo",
+            senha_atual="errada",
+        )
+
+    assert erro.value.mensagem == (
+        "Senha atual incorreta."
+    )
+
+
+def test_renomear_usuario_rejeita_mesmo_nome():
+    service = criar_service()
+    cliente = cadastrar_cliente(
+        service
+    )
+
+    with pytest.raises(
+        RegraDeNegocio
+    ) as erro:
+        service.renomear_usuario(
+            cliente=cliente,
+            novo_usuario="LUCAS",
+            senha_atual="lucas123",
+        )
+
+    assert erro.value.mensagem == (
+        "O novo usuário deve ser "
+        "diferente do atual."
+    )
+
+
+def test_falha_ao_renomear_restaura_estado():
+    service = criar_service()
+    cliente = cadastrar_cliente(
+        service
+    )
+
+    conta = (
+        service.buscar_conta_do_cliente(
+            cliente
+        )
+    )
+
+    service.cliente_repository.falhar_renomeacao = (
+        True
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Falha simulada na renomeação.",
+    ):
+        service.renomear_usuario(
+            cliente=cliente,
+            novo_usuario="lucas.novo",
+            senha_atual="lucas123",
+        )
+
+    assert cliente.usuario == "lucas"
+    assert conta.usuario == "lucas"

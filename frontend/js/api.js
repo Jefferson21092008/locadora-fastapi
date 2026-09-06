@@ -133,6 +133,22 @@ export function getCurrentUser() {
     return apiRequest("/auth/me");
 }
 
+export function renameCurrentUser(
+    novoUsuario,
+    senhaAtual,
+) {
+    return apiRequest(
+        "/auth/me/usuario",
+        {
+            method: "PATCH",
+            body: JSON.stringify({
+                novo_usuario: novoUsuario,
+                senha_atual: senhaAtual,
+            }),
+        },
+    );
+}
+
 export function getSystemStatus() {
     return apiRequest("/status");
 }

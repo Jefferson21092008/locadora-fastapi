@@ -36,10 +36,27 @@
                     <h1>Olá, <span id="current-username">usuário</span>.</h1>
                     <p>Acompanhe os principais números da operação.</p>
                 </div>
-
                 <div class="account-actions">
-                    <span id="current-role" class="role-badge">carregando</span>
-                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                    <span id="current-role" class="role-badge">
+                        carregando
+                    </span>
+
+                    <button
+                        id="rename-user-button"
+                        class="secondary-button"
+                        type="button"
+                        hidden
+                    >
+                        Alterar usuário
+                    </button>
+
+                    <button
+                        id="logout-button"
+                        class="secondary-button"
+                        type="button"
+                    >
+                        Sair
+                    </button>
                 </div>
             </header>
 
@@ -97,6 +114,97 @@
             </section>
         </main>
     </div>
+
+<dialog
+    id="rename-user-dialog"
+    class="modal modal--small"
+>
+    <form
+        id="rename-user-form"
+        class="modal__surface"
+    >
+        <div class="modal__header">
+            <div>
+                <p class="eyebrow">
+                    Configurações da conta
+                </p>
+                <h2>Alterar nome de usuário</h2>
+            </div>
+
+            <button
+                class="icon-button"
+                type="button"
+                data-close-rename-user
+                aria-label="Fechar formulário"
+            >
+                ×
+            </button>
+        </div>
+
+        <p class="modal__description">
+            Informe seu novo nome de usuário
+            e confirme a alteração com sua
+            senha atual.
+        </p>
+
+        <div class="form-grid">
+            <div class="field field--wide">
+                <label for="new-username">
+                    Novo usuário
+                </label>
+
+                <input
+                    id="new-username"
+                    type="text"
+                    minlength="3"
+                    maxlength="100"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+
+            <div class="field field--wide">
+                <label for="current-password">
+                    Senha atual
+                </label>
+
+                <input
+                    id="current-password"
+                    type="password"
+                    maxlength="128"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+        </div>
+
+        <div
+            id="rename-user-message"
+            class="form-message"
+            role="status"
+            aria-live="polite"
+        ></div>
+
+        <div class="modal__actions">
+            <button
+                class="secondary-button"
+                type="button"
+                data-close-rename-user
+            >
+                Cancelar
+            </button>
+
+            <button
+                id="save-username-button"
+                class="primary-button primary-button--compact"
+                type="submit"
+            >
+                <span>Alterar usuário</span>
+                <span aria-hidden="true">→</span>
+            </button>
+        </div>
+    </form>
+</dialog>
 
     <script type="module" src="/app/js/dashboard.js"></script>
 </body>

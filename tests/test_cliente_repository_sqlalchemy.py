@@ -358,3 +358,116 @@ def test_repository_nao_possui_estado_legado(
         repository,
         "adicionar_na_colecao",
     )
+
+def test_renomear_usuario_atualiza_cliente_e_conta(
+    banco_sqlalchemy,
+):
+    repository = criar_repository(
+        banco_sqlalchemy
+    )
+
+    cliente = criar_cliente(
+        usuario="lucas"
+    )
+
+    usuario = criar_usuario(
+        usuario="lucas"
+    )
+
+    cliente_id, usuario_id = (
+        repository.registrar_com_usuario(
+            cliente,
+            usuario,
+        )
+    )
+
+    repository.renomear_usuario_com_conta(
+        usuario_id=usuario_id,
+        novo_usuario="lucas.novo",
+    )
+
+    with banco_sqlalchemy.criar_sessao() as sessao:
+        usuario_model = sessao.get(
+            UsuarioModel,
+            usuario_id,
+        )
+
+        cliente_model = sessao.get(
+            ClienteModel,
+            cliente_id,
+        )
+
+        assert (
+            usuario_model.usuario
+            == "lucas.novo"
+        )
+
+        assert (
+            cliente_model.usuario
+            == "lucas.novo"
+        )
+
+
+def test_renomear_usuario_faz_rollback_em_conflito(
+    banco_sqlalchemy,
+):
+    repository = criar_repository(
+        banco_sqlalchemy
+    )
+
+    primeiro_cliente = criar_cliente(
+        usuario="lucas",
+        email="lucas@email.com",
+    )
+
+    primeiro_usuario = criar_usuario(
+        usuario="lucas"
+    )
+
+    _, primeiro_usuario_id = (
+        repository.registrar_com_usuario(
+            primeiro_cliente,
+            primeiro_usuario,
+        )
+    )
+
+    segundo_cliente = criar_cliente(
+        usuario="maria",
+        email="maria@email.com",
+    )
+
+    segundo_usuario = criar_usuario(
+        usuario="maria"
+    )
+
+    repository.registrar_com_usuario(
+        segundo_cliente,
+        segundo_usuario,
+    )
+
+    with pytest.raises(
+        IntegrityError
+    ):
+        repository.renomear_usuario_com_conta(
+            usuario_id=primeiro_usuario_id,
+            novo_usuario="maria",
+        )
+
+    with banco_sqlalchemy.criar_sessao() as sessao:
+        usuario_model = sessao.get(
+            UsuarioModel,
+            primeiro_usuario_id,
+        )
+
+        cliente_model = (
+            sessao.query(
+                ClienteModel
+            )
+            .filter_by(
+                usuario_id=primeiro_usuario_id
+            )
+            .one()
+        )
+
+        assert usuario_model.usuario == "lucas"
+        assert cliente_model.usuario == "lucas"

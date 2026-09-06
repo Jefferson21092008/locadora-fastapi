@@ -501,6 +501,67 @@ class ClienteRepository:
                 sessao.rollback()
                 raise
 
+    def renomear_usuario_com_conta(
+        self,
+        usuario_id,
+        novo_usuario,
+    ):
+        with (
+            self.banco_sqlalchemy
+            .criar_sessao()
+        ) as sessao:
+            try:
+                usuario_model = (
+                    sessao.get(
+                        UsuarioModel,
+                        usuario_id,
+                    )
+                )
+
+                if (
+                    usuario_model is None
+                    or usuario_model.role
+                    != "cliente"
+                ):
+                    raise RuntimeError(
+                        "Usuário do cliente "
+                        "não encontrado."
+                    )
+
+                comando = select(
+                    ClienteModel
+                ).where(
+                    ClienteModel.usuario_id
+                    == usuario_id
+                )
+
+                cliente_model = (
+                    sessao.scalar(
+                        comando
+                    )
+                )
+
+                if cliente_model is None:
+                    raise RuntimeError(
+                        "Cliente não encontrado."
+                    )
+
+                usuario_model.usuario = (
+                    novo_usuario
+                )
+
+                cliente_model.usuario = (
+                    novo_usuario
+                )
+
+                sessao.commit()
+
+                return None
+
+            except Exception:
+                sessao.rollback()
+                raise
+
     # ================================================================
     # COMPATIBILIDADE DE INTERFACE TEMPORÁRIA
     # ================================================================

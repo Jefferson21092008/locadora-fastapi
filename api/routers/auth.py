@@ -4,15 +4,15 @@ from fastapi import (
 )
 
 from api.dependencias import (
+    get_cliente_atual,
     get_container,
     get_usuario_atual,
 )
-
 from api.erros import (
     nao_autorizado,
 )
-
 from api.schemas.auth import (
+    AlterarUsuarioRequest,
     LoginRequest,
     MensagemAuthResponse,
     RecuperacaoSenhaRequest,
@@ -20,11 +20,9 @@ from api.schemas.auth import (
     TokenResponse,
     UsuarioAutenticadoResponse,
 )
-
 from api.seguranca import (
     criar_token_acesso,
 )
-
 from modulos.container import (
     Container,
 )
@@ -97,9 +95,7 @@ def login(
     autenticado = (
         container.auth_service
         .autenticar(
-            nome_usuario=(
-                dados.usuario
-            ),
+            nome_usuario=dados.usuario,
             senha=dados.senha,
             role=usuario.role,
         )
@@ -163,6 +159,79 @@ def meu_usuario(
 
 
 # ================================================================
+# ALTERAR NOME DE USUÁRIO
+# ================================================================
+
+
+@router.patch(
+    "/me/usuario",
+    response_model=(
+        UsuarioAutenticadoResponse
+    ),
+    summary="Alterar nome de usuário",
+    description=(
+        "Altera o nome de usuário da "
+        "conta autenticada de cliente. "
+        "A senha atual é obrigatória."
+    ),
+    responses={
+        400: {
+            "description": (
+                "Senha incorreta, usuário "
+                "inválido ou já utilizado."
+            ),
+        },
+        401: {
+            "description": (
+                "Autenticação necessária."
+            ),
+        },
+        403: {
+            "description": (
+                "Operação disponível apenas "
+                "para clientes."
+            ),
+        },
+    },
+)
+def alterar_meu_usuario(
+    dados: AlterarUsuarioRequest,
+    container: Container = Depends(
+        get_container
+    ),
+    cliente=Depends(
+        get_cliente_atual
+    ),
+):
+    cliente = (
+        container.cliente_service
+        .renomear_usuario(
+            cliente=cliente,
+            novo_usuario=(
+                dados.novo_usuario
+            ),
+            senha_atual=(
+                dados.senha_atual
+            ),
+        )
+    )
+
+    usuario = (
+        container.auth_service
+        .buscar_por_id(
+            cliente.usuario_id
+        )
+    )
+
+    return UsuarioAutenticadoResponse(
+        id=usuario.id,
+        usuario=usuario.usuario,
+        role=usuario.role.value,
+        ativo=usuario.ativo,
+    )
+
+
+# ================================================================
 # SOLICITAR RECUPERAÇÃO DE SENHA
 # ================================================================
 
@@ -200,9 +269,7 @@ def solicitar_recuperacao_senha(
     )
 
     return MensagemAuthResponse(
-        mensagem=(
-            MENSAGEM_RECUPERACAO
-        )
+        mensagem=MENSAGEM_RECUPERACAO
     )
 
 

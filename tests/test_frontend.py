@@ -33,6 +33,20 @@ def test_frontend_dashboard_esta_disponivel():
     assert resposta.status_code == 200
     assert 'id="metrics-title"' in resposta.text
     assert "/app/js/dashboard.js" in resposta.text
+    assert (
+        'id="rename-user-button"'
+        in resposta.text
+    )
+
+    assert (
+        'id="rename-user-dialog"'
+        in resposta.text
+    )
+
+    assert (
+        'id="rename-user-form"'
+        in resposta.text
+    )
 
 
 def test_frontend_veiculos_esta_disponivel():
@@ -184,3 +198,30 @@ def test_assets_do_frontend_sao_servidos(
 
     assert resposta.status_code == 200
     assert conteudo_esperado in resposta.text
+
+def test_frontend_possui_funcao_para_renomear_usuario():
+    resposta = client.get(
+        "/app/js/api.js"
+    )
+
+    assert resposta.status_code == 200
+
+    assert (
+        '"/auth/me/usuario"'
+        in resposta.text
+    )
+
+    assert (
+        'method: "PATCH"'
+        in resposta.text
+    )
+
+    assert "novo_usuario" in resposta.text
+    assert "senha_atual" in resposta.text
+    assert (
+        'method: "PATCH"'
+        in resposta.text
+    )
+
+    assert "novo_usuario" in resposta.text
+    assert "senha_atual" in resposta.text

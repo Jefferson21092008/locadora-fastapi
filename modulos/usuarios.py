@@ -83,19 +83,33 @@ class Usuario:
     # VALIDAÇÃO
     # ================================================================
 
-    def validar_dados(self):
-        if not self.usuario:
+    @staticmethod
+    def validar_nome_usuario(
+        usuario,
+    ):
+        usuario = str(
+            usuario
+        ).strip()
+
+        if not usuario:
             return (
                 False,
                 "O usuário não pode "
                 "ficar vazio.",
             )
 
-        if len(self.usuario) < 3:
+        if len(usuario) < 3:
             return (
                 False,
                 "O usuário deve possuir "
                 "pelo menos 3 caracteres.",
+            )
+
+        if len(usuario) > 100:
+            return (
+                False,
+                "O usuário deve possuir "
+                "no máximo 100 caracteres.",
             )
 
         return (
@@ -103,6 +117,12 @@ class Usuario:
             "",
         )
 
+    def validar_dados(self):
+        return (
+            self.validar_nome_usuario(
+                self.usuario
+            )
+        )
     # ================================================================
     # VALIDAÇÃO DE SENHA
     # ================================================================
