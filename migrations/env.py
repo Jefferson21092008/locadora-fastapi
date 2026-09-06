@@ -12,6 +12,7 @@ from sqlalchemy.engine import (
 
 from modulos.config import (
     DATABASE_URL_PADRAO,
+    normalizar_database_url,
 )
 from modulos.models import (
     Base,
@@ -25,7 +26,7 @@ if config.config_file_name is not None:
         config.config_file_name
     )
 
-database_url = (
+database_url = normalizar_database_url(
     config.attributes.get(
         "database_url_override"
     )
