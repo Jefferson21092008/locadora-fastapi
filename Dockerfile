@@ -17,6 +17,6 @@ COPY --chown=app:app . .
 
 USER app
 
-EXPOSE 8000
+EXPOSE 10000
 
-CMD ["python", "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/bin/sh", "-c", "python -m alembic upgrade head && exec python -m uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-10000}"]

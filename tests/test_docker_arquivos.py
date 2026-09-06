@@ -20,14 +20,14 @@ def ler_arquivo(nome):
 
 
 def test_dockerfile_executa_api_sem_usuario_root():
-    conteudo = ler_arquivo(
-        "Dockerfile"
-    )
+    conteudo = ler_arquivo("Dockerfile")
 
     assert "FROM python:3.14-slim" in conteudo
     assert "USER app" in conteudo
-    assert '"--host", "0.0.0.0"' in conteudo
-
+    assert "python -m alembic upgrade head" in conteudo
+    assert "python -m uvicorn api.main:app" in conteudo
+    assert "--host 0.0.0.0" in conteudo
+    assert "${PORT:-10000}" in conteudo
 
 def test_dockerignore_protege_segredos_e_banco_local():
     conteudo = ler_arquivo(
