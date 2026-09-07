@@ -1133,3 +1133,158 @@ def test_admin_nao_pode_usar_rota_de_cliente(
     )
 
     assert resposta.status_code == 403
+
+def test_login_bloqueia_apos_cinco_falhas(
+    client,
+):
+    for _ in range(5):
+        resposta = fazer_login(
+            client,
+            senha="senha-errada",
+        )
+
+        assert resposta.status_code == 401
+
+    bloqueada = fazer_login(
+        client,
+        senha="senha-errada",
+    )
+
+    assert bloqueada.status_code == 429
+
+    assert bloqueada.json() == {
+        "detail": (
+            "Muitas tentativas. "
+            "Tente novamente mais tarde."
+        )
+    }
+
+
+def test_login_correto_limpa_tentativas(
+    client,
+):
+    for _ in range(3):
+        resposta = fazer_login(
+            client,
+            senha="senha-errada",
+        )
+
+        assert resposta.status_code == 401
+
+    sucesso = fazer_login(
+        client,
+        senha="senha123",
+    )
+
+    assert sucesso.status_code == 200
+
+    for _ in range(5):
+        resposta = fazer_login(
+            client,
+            senha="senha-errada",
+        )
+
+        assert resposta.status_code == 401
+
+    bloqueada = fazer_login(
+        client,
+        senha="senha-errada",
+    )
+
+    assert bloqueada.status_code == 429
+
+def test_recuperacao_bloqueia_apos_tres_solicitacoes(
+    client,
+):
+    for _ in range(3):
+        resposta = client.post(
+            "/auth/esqueci-senha",
+            json={
+                "usuario": "lucas123",
+            },
+        )
+
+        assert resposta.status_code == 200
+
+    bloqueada = client.post(
+        "/auth/esqueci-senha",
+        json={
+            "usuario": "lucas123",
+        },
+    )
+
+    assert bloqueada.status_code == 429
+
+
+def test_redefinicao_bloqueia_apos_cinco_tentativas(
+    client,
+):
+    for _ in range(5):
+        resposta = client.post(
+            "/auth/redefinir-senha",
+            json={
+                "token": "token-invalido",
+                "nova_senha": "novaSenha123",
+            },
+        )
+
+        assert resposta.status_code == 400
+
+    bloqueada = client.post(
+        "/auth/redefinir-senha",
+        json={
+            "token": "token-invalido",
+            "nova_senha": "novaSenha123",
+        },
+    )
+
+    assert bloqueada.status_code == 429
+
+def test_rate_limit_separa_ips_encaminhados(
+    client,
+):
+    for _ in range(5):
+        resposta = client.post(
+            "/auth/login",
+            headers={
+                "X-Forwarded-For": (
+                    "198.51.100.10"
+                ),
+            },
+            json={
+                "usuario": "lucas123",
+                "senha": "senha-errada",
+            },
+        )
+
+        assert resposta.status_code == 401
+
+    bloqueada = client.post(
+        "/auth/login",
+        headers={
+            "X-Forwarded-For": (
+                "198.51.100.10"
+            ),
+        },
+        json={
+            "usuario": "lucas123",
+            "senha": "senha-errada",
+        },
+    )
+
+    assert bloqueada.status_code == 429
+
+    outro_ip = client.post(
+        "/auth/login",
+        headers={
+            "X-Forwarded-For": (
+                "203.0.113.20"
+            ),
+        },
+        json={
+            "usuario": "lucas123",
+            "senha": "senha-errada",
+        },
+    )
+
+    assert outro_ip.status_code == 401
