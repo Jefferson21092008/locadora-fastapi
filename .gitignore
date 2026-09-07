@@ -8,8 +8,12 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Pytest
+# Pytest / Coverage
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # Variáveis de ambiente
 .env
