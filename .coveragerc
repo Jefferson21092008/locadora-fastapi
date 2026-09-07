@@ -1,0 +1,8 @@
+[run]
+omit =
+    modulos/cli/*
+    modulos/interface.py
+    modulos/locadora.py
+
+[report]
+show_missing = True
