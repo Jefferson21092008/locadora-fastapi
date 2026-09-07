@@ -3,6 +3,9 @@ import pytest
 from modulos.seguranca import (
     SegurancaSenha,
 )
+from api.rate_limit import (
+    rate_limiter,
+)
 
 
 @pytest.fixture(
@@ -16,3 +19,13 @@ def reduzir_pbkdf2_nos_testes(
         "ITERACOES",
         10_000,
     )
+
+@pytest.fixture(
+    autouse=True
+)
+def limpar_rate_limiter():
+    rate_limiter.limpar_tudo()
+
+    yield
+
+    rate_limiter.limpar_tudo()

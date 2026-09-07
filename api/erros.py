@@ -77,3 +77,15 @@ def recurso_nao_encontrado(
         status_code=404,
         detail=mensagem,
     )
+
+
+def muitas_tentativas(
+    mensagem=(
+        "Muitas tentativas. "
+        "Tente novamente mais tarde."
+    ),
+):
+    raise HTTPException(
+        status_code=429,
+        detail=mensagem,
+    )

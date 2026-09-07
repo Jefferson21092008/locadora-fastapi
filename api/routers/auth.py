@@ -1,6 +1,7 @@
 from fastapi import (
     APIRouter,
     Depends,
+    Request,
 )
 
 from api.dependencias import (
@@ -9,6 +10,7 @@ from api.dependencias import (
     get_usuario_atual,
 )
 from api.erros import (
+    muitas_tentativas,
     nao_autorizado,
 )
 from api.schemas.auth import (
@@ -23,11 +25,13 @@ from api.schemas.auth import (
 from api.seguranca import (
     criar_token_acesso,
 )
+from api.rate_limit import (
+    obter_ip_cliente,
+    rate_limiter,
+)
 from modulos.container import (
     Container,
 )
-
-
 router = APIRouter(
     prefix="/auth",
     tags=["Autenticação"],
@@ -72,14 +76,36 @@ MENSAGEM_RECUPERACAO = (
                 "pela validação."
             ),
         },
+                429: {
+            "description": (
+                "Limite de tentativas excedido."
+            ),
+        },
     },
 )
 def login(
+    request: Request,
     dados: LoginRequest,
     container: Container = Depends(
         get_container
     ),
 ):
+    ip = obter_ip_cliente(
+        request
+    )
+
+    chave_limite = (
+        f"login:{ip}:"
+        f"{dados.usuario.strip().lower()}"
+    )
+
+    if rate_limiter.atingiu_limite(
+        chave=chave_limite,
+        limite=5,
+        janela_segundos=60,
+    ):
+        muitas_tentativas()
+
     usuario = (
         container.auth_service
         .buscar_por_usuario(
@@ -88,6 +114,10 @@ def login(
     )
 
     if usuario is None:
+        rate_limiter.registrar(
+            chave_limite
+        )
+
         nao_autorizado(
             MENSAGEM_CREDENCIAIS_INVALIDAS
         )
@@ -102,9 +132,17 @@ def login(
     )
 
     if not autenticado:
+        rate_limiter.registrar(
+            chave_limite
+        )
+
         nao_autorizado(
             MENSAGEM_CREDENCIAIS_INVALIDAS
         )
+
+    rate_limiter.limpar(
+        chave_limite
+    )
 
     token = criar_token_acesso(
         usuario=usuario,
@@ -253,14 +291,40 @@ def alterar_meu_usuario(
                 "pela validação."
             ),
         },
+        429: {
+            "description": (
+                "Limite de tentativas excedido."
+            ),
+        },
     },
 )
 def solicitar_recuperacao_senha(
+    request: Request,
     dados: RecuperacaoSenhaRequest,
     container: Container = Depends(
         get_container
     ),
 ):
+    ip = obter_ip_cliente(
+        request
+    )
+
+    chave_limite = (
+        f"recuperacao:{ip}:"
+        f"{dados.usuario.strip().lower()}"
+    )
+
+    if rate_limiter.atingiu_limite(
+        chave=chave_limite,
+        limite=3,
+        janela_segundos=900,
+    ):
+        muitas_tentativas()
+
+    rate_limiter.registrar(
+        chave_limite
+    )
+
     (
         container.recuperacao_senha_service
         .solicitar_recuperacao(
@@ -301,20 +365,51 @@ def solicitar_recuperacao_senha(
                 "pela validação."
             ),
         },
+        429: {
+            "description": (
+                "Limite de tentativas excedido."
+            ),
+        },
     },
 )
+
 def redefinir_senha(
+    request: Request,
     dados: RedefinirSenhaRequest,
     container: Container = Depends(
         get_container
     ),
 ):
+    ip = obter_ip_cliente(
+        request
+    )
+
+    chave_limite = (
+        f"redefinicao:{ip}:"
+        f"{dados.token}"
+    )
+
+    if rate_limiter.atingiu_limite(
+        chave=chave_limite,
+        limite=5,
+        janela_segundos=900,
+    ):
+        muitas_tentativas()
+
+    rate_limiter.registrar(
+        chave_limite
+    )
+
     mensagem = (
         container.recuperacao_senha_service
         .redefinir_senha(
             token=dados.token,
             nova_senha=dados.nova_senha,
         )
+    )
+
+    rate_limiter.limpar(
+        chave_limite
     )
 
     return MensagemAuthResponse(
