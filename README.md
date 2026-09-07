@@ -35,6 +35,10 @@ SQLite / PostgreSQL
 
 O projeto está validado localmente e em produção, com frontend, API, autenticação, banco PostgreSQL, migrations, recuperação de senha e alteração de nome de usuário funcionando de ponta a ponta.
 
+Além das funcionalidades de negócio, a versão atual também possui cobertura mínima obrigatória no CI, documentação da arquitetura, rate limiting em endpoints sensíveis de autenticação e testes E2E de frontend executados em Chromium com Playwright.
+
+A documentação detalhada da arquitetura está disponível em [`docs/arquitetura.md`](docs/arquitetura.md).
+
 ## Funcionalidades
 
 - cadastro, consulta, ativação e desativação de clientes;
@@ -57,6 +61,10 @@ O projeto está validado localmente e em produção, com frontend, API, autentic
 - migrations automáticas no deploy;
 - testes unitários e de integração;
 - integração contínua com GitHub Actions;
+- rate limiting para login, recuperação e redefinição de senha;
+- identificação do cliente atrás de proxy para aplicação dos limites;
+- cobertura automatizada de testes com limite mínimo obrigatório no CI;
+- testes E2E do frontend com Playwright e Chromium;
 - auditoria de dependências e atualizações automatizadas com Dependabot.
 
 ## Tecnologias
@@ -80,6 +88,9 @@ O projeto está validado localmente e em produção, com frontend, API, autentic
 - PyJWT;
 - python-dotenv;
 - pytest;
+- pytest-cov;
+- Playwright;
+- pytest-playwright;
 - HTTPX para testes da API e integração HTTPS com a Brevo.
 
 ## Estrutura
@@ -96,6 +107,7 @@ Locadora/
 │   ├── dependencias.py
 │   ├── erros.py
 │   ├── main.py
+│   ├── rate_limit.py
 │   └── seguranca.py
 ├── dados/
 │   └── locadora.db
@@ -124,6 +136,8 @@ Locadora/
 │   ├── redefinir-senha.html
 │   ├── relatorios.html
 │   └── veiculos.html
+├── docs/
+│   └── arquitetura.md
 ├── migrations/
 │   ├── versions/
 │   │   └── 20260903_0001_schema_inicial.py
@@ -153,6 +167,10 @@ Locadora/
 │       ├── README.md
 │       └── migrar_json_sqlite.py
 ├── tests/
+│   ├── e2e/
+│   │   ├── conftest.py
+│   │   └── test_login.py
+│   └── ...
 ├── .dockerignore
 ├── .env.docker.example
 ├── .env.example
@@ -355,11 +373,13 @@ O pipeline valida, entre outros pontos:
 3. vulnerabilidades conhecidas com `pip-audit`;
 4. migrations Alembic;
 5. integração com PostgreSQL temporário;
-6. suíte de testes com pytest;
-7. construção da imagem Docker;
-8. configuração Docker Compose.
+6. suíte principal de testes com pytest;
+7. cobertura de código com mínimo obrigatório de 85%;
+8. testes E2E com Playwright em Chromium;
+9. construção da imagem Docker;
+10. configuração Docker Compose.
 
-As credenciais usadas pelo PostgreSQL temporário do CI são descartáveis e não correspondem às credenciais de produção.
+Os testes convencionais e os testes E2E são executados em jobs separados. O job principal ignora `tests/e2e`, enquanto o job E2E instala o Chromium e executa os testes de navegador de forma independente.
 
 ## Qualidade e segurança das dependências
 
@@ -561,19 +581,31 @@ O uso da API HTTPS resolve a limitação do Render Free, que bloqueia conexões 
 
 ## Testes
 
-Execute toda a suíte:
+A suíte automatizada está dividida entre testes convencionais e testes E2E de navegador.
+
+### Testes convencionais
+
+Execute:
 
 ```bash
-python -m pytest -q
+python -m pytest --ignore=tests/e2e
 ```
 
-Estado final validado desta versão:
+Para executar a mesma validação de coverage usada no CI:
+
+```bash
+python -m pytest --ignore=tests/e2e --cov=api --cov=modulos --cov-report=term-missing --cov-fail-under=85
+```
+
+Estado atualmente validado:
 
 ```text
-444 passed
+449 passed
+Coverage total: 89,86%
+Coverage mínima obrigatória: 85%
 ```
 
-Os testes cobrem:
+Os testes convencionais cobrem:
 
 - entidades de domínio;
 - Services;
@@ -582,6 +614,7 @@ Os testes cobrem:
 - Container;
 - autenticação JWT;
 - recuperação de senha;
+- rate limiting;
 - Brevo API com mocks;
 - alteração de nome de usuário;
 - persistência da alteração em `usuarios` e `clientes`;
@@ -592,12 +625,42 @@ Os testes cobrem:
 - migrations;
 - integração PostgreSQL.
 
+### Testes E2E
+
+Os testes de navegador utilizam Playwright com Chromium:
+
+```bash
+python -m pytest tests/e2e --browser chromium -v
+```
+
+Estado atualmente validado:
+
+```text
+2 passed
+```
+
+Os testes E2E atuais validam:
+
+- abertura real do frontend em Chromium;
+- preenchimento e envio do formulário de login;
+- execução do JavaScript da aplicação;
+- armazenamento do JWT no `sessionStorage`;
+- redirecionamento para o dashboard;
+- carregamento dos dados do usuário e das métricas;
+- tratamento de credenciais inválidas;
+- permanência na tela de login após falha;
+- ausência de token após login inválido.
+
+Nesta etapa, as respostas da API são interceptadas pelo Playwright. Assim, os testes validam o frontend em um navegador real sem depender do banco de produção. Testes E2E full-stack, usando API e banco de testes reais, podem ser adicionados em uma evolução futura.
+
+No CI, os testes convencionais e os testes E2E são executados em jobs separados. Considerando as duas suítes, a validação atual executa **451 testes automatizados**: 449 convencionais e 2 E2E.
+
 Os testes PostgreSQL dependem de `LOCADORA_TEST_DATABASE_URL`. O banco configurado nessa variável deve ser exclusivamente descartável para testes.
 
 Exemplo:
 
 ```bat
-python -m pytest tests\test_postgresql_integracao.py -q
+python -m pytest tests	est_postgresql_integracao.py -q
 ```
 
 Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TEST_DATABASE_URL` para o banco de produção ou para um banco com dados importantes.
@@ -616,6 +679,10 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - segredos e credenciais ficam em variáveis de ambiente;
 - `.env` e `.env.docker` não são versionados;
 - container de produção executa com usuário sem privilégios administrativos;
+- login protegido por rate limiting baseado em IP e usuário;
+- recuperação e redefinição de senha possuem limites próprios de tentativas;
+- excesso de tentativas retorna HTTP `429 Too Many Requests`;
+- identificação do cliente considera o endereço encaminhado pelo proxy de produção;
 - dependências são auditadas com `pip-audit`;
 - Dependabot acompanha atualizações de dependências e ferramentas.
 
@@ -646,7 +713,14 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - proteção da branch principal: **concluída**;
 - Ruff, pip-audit e Dependabot: **concluídos**;
 - deploy Render + Neon: **concluído**;
-- publicação online: **concluída**.
+- publicação online: **concluída**;
+- coverage obrigatório no CI: **concluído**;
+- documentação da arquitetura: **concluída**;
+- rate limiting: **concluído**;
+- testes E2E com Playwright: **concluídos e integrados ao CI**;
+- logs estruturados: **próxima etapa**;
+- monitoramento de erros: **planejado**;
+- audit logs: **planejados**.
 
 ## Deploy — Render + Neon
 
@@ -735,4 +809,4 @@ A versão online foi testada manualmente após o deploy com sucesso para:
 - login com o novo nome de usuário;
 - persistência da alteração no banco.
 
-**Status atual: projeto concluído, publicado e funcional em produção.**
+**Status atual: versão funcional concluída, publicada e validada em produção, com evolução contínua de segurança, testes, observabilidade e arquitetura.**
