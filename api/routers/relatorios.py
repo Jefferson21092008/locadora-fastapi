@@ -5,7 +5,7 @@ from fastapi import (
 )
 
 from api.dependencias import (
-    get_admin_atual,
+    exigir_permissao,
     get_container,
 )
 
@@ -17,6 +17,10 @@ from api.schemas.relatorios import (
     ResumoFinanceiroResponse,
     ResumoGeralResponse,
     VeiculoMaisAlugadoResponse,
+)
+
+from modulos.permissoes import (
+    Permissao,
 )
 
 from modulos.container import Container
@@ -63,7 +67,9 @@ def resumo_geral(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
     ),
 ):
     return (
@@ -121,7 +127,9 @@ def veiculos_mais_alugados(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
     ),
 ):
     return (
@@ -169,7 +177,9 @@ def faturamento_por_tipo(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
     ),
 ):
     return (
@@ -215,7 +225,9 @@ def custos_manutencao(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
     ),
 ):
     return (
@@ -273,7 +285,9 @@ def clientes_mais_alugam(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
     ),
 ):
     return (
@@ -319,7 +333,9 @@ def resumo_financeiro(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
     ),
 ):
     return (
@@ -365,7 +381,9 @@ def resultado_por_veiculo(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
     ),
 ):
     return (

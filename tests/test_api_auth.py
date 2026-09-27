@@ -728,6 +728,20 @@ def test_login_admin(
         == "admin"
     )
 
+    assert (
+        "auditoria:ler"
+        in response_me.json()[
+            "permissoes"
+        ]
+    )
+
+    assert (
+        "alugueis:criar"
+        not in response_me.json()[
+            "permissoes"
+        ]
+    )
+
 
 # ================================================================
 # USUÁRIO ATUAL
@@ -795,6 +809,16 @@ def test_me_com_token_valido(
     )
 
     assert dados["ativo"] is True
+
+    assert (
+        "alugueis:criar"
+        in dados["permissoes"]
+    )
+
+    assert (
+        "relatorios:ler"
+        not in dados["permissoes"]
+    )
 
 
 def test_me_com_token_invalido(

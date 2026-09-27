@@ -1226,9 +1226,8 @@ def test_cliente_nao_pode_listar_todos_alugueis(
 
     assert response.json() == {
         "detail": (
-            "Acesso permitido "
-            "apenas para "
-            "administradores."
+            "Usuário sem permissão "
+            "para esta operação."
         )
     }
 

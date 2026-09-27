@@ -1,5 +1,6 @@
 import {
     ApiError,
+    Permissions,
     clearToken,
     getCurrentUser,
     getFinancialSummary,
@@ -7,6 +8,7 @@ import {
     getReportSummary,
     getRevenueByType,
     getToken,
+    hasPermission,
     logout,
     getTopCustomers,
     getTopRentedVehicles,
@@ -290,12 +292,14 @@ async function initialize() {
 
     try {
         const currentUser = await getCurrentUser();
-        if (currentUser.role !== "admin") {
+        if (!hasPermission(currentUser, Permissions.RELATORIOS_LER)) {
             goToDashboard();
             return;
         }
 
-        roleBadge.textContent = "Administrador";
+        roleBadge.textContent = currentUser.role === "admin"
+            ? "Administrador"
+            : "Cliente";
         await loadReports();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {

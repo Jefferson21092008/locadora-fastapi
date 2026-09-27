@@ -9,7 +9,7 @@ from api.auditoria import (
 )
 
 from api.dependencias import (
-    get_admin_atual,
+    exigir_permissao,
     get_cliente_atual,
     get_container,
 )
@@ -20,6 +20,10 @@ from api.schemas.alugueis import (
     DevolucaoCreate,
     DevolucaoResponse,
     PagamentoResponse,
+)
+
+from modulos.permissoes import (
+    Permissao,
 )
 
 from modulos.container import Container
@@ -163,7 +167,9 @@ def listar_alugueis(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.ALUGUEIS_LER
+        )
     ),
 ):
     alugueis = (
@@ -216,7 +222,9 @@ def listar_alugueis_ativos(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.ALUGUEIS_LER
+        )
     ),
 ):
     alugueis = (
@@ -292,6 +300,12 @@ def criar_aluguel(
 
     container: Container = Depends(
         get_container
+    ),
+
+    _usuario_autorizado=Depends(
+        exigir_permissao(
+            Permissao.ALUGUEIS_CRIAR
+        )
     ),
 ):
     aluguel = (
@@ -374,6 +388,12 @@ def meus_alugueis(
     container: Container = Depends(
         get_container
     ),
+
+    _usuario_autorizado=Depends(
+        exigir_permissao(
+            Permissao.ALUGUEIS_PROPRIOS_LER
+        )
+    ),
 ):
     alugueis = (
         container.aluguel_service
@@ -452,6 +472,12 @@ def devolver_veiculo(
 
     container: Container = Depends(
         get_container
+    ),
+
+    _usuario_autorizado=Depends(
+        exigir_permissao(
+            Permissao.ALUGUEIS_DEVOLVER
+        )
     ),
 ):
     resultado_devolucao = (

@@ -9,7 +9,7 @@ from api.auditoria import (
 )
 
 from api.dependencias import (
-    get_admin_atual,
+    exigir_permissao,
     get_container,
 )
 
@@ -17,6 +17,10 @@ from api.schemas.manutencoes import (
     ManutencaoCreate,
     ManutencaoFinalizar,
     ManutencaoResponse,
+)
+
+from modulos.permissoes import (
+    Permissao,
 )
 
 from modulos.container import Container
@@ -101,7 +105,9 @@ def listar_manutencoes(
     ),
 
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.MANUTENCOES_LER
+        )
     ),
 ):
     manutencoes = (
@@ -155,7 +161,9 @@ def listar_manutencoes_ativas(
     ),
 
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.MANUTENCOES_LER
+        )
     ),
 ):
     manutencoes = (
@@ -217,7 +225,9 @@ def listar_manutencoes_do_veiculo(
     ),
 
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.MANUTENCOES_LER
+        )
     ),
 ):
     manutencoes = (
@@ -294,7 +304,9 @@ def abrir_manutencao(
     ),
 
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.MANUTENCOES_CRIAR
+        )
     ),
 ):
     manutencao = (
@@ -385,7 +397,9 @@ def finalizar_manutencao(
     ),
 
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.MANUTENCOES_FINALIZAR
+        )
     ),
 ):
     manutencao = (

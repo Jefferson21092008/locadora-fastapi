@@ -20,6 +20,10 @@ from api.seguranca import (
 from modulos.container import (
     Container,
 )
+from modulos.permissoes import (
+    Permissao,
+    possui_permissao,
+)
 
 
 # ================================================================
@@ -150,28 +154,32 @@ def get_usuario_atual(
 
 
 # ================================================================
-# ADMIN
+# PERMISSÕES
 # ================================================================
 
 
-def get_admin_atual(
-    usuario=Depends(
-        get_usuario_atual
-    ),
+def exigir_permissao(
+    permissao: Permissao,
 ):
-    if (
-        usuario.role.value
-        != "admin"
+    def dependencia(
+        usuario=Depends(
+            get_usuario_atual
+        ),
     ):
-        acesso_negado(
-            (
-                "Acesso permitido "
-                "apenas para "
-                "administradores."
+        if not possui_permissao(
+            usuario.role,
+            permissao,
+        ):
+            acesso_negado(
+                (
+                    "Usuário sem permissão "
+                    "para esta operação."
+                )
             )
-        )
 
-    return usuario
+        return usuario
+
+    return dependencia
 
 
 # ================================================================

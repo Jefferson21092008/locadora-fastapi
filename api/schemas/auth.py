@@ -195,6 +195,13 @@ class UsuarioAutenticadoResponse(
                     "id": 1,
                     "usuario": "joao123",
                     "role": "cliente",
+                    "permissoes": [
+                        "alugueis:criar",
+                        "alugueis:devolver",
+                        "alugueis:proprios:ler",
+                        "conta:renomear",
+                        "sessoes:gerenciar",
+                    ],
                     "ativo": True,
                 }
             ]
@@ -229,6 +236,19 @@ class UsuarioAutenticadoResponse(
         ),
         examples=[
             "cliente"
+        ],
+    )
+
+    permissoes: list[str] = Field(
+        description=(
+            "Permissões efetivas derivadas do "
+            "perfil RBAC do usuário."
+        ),
+        examples=[
+            [
+                "alugueis:criar",
+                "alugueis:devolver",
+            ]
         ],
     )
 

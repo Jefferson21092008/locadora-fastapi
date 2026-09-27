@@ -1,10 +1,13 @@
 import {
     ApiError,
+    Permissions,
+    applyNavigationPermissions,
     clearToken,
     createVehicle,
     deactivateVehicle,
     getCurrentUser,
     getToken,
+    hasPermission,
     logout,
     getVehicles,
     reactivateVehicle,
@@ -111,8 +114,8 @@ function clearMessage(element) {
     );
 }
 
-function isAdmin() {
-    return currentUser?.role === "admin";
+function can(permission) {
+    return hasPermission(currentUser, permission);
 }
 
 function updateSummary() {
@@ -149,33 +152,44 @@ function filteredVehicles() {
     });
 }
 
-function adminActions(vehicle) {
-    if (!isAdmin()) {
-        return "";
-    }
-
+function vehicleActions(vehicle) {
     if (vehicle.status === "desativado") {
-        return `
-            <button class="card-button card-button--success" type="button" data-action="reactivate" data-id="${vehicle.id}">
-                Reativar
-            </button>
-        `;
+        return can(Permissions.VEICULOS_GERENCIAR_STATUS)
+            ? `
+                <button class="card-button card-button--success" type="button" data-action="reactivate" data-id="${vehicle.id}">
+                    Reativar
+                </button>
+            `
+            : "";
     }
 
     if (vehicle.status !== "disponivel") {
-        return `
-            <span class="vehicle-card__locked">Alterações bloqueadas neste status</span>
-        `;
+        const canChange = can(Permissions.VEICULOS_EDITAR)
+            || can(Permissions.VEICULOS_GERENCIAR_STATUS);
+        return canChange
+            ? '<span class="vehicle-card__locked">Alterações bloqueadas neste status</span>'
+            : "";
     }
 
-    return `
-        <button class="card-button" type="button" data-action="edit" data-id="${vehicle.id}">
-            Editar
-        </button>
-        <button class="card-button card-button--danger" type="button" data-action="deactivate" data-id="${vehicle.id}">
-            Desativar
-        </button>
-    `;
+    const actions = [];
+
+    if (can(Permissions.VEICULOS_EDITAR)) {
+        actions.push(`
+            <button class="card-button" type="button" data-action="edit" data-id="${vehicle.id}">
+                Editar
+            </button>
+        `);
+    }
+
+    if (can(Permissions.VEICULOS_GERENCIAR_STATUS)) {
+        actions.push(`
+            <button class="card-button card-button--danger" type="button" data-action="deactivate" data-id="${vehicle.id}">
+                Desativar
+            </button>
+        `);
+    }
+
+    return actions.join("");
 }
 
 function renderVehicles() {
@@ -211,7 +225,7 @@ function renderVehicles() {
                 </div>
             </dl>
 
-            ${isAdmin() ? `<div class="vehicle-card__actions">${adminActions(vehicle)}</div>` : ""}
+            ${vehicleActions(vehicle) ? `<div class="vehicle-card__actions">${vehicleActions(vehicle)}</div>` : ""}
         </article>
     `).join("");
 
@@ -243,10 +257,8 @@ function handleVehicleAction(event) {
 function configureCurrentUser(user) {
     currentUser = user;
     roleBadge.textContent = user.role === "admin" ? "Administrador" : "Cliente";
-    newVehicleButton.hidden = !isAdmin();
-    for (const link of document.querySelectorAll(".admin-nav")) {
-        link.hidden = !isAdmin();
-    }
+    newVehicleButton.hidden = !can(Permissions.VEICULOS_CRIAR);
+    applyNavigationPermissions(user);
 }
 
 async function loadVehicles({ preserveMessage = false } = {}) {

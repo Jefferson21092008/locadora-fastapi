@@ -1,11 +1,13 @@
 import {
     ApiError,
+    Permissions,
     clearToken,
     createMaintenance,
     finishMaintenance,
     getCurrentUser,
     getMaintenances,
     getToken,
+    hasPermission,
     logout,
     getVehicles,
 } from "/app/js/api.js";
@@ -44,6 +46,7 @@ const summaryElements = {
     cost: document.querySelector("#maintenances-summary-cost"),
 };
 
+let currentUser = null;
 let maintenances = [];
 let vehicles = [];
 let pendingMaintenance = null;
@@ -215,11 +218,11 @@ function renderMaintenances() {
                 </dl>
 
                 <div class="maintenance-card__actions">
-                    ${active ? `
+                    ${active && hasPermission(currentUser, Permissions.MANUTENCOES_FINALIZAR) ? `
                         <button class="card-button card-button--success" type="button" data-finish-maintenance="${maintenance.id}">
                             Finalizar serviço
                         </button>
-                    ` : '<span class="maintenance-card__finished-note">Serviço concluído</span>'}
+                    ` : (!active ? '<span class="maintenance-card__finished-note">Serviço concluído</span>' : "")}
                 </div>
             </article>
         `;
@@ -393,13 +396,19 @@ async function initialize() {
     }
 
     try {
-        const currentUser = await getCurrentUser();
-        if (currentUser.role !== "admin") {
+        currentUser = await getCurrentUser();
+        if (!hasPermission(currentUser, Permissions.MANUTENCOES_LER)) {
             goToDashboard();
             return;
         }
 
-        roleBadge.textContent = "Administrador";
+        roleBadge.textContent = currentUser.role === "admin"
+            ? "Administrador"
+            : "Cliente";
+        newMaintenanceButton.hidden = !hasPermission(
+            currentUser,
+            Permissions.MANUTENCOES_CRIAR,
+        );
         await loadData();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {

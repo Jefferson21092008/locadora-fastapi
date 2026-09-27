@@ -3,6 +3,43 @@ const API_BASE = "/api/v1";
 
 let refreshPromise = null;
 
+export const Permissions = Object.freeze({
+    CLIENTES_LER: "clientes:ler",
+    CLIENTES_GERENCIAR_STATUS: "clientes:gerenciar_status",
+    VEICULOS_CRIAR: "veiculos:criar",
+    VEICULOS_EDITAR: "veiculos:editar",
+    VEICULOS_GERENCIAR_STATUS: "veiculos:gerenciar_status",
+    ALUGUEIS_LER: "alugueis:ler",
+    ALUGUEIS_CRIAR: "alugueis:criar",
+    ALUGUEIS_PROPRIOS_LER: "alugueis:proprios:ler",
+    ALUGUEIS_DEVOLVER: "alugueis:devolver",
+    MANUTENCOES_LER: "manutencoes:ler",
+    MANUTENCOES_CRIAR: "manutencoes:criar",
+    MANUTENCOES_FINALIZAR: "manutencoes:finalizar",
+    RELATORIOS_LER: "relatorios:ler",
+    AUDITORIA_LER: "auditoria:ler",
+    CONTA_RENOMEAR: "conta:renomear",
+    SESSOES_GERENCIAR: "sessoes:gerenciar",
+});
+
+export function hasPermission(user, permission) {
+    return Array.isArray(user?.permissoes)
+        && user.permissoes.includes(permission);
+}
+
+const NAVIGATION_PERMISSIONS = Object.freeze({
+    "/app/clientes.html": Permissions.CLIENTES_LER,
+    "/app/manutencoes.html": Permissions.MANUTENCOES_LER,
+    "/app/relatorios.html": Permissions.RELATORIOS_LER,
+});
+
+export function applyNavigationPermissions(user, root = document) {
+    for (const link of root.querySelectorAll(".admin-nav")) {
+        const permission = NAVIGATION_PERMISSIONS[link.getAttribute("href")];
+        link.hidden = !permission || !hasPermission(user, permission);
+    }
+}
+
 export class ApiError extends Error {
     constructor(message, status = 0, details = null) {
         super(message);

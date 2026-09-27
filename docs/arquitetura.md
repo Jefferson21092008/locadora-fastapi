@@ -178,3 +178,29 @@ Novos access tokens incluem a claim `sid`. `get_usuario_atual` continua validand
 O frontend mantém o access token no `sessionStorage`, como antes. Ao receber `401`, `frontend/js/api.js` tenta uma única renovação automática e repete a requisição original. Uma Promise compartilhada evita que várias requisições simultâneas tentem rotacionar o mesmo refresh token ao mesmo tempo.
 
 A redefinição de senha revoga as sessões persistentes da conta antes da troca da credencial. Dessa forma, uma sessão já autenticada não permanece válida após uma recuperação de senha.
+## RBAC granular por permissões
+
+A Etapa 10 mantém os papéis `admin` e `cliente`, mas remove a necessidade de as rotas conhecerem diretamente esses nomes para decidir autorização. `modulos/permissoes.py` concentra a matriz RBAC e expõe permissões atômicas por operação.
+
+Fluxo de autorização:
+
+```text
+JWT válido
+   ↓
+get_usuario_atual
+   ↓
+exigir_permissao(Permissao.X)
+   ↓
+matriz papel → permissões
+   ↓
+permitido → endpoint
+negado    → HTTP 403
+```
+
+Exemplos de capacidades administrativas são `clientes:ler`, `clientes:gerenciar_status`, `veiculos:criar`, `veiculos:editar`, `alugueis:ler`, `manutencoes:finalizar`, `relatorios:ler` e `auditoria:ler`. O cliente recebe somente capacidades do próprio fluxo, como `alugueis:criar`, `alugueis:proprios:ler`, `alugueis:devolver`, `conta:renomear` e `sessoes:gerenciar`.
+
+`get_cliente_atual` continua existindo para resolver o perfil de domínio do cliente e validar se ele está ativo. A autorização de capacidade, porém, é tratada separadamente pela dependência RBAC. Isso evita misturar identificação do ator com a decisão de quais operações ele pode executar.
+
+`GET /api/v1/auth/me` devolve a lista de permissões efetivas. O frontend usa essa lista para decidir quais controles e páginas administrativas devem ser apresentados. Essa lógica de interface é apenas uma camada de experiência do usuário; a API repete a validação em cada operação protegida e continua sendo a fonte de verdade.
+
+Como os papéis existentes não mudam e as permissões são derivadas em código, a Etapa 10 não altera o schema do banco e não exige migration.

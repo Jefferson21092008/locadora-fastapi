@@ -73,7 +73,7 @@ API REST para gerenciamento de uma locadora de veículos.
 ## Principais recursos
 
 - Autenticação com access token JWT e refresh token rotativo.
-- Controle de acesso por perfil de usuário.
+- Controle de acesso RBAC por permissões granulares.
 - Cadastro e gerenciamento de clientes.
 - Cadastro e gerenciamento de veículos.
 - Controle de aluguéis e devoluções.

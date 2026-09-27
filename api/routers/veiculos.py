@@ -9,7 +9,7 @@ from api.auditoria import (
 )
 
 from api.dependencias import (
-    get_admin_atual,
+    exigir_permissao,
     get_container,
 )
 
@@ -21,6 +21,10 @@ from api.schemas.veiculos import (
     VeiculoCreate,
     VeiculoResponse,
     VeiculoUpdate,
+)
+
+from modulos.permissoes import (
+    Permissao,
 )
 
 from modulos.container import (
@@ -191,7 +195,9 @@ def cadastrar_veiculo(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.VEICULOS_CRIAR
+        )
     ),
 ):
     veiculo = (
@@ -281,7 +287,9 @@ def editar_veiculo(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.VEICULOS_EDITAR
+        )
     ),
 ):
     veiculo = (
@@ -366,7 +374,9 @@ def desativar_veiculo(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.VEICULOS_GERENCIAR_STATUS
+        )
     ),
 ):
     veiculo = (
@@ -446,7 +456,9 @@ def reativar_veiculo(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.VEICULOS_GERENCIAR_STATUS
+        )
     ),
 ):
     veiculo = (
