@@ -1,6 +1,11 @@
 from fastapi import (
     APIRouter,
     Depends,
+    Request,
+)
+
+from api.auditoria import (
+    registrar_auditoria,
 )
 
 from api.dependencias import (
@@ -180,6 +185,7 @@ def buscar_veiculo(
     },
 )
 def cadastrar_veiculo(
+    request: Request,
     dados: VeiculoCreate,
     container: Container = Depends(
         get_container
@@ -197,6 +203,22 @@ def cadastrar_veiculo(
             diaria=dados.diaria,
             preco_km=dados.preco_km,
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="veiculo.cadastrado",
+        recurso="veiculo",
+        recurso_id=veiculo.id,
+        campos_alterados=(
+            "tipo",
+            "modelo",
+            "ano",
+            "diaria",
+            "preco_km",
+        ),
     )
 
     return transformar_veiculo(
@@ -252,6 +274,7 @@ def cadastrar_veiculo(
     },
 )
 def editar_veiculo(
+    request: Request,
     id_veiculo: int,
     dados: VeiculoUpdate,
     container: Container = Depends(
@@ -270,6 +293,18 @@ def editar_veiculo(
             diaria=dados.diaria,
             preco_km=dados.preco_km,
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="veiculo.editado",
+        recurso="veiculo",
+        recurso_id=veiculo.id,
+        campos_alterados=sorted(
+            dados.model_fields_set
+        ),
     )
 
     return transformar_veiculo(
@@ -325,6 +360,7 @@ def editar_veiculo(
     },
 )
 def desativar_veiculo(
+    request: Request,
     id_veiculo: int,
     container: Container = Depends(
         get_container
@@ -338,6 +374,19 @@ def desativar_veiculo(
         .desativar(
             id_veiculo
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="veiculo.desativado",
+        recurso="veiculo",
+        recurso_id=veiculo.id,
+        campos_alterados=(
+            "ativo",
+            "status",
+        ),
     )
 
     return transformar_veiculo(
@@ -391,6 +440,7 @@ def desativar_veiculo(
     },
 )
 def reativar_veiculo(
+    request: Request,
     id_veiculo: int,
     container: Container = Depends(
         get_container
@@ -404,6 +454,19 @@ def reativar_veiculo(
         .reativar(
             id_veiculo
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="veiculo.reativado",
+        recurso="veiculo",
+        recurso_id=veiculo.id,
+        campos_alterados=(
+            "ativo",
+            "status",
+        ),
     )
 
     return transformar_veiculo(

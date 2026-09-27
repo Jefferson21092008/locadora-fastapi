@@ -318,6 +318,11 @@ class RecuperacaoSenhaServiceFake:
 
 class ContainerFake:
     def __init__(self):
+        self.auditoria_service = SimpleNamespace(
+            registrar=lambda **kwargs: None,
+            listar=lambda: [],
+        )
+
         self.config = (
             ConfiguracaoFake()
         )

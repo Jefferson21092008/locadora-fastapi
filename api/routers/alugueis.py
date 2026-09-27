@@ -1,6 +1,11 @@
 from fastapi import (
     APIRouter,
     Depends,
+    Request,
+)
+
+from api.auditoria import (
+    registrar_auditoria,
 )
 
 from api.dependencias import (
@@ -278,6 +283,7 @@ def listar_alugueis_ativos(
     },
 )
 def criar_aluguel(
+    request: Request,
     dados: AluguelCreate,
 
     cliente=Depends(
@@ -303,6 +309,20 @@ def criar_aluguel(
                 dados.anos_habilitacao
             ),
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=cliente,
+        acao="aluguel.criado",
+        recurso="aluguel",
+        recurso_id=aluguel.id,
+        campos_alterados=(
+            "status",
+            "veiculo_id",
+            "dias",
+        ),
     )
 
     return transformar_aluguel(
@@ -421,6 +441,7 @@ def meus_alugueis(
     },
 )
 def devolver_veiculo(
+    request: Request,
     id_veiculo: int,
 
     dados: DevolucaoCreate,
@@ -462,6 +483,22 @@ def devolver_veiculo(
         resultado_devolucao[
             "pagamento"
         ]
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=cliente,
+        acao="aluguel.devolvido",
+        recurso="aluguel",
+        recurso_id=aluguel.id,
+        campos_alterados=(
+            "status",
+            "km",
+            "pagamento",
+            "data_fim",
+            "multa",
+        ),
     )
 
     return DevolucaoResponse(

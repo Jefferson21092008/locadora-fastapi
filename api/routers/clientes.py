@@ -1,6 +1,11 @@
 from fastapi import (
     APIRouter,
     Depends,
+    Request,
+)
+
+from api.auditoria import (
+    registrar_auditoria,
 )
 
 from api.dependencias import (
@@ -262,6 +267,7 @@ def criar_cliente(
     },
 )
 def desativar_cliente(
+    request: Request,
     id_cliente: int,
     container: Container = Depends(
         get_container
@@ -275,6 +281,18 @@ def desativar_cliente(
         .desativar(
             id_cliente
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="cliente.desativado",
+        recurso="cliente",
+        recurso_id=cliente.id,
+        campos_alterados=(
+            "ativo",
+        ),
     )
 
     return transformar_cliente(
@@ -329,6 +347,7 @@ def desativar_cliente(
     },
 )
 def reativar_cliente(
+    request: Request,
     id_cliente: int,
     container: Container = Depends(
         get_container
@@ -342,6 +361,18 @@ def reativar_cliente(
         .reativar(
             id_cliente
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="cliente.reativado",
+        recurso="cliente",
+        recurso_id=cliente.id,
+        campos_alterados=(
+            "ativo",
+        ),
     )
 
     return transformar_cliente(

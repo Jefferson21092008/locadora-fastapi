@@ -53,6 +53,7 @@ def banco_orm(tmp_path):
 
 def test_base_registra_primeiros_models():
     assert "usuarios" in Base.metadata.tables
+    assert "audit_logs" in Base.metadata.tables
 
     assert (
         "tokens_recuperacao_senha"
@@ -72,6 +73,7 @@ def test_models_criam_tabelas_esperadas(
     )
 
     assert "usuarios" in tabelas
+    assert "audit_logs" in tabelas
 
     assert (
         "tokens_recuperacao_senha"

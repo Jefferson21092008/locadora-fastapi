@@ -35,7 +35,7 @@ SQLite / PostgreSQL
 
 O projeto está validado localmente e em produção, com frontend, API, autenticação, banco PostgreSQL, migrations, recuperação de senha e alteração de nome de usuário funcionando de ponta a ponta.
 
-Além das funcionalidades de negócio, a versão atual também possui cobertura mínima obrigatória no CI, documentação da arquitetura, rate limiting em endpoints sensíveis de autenticação, testes E2E de frontend executados em Chromium com Playwright e observabilidade HTTP com logs estruturados e request ID.
+Além das funcionalidades de negócio, a versão atual também possui cobertura mínima obrigatória no CI, documentação da arquitetura, rate limiting em endpoints sensíveis de autenticação, testes E2E de frontend executados em Chromium com Playwright, observabilidade HTTP com logs estruturados e request ID, monitoramento de erros com Sentry e auditoria persistente de ações sensíveis.
 
 A documentação detalhada da arquitetura está disponível em [`docs/arquitetura.md`](docs/arquitetura.md).
 
@@ -70,6 +70,9 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - eventos importantes de autenticação sem registrar senha, token ou corpo da requisição;
 - monitoramento opcional de exceções de produção com Sentry;
 - correlação de erros do Sentry com o `request_id` dos logs estruturados;
+- audit logs persistentes para ações sensíveis autenticadas;
+- rota administrativa `GET /auditoria` para consulta do histórico;
+- auditoria registra ator, ação, recurso, campos alterados, horário e `request_id`, sem persistir valores sensíveis;
 - auditoria de dependências e atualizações automatizadas com Dependabot.
 
 ## Tecnologias
@@ -110,9 +113,11 @@ Locadora/
 ├── api/
 │   ├── routers/
 │   ├── schemas/
+│   ├── auditoria.py
 │   ├── dependencias.py
 │   ├── erros.py
 │   ├── main.py
+│   ├── monitoramento.py
 │   ├── observabilidade.py
 │   ├── rate_limit.py
 │   └── seguranca.py
@@ -147,7 +152,8 @@ Locadora/
 │   └── arquitetura.md
 ├── migrations/
 │   ├── versions/
-│   │   └── 20260903_0001_schema_inicial.py
+│   │   ├── 20260903_0001_schema_inicial.py
+│   │   └── 20260927_0002_audit_logs.py
 │   ├── env.py
 │   ├── README
 │   └── script.py.mako
@@ -157,6 +163,7 @@ Locadora/
 │   ├── repositories/
 │   ├── servicos/
 │   ├── alugueis.py
+│   ├── auditoria.py
 │   ├── clientes.py
 │   ├── config.py
 │   ├── container.py
@@ -196,7 +203,7 @@ O diretório `scripts/legacy/` preserva apenas o histórico da antiga migração
 
 ### Entidades
 
-Os arquivos de domínio em `modulos/` representam clientes, veículos, aluguéis, manutenções, usuários e pagamentos. Eles concentram regras próprias do domínio e não executam SQL.
+Os arquivos de domínio em `modulos/` representam clientes, veículos, aluguéis, manutenções, usuários, pagamentos e registros de auditoria. Eles concentram regras próprias do domínio e não executam SQL.
 
 ### Models
 
@@ -621,7 +628,16 @@ Coverage total: 90,13%
 Coverage mínima obrigatória: 85%
 ```
 
-A suíte convencional passa a ter **461 testes**. Os quatro testes PostgreSQL são executados normalmente no CI quando `LOCADORA_TEST_DATABASE_URL` está disponível.
+Validação local da Etapa 7 neste patch:
+
+```text
+464 passed
+4 skipped (integração PostgreSQL sem banco de teste configurado)
+Coverage total: 90,52%
+Coverage mínima obrigatória: 85%
+```
+
+A suíte convencional passa a ter **468 testes**. No ambiente local sem PostgreSQL de teste, quatro testes de integração são ignorados; no CI e no ambiente de desenvolvimento configurado, eles são executados normalmente quando `LOCADORA_TEST_DATABASE_URL` está disponível.
 
 Os testes convencionais cobrem:
 
@@ -635,6 +651,7 @@ Os testes convencionais cobrem:
 - rate limiting;
 - observabilidade HTTP e request ID;
 - monitoramento de erros e sanitização de eventos do Sentry;
+- audit logs persistentes, correlação por request ID e controle de acesso administrativo;
 - Brevo API com mocks;
 - alteração de nome de usuário;
 - persistência da alteração em `usuarios` e `clientes`;
@@ -673,7 +690,7 @@ Os testes E2E atuais validam:
 
 Nesta etapa, as respostas da API são interceptadas pelo Playwright. Assim, os testes validam o frontend em um navegador real sem depender do banco de produção. Testes E2E full-stack, usando API e banco de testes reais, podem ser adicionados em uma evolução futura.
 
-No CI, os testes convencionais e os testes E2E são executados em jobs separados. Com os testes de observabilidade e monitoramento, a suíte passa a conter **463 testes automatizados**: 461 convencionais e 2 E2E.
+No CI, os testes convencionais e os testes E2E são executados em jobs separados. Com a Etapa 7, a suíte passa a conter **470 testes automatizados**: 468 convencionais e 2 E2E.
 
 Os testes PostgreSQL dependem de `LOCADORA_TEST_DATABASE_URL`. O banco configurado nessa variável deve ser exclusivamente descartável para testes.
 
@@ -708,6 +725,9 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - cada resposta HTTP recebe um `X-Request-ID` gerado pela aplicação;
 - eventos enviados ao Sentry removem body, query string, cookies, headers e dados de usuário;
 - o Sentry é ativado somente quando `LOCADORA_SENTRY_DSN` está configurada;
+- audit logs não persistem senha, token, JWT, segredo, DSN ou valores dos campos alterados;
+- a consulta de auditoria é restrita a administradores e não existem endpoints de edição ou exclusão desses registros;
+- falhas isoladas ao persistir auditoria são registradas como `audit.write_failed` e encaminhadas ao Sentry sem transformar uma operação de negócio já concluída em falso erro HTTP;
 - dependências são auditadas com `pip-audit`;
 - Dependabot acompanha atualizações de dependências e ferramentas.
 
@@ -744,8 +764,8 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - rate limiting: **concluído**;
 - testes E2E com Playwright: **concluídos e integrados ao CI**;
 - logs estruturados e request ID: **concluídos**;
-- monitoramento de erros: **implementado; aguardando configuração do Sentry e validação do CI/deploy**;
-- audit logs: **planejados**.
+- monitoramento de erros: **concluído e validado em produção com Sentry**;
+- audit logs: **implementados; aguardando validação do CI e deploy da Etapa 7**.
 
 ## Deploy — Render + Neon
 

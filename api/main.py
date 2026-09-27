@@ -45,6 +45,9 @@ from api.routers.auth import (
 from api.routers.alugueis import (
     router as alugueis_router,
 )
+from api.routers.auditoria import (
+    router as auditoria_router,
+)
 
 from api.routers.manutencoes import (
     router as manutencoes_router,
@@ -133,6 +136,13 @@ tags_metadata = [
         ),
     },
     {
+        "name": "Auditoria",
+        "description": (
+            "Histórico persistente de ações "
+            "sensíveis realizadas no sistema."
+        ),
+    },
+    {
         "name": "Sistema",
         "description": (
             "Rotas básicas para verificar "
@@ -208,6 +218,10 @@ app.include_router(
 
 app.include_router(
     relatorios_router
+)
+
+app.include_router(
+    auditoria_router
 )
 
 

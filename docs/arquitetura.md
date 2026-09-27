@@ -16,6 +16,8 @@ flowchart TD
 
     ERR[Monitoramento de erros<br>Sentry]
 
+    AUD[Auditoria persistente<br>AuditService]
+
     API[FastAPI<br>Routers]
 
     DEP[Dependências<br>Autenticação e autorização]
@@ -25,6 +27,8 @@ flowchart TD
     SER[Services<br>Regras de negócio]
 
     REP[Repositories<br>Acesso aos dados]
+
+    AREP[AuditoriaRepository<br>Append-only pela API]
 
     ORM[SQLAlchemy]
 
@@ -38,6 +42,7 @@ flowchart TD
     F --> OBS
     OBS --> API
     API --> ERR
+    API --> AUD
 
     API --> DEP
     API --> SCH
@@ -46,7 +51,9 @@ flowchart TD
 
     API --> SER
     SER --> REP
+    AUD --> AREP
     REP --> ORM
+    AREP --> ORM
     ORM --> DB
 
     SER --> EMAIL
@@ -85,3 +92,29 @@ Variáveis usadas:
 - `LOCADORA_AMBIENTE`: identifica o ambiente, como `development`, `test` ou `production`.
 
 Nesta etapa o foco é monitoramento de **erros**, não tracing de desempenho. Por isso `traces_sample_rate` permanece em `0.0`.
+
+## Auditoria persistente
+
+A Etapa 7 adiciona uma trilha persistente para ações sensíveis realizadas por usuários autenticados. O objetivo é responder **quem fez**, **o que fez**, **em qual recurso** e **quando**, mantendo correlação com o `request_id` da observabilidade HTTP.
+
+Cada registro contém apenas metadados controlados:
+
+- ID e nome de usuário do ator;
+- perfil (`admin` ou `cliente`);
+- ação, como `veiculo.editado` ou `cliente.desativado`;
+- tipo e identificador do recurso afetado;
+- nomes dos campos alterados, sem armazenar os valores;
+- `request_id`;
+- data/hora em UTC.
+
+A tabela `audit_logs` é escrita pelo `AuditoriaRepository` e consultada por meio de `GET /auditoria`, rota restrita a administradores. A API não oferece endpoints para editar ou excluir registros de auditoria.
+
+São auditadas, nesta etapa, ações autenticadas de alteração de estado: cadastro/edição/ativação de veículos, ativação/desativação de clientes, abertura/finalização de manutenção, criação/devolução de aluguel e alteração do próprio nome de usuário. Login e recuperação de senha continuam registrados como eventos estruturados da camada de observabilidade, sem duplicação na tabela de auditoria.
+
+Por segurança, valores de campos não entram no histórico e nomes sensíveis como senha, token, JWT, segredo, API key ou DSN são filtrados pelo `AuditoriaService`.
+
+### Consistência da auditoria
+
+Os Services atuais confirmam suas próprias transações de negócio antes do registro de auditoria. Por isso, uma falha isolada ao gravar `audit_logs` não pode fazer a API responder `500` depois que a operação principal já foi confirmada no banco. Nessa situação, a aplicação registra `audit.write_failed` nos logs estruturados e envia a exceção ao Sentry.
+
+Esse é um compromisso explícito da arquitetura atual. Uma garantia atômica entre ação de negócio e audit log exigiria uma unidade de trabalho/transação compartilhada e pode ser tratada na etapa futura de concorrência e consistência transacional.

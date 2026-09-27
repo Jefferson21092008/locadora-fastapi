@@ -4,6 +4,10 @@ from fastapi import (
     Request,
 )
 
+from api.auditoria import (
+    registrar_auditoria,
+)
+
 from api.dependencias import (
     get_cliente_atual,
     get_container,
@@ -270,6 +274,7 @@ def meu_usuario(
     },
 )
 def alterar_meu_usuario(
+    request: Request,
     dados: AlterarUsuarioRequest,
     container: Container = Depends(
         get_container
@@ -296,6 +301,18 @@ def alterar_meu_usuario(
         .buscar_por_id(
             cliente.usuario_id
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=cliente,
+        acao="conta.usuario_alterado",
+        recurso="usuario",
+        recurso_id=usuario.id,
+        campos_alterados=(
+            "usuario",
+        ),
     )
 
     return UsuarioAutenticadoResponse(
