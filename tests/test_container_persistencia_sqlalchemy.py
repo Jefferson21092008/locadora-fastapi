@@ -99,6 +99,7 @@ def test_container_aplica_migrations_automaticamente(
         )
 
         assert {
+            "audit_logs",
             "usuarios",
             "clientes",
             "veiculos",

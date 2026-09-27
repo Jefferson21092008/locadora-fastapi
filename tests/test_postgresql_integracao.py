@@ -36,6 +36,7 @@ pytestmark = pytest.mark.postgresql
 
 TABELAS_ESPERADAS = {
     "alembic_version",
+    "audit_logs",
     "alugueis",
     "clientes",
     "manutencoes",
@@ -197,7 +198,7 @@ def test_alembic_cria_schema_postgresql_completo(
             )
         )
 
-    assert revisao == "20260903_0001"
+    assert revisao == "20260927_0002"
 
     fks_clientes = (
         inspetor.get_foreign_keys(

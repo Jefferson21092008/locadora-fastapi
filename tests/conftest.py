@@ -1,3 +1,10 @@
+import os
+
+# Evita que a suíte local envie exceções simuladas ao projeto real do Sentry.
+# O valor vazio bloqueia o carregamento do DSN do .env pelo python-dotenv.
+os.environ["LOCADORA_SENTRY_DSN"] = ""
+os.environ["LOCADORA_AMBIENTE"] = "test"
+
 import pytest
 
 from modulos.seguranca import (

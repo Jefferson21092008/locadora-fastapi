@@ -1,6 +1,11 @@
 from fastapi import (
     APIRouter,
     Depends,
+    Request,
+)
+
+from api.auditoria import (
+    registrar_auditoria,
 )
 
 from api.dependencias import (
@@ -281,6 +286,7 @@ def listar_manutencoes_do_veiculo(
     },
 )
 def abrir_manutencao(
+    request: Request,
     dados: ManutencaoCreate,
 
     container: Container = Depends(
@@ -300,6 +306,19 @@ def abrir_manutencao(
 
             motivo=dados.motivo,
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="manutencao.aberta",
+        recurso="manutencao",
+        recurso_id=manutencao.id,
+        campos_alterados=(
+            "status",
+            "motivo",
+        ),
     )
 
     return transformar_manutencao(
@@ -356,6 +375,7 @@ def abrir_manutencao(
     },
 )
 def finalizar_manutencao(
+    request: Request,
     id_veiculo: int,
 
     dados: ManutencaoFinalizar,
@@ -374,6 +394,20 @@ def finalizar_manutencao(
             id_veiculo=id_veiculo,
             custo=dados.custo,
         )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="manutencao.finalizada",
+        recurso="manutencao",
+        recurso_id=manutencao.id,
+        campos_alterados=(
+            "status",
+            "custo",
+            "data_fim",
+        ),
     )
 
     return transformar_manutencao(

@@ -24,6 +24,7 @@ from modulos.models import (
 
 
 TABELAS_ESPERADAS = {
+    "audit_logs",
     "usuarios",
     "clientes",
     "veiculos",
@@ -349,7 +350,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20260903_0001"
+        assert revisao == "20260927_0002"
 
     finally:
         engine.dispose()
@@ -404,7 +405,14 @@ def test_upgrade_preserva_dados_do_schema_legado(
                         f"FROM {tabela}"
                     )
                 )
-                assert total == 1
+
+                esperado = (
+                    0
+                    if tabela == "audit_logs"
+                    else 1
+                )
+
+                assert total == esperado
 
             contexto = (
                 MigrationContext

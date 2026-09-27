@@ -7,6 +7,9 @@ from modulos.database import (
 from modulos.repositories.aluguel_repository import (
     AluguelRepository,
 )
+from modulos.repositories.auditoria_repository import (
+    AuditoriaRepository,
+)
 from modulos.repositories.cliente_repository import (
     ClienteRepository,
 )
@@ -28,6 +31,9 @@ from modulos.repositories.veiculo_repository import (
 
 from modulos.servicos.admin_service import (
     AdminService,
+)
+from modulos.servicos.auditoria_service import (
+    AuditoriaService,
 )
 from modulos.servicos.alugueis_service import (
     AluguelService,
@@ -130,6 +136,14 @@ class Container:
             )
         )
 
+        self.auditoria_repository = (
+            AuditoriaRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
         self.token_recuperacao_repository = (
             TokenRecuperacaoRepository(
                 banco_sqlalchemy=(
@@ -185,6 +199,14 @@ class Container:
     def _criar_services(
         self,
     ):
+        self.auditoria_service = (
+            AuditoriaService(
+                auditoria_repository=(
+                    self.auditoria_repository
+                ),
+            )
+        )
+
         self.auth_service = (
             AuthService(
                 usuario_repository=(
