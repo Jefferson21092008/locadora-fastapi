@@ -6,6 +6,7 @@ import {
     getMyRentals,
     getRentals,
     getToken,
+    logout,
     getVehicles,
     returnVehicle,
 } from "/app/js/api.js";
@@ -560,8 +561,8 @@ async function initialize() {
     }
 }
 
-logoutButton.addEventListener("click", () => {
-    clearToken();
+logoutButton.addEventListener("click", async () => {
+    await logout();
     goToLogin();
 });
 

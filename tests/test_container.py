@@ -21,6 +21,9 @@ from modulos.servicos.manutencao_service import (
 from modulos.servicos.relatorios_service import (
     RelatorioService,
 )
+from modulos.servicos.sessao_service import (
+    SessaoService,
+)
 from modulos.servicos.veiculos_service import (
     VeiculoService,
 )
@@ -61,6 +64,11 @@ def test_container_cria_services(
     assert isinstance(
         container.auth_service,
         AuthService,
+    )
+
+    assert isinstance(
+        container.sessao_service,
+        SessaoService,
     )
 
     assert isinstance(
@@ -116,6 +124,12 @@ def test_services_compartilham_repositories(
         container.auth_service
         .usuario_repository
         is container.usuario_repository
+    )
+
+    assert (
+        container.sessao_service
+        .sessao_repository
+        is container.sessao_repository
     )
 
     assert (

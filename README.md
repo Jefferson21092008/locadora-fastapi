@@ -47,14 +47,14 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - cálculo de devolução, quilometragem, multa e pagamento;
 - abertura e finalização de manutenções;
 - relatórios administrativos e financeiros;
-- autenticação JWT com perfis de administrador e cliente;
+- autenticação com access token JWT, refresh token rotativo e perfis de administrador e cliente;
 - recuperação de senha por e-mail via Brevo API;
 - tokens temporários, de uso único e armazenados por hash;
 - alteração do nome de usuário pelo próprio cliente, com confirmação da senha atual;
 - prevenção de nomes de usuário duplicados;
 - atualização transacional do nome de usuário nas tabelas relacionadas;
 - CLI e API REST usando a mesma camada de negócio;
-- frontend responsivo com login JWT e painel conectado à API;
+- frontend responsivo com login JWT, renovação automática de sessão e painel conectado à API;
 - transações e rollback em operações compostas;
 - documentação OpenAPI/Swagger;
 - health check para produção;
@@ -154,7 +154,8 @@ Locadora/
 ├── migrations/
 │   ├── versions/
 │   │   ├── 20260903_0001_schema_inicial.py
-│   │   └── 20260927_0002_audit_logs.py
+│   │   ├── 20260927_0002_audit_logs.py
+│   │   └── 20260927_0003_sessoes_refresh.py
 │   ├── env.py
 │   ├── README
 │   └── script.py.mako
@@ -489,10 +490,12 @@ Os módulos implementados possuem:
 
 - tela de login responsiva;
 - integração com `POST /api/v1/auth/login`;
-- armazenamento do JWT em `sessionStorage`;
+- armazenamento apenas do access token JWT em `sessionStorage`;
+- refresh token rotativo mantido em cookie `HttpOnly` e nunca exposto ao JavaScript;
+- renovação automática do access token após `401`, com proteção contra refresh concorrente;
 - validação da sessão com `GET /api/v1/auth/me`;
 - redirecionamento de usuários sem autenticação;
-- encerramento da sessão;
+- logout com revogação da sessão no backend;
 - painel com quantidades carregadas de `GET /api/v1/status`;
 - tela de veículos com busca por modelo, tipo, ano ou ID;
 - filtros por disponibilidade, aluguel, manutenção e desativação;
@@ -551,7 +554,7 @@ O login é realizado por:
 POST /api/v1/auth/login
 ```
 
-Em caso de sucesso, a API retorna um JWT:
+Em caso de sucesso, a API retorna um **access token JWT** de curta duração e grava o **refresh token** em um cookie `HttpOnly`, `SameSite=Lax`. Em produção HTTPS, o cookie também recebe `Secure`. O refresh token puro não é salvo no banco nem fica disponível ao JavaScript; somente seu hash SHA-256 é persistido na tabela `sessoes`.
 
 ```json
 {
@@ -580,6 +583,27 @@ PATCH /api/v1/auth/me/usuario
 
 A alteração exige a senha atual, rejeita nomes já utilizados e atualiza os registros relacionados de forma transacional.
 
+### Refresh token e gerenciamento de sessões
+
+Quando o access token expira, o frontend pode renovar a autenticação por:
+
+```text
+POST /api/v1/auth/refresh
+```
+
+A renovação usa o cookie `HttpOnly`, rotaciona o refresh token a cada uso e emite um novo access token. O refresh token anterior deixa de ser aceito depois da rotação.
+
+Rotas de sessão disponíveis:
+
+```text
+POST   /api/v1/auth/logout
+GET    /api/v1/auth/sessoes
+DELETE /api/v1/auth/sessoes/{id_sessao}
+DELETE /api/v1/auth/sessoes
+```
+
+Novos access tokens carregam o identificador `sid` da sessão. Assim, logout ou revogação tornam esses access tokens inválidos imediatamente, sem esperar os 30 minutos de expiração do JWT. Tokens emitidos antes desta etapa, que ainda não possuem `sid`, permanecem compatíveis somente até sua expiração natural.
+
 ## Recuperação de senha
 
 O fluxo de recuperação funciona da seguinte forma:
@@ -594,6 +618,8 @@ Token é armazenado de forma segura
 Brevo API envia e-mail por HTTPS
         ↓
 Usuário abre o link de redefinição
+        ↓
+Sessões ativas são revogadas
         ↓
 Nova senha é validada e salva
 ```
@@ -724,6 +750,11 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - senhas novas usam PBKDF2-HMAC-SHA256 com salt aleatório;
 - hashes SHA-256 antigos são aceitos apenas para compatibilidade;
 - tokens de recuperação são aleatórios e apenas seu hash é persistido;
+- refresh tokens são aleatórios, rotativos e persistidos somente por hash SHA-256;
+- refresh tokens ficam em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção HTTPS;
+- access tokens novos ficam vinculados a uma sessão persistente por `sid`;
+- logout e revogação de sessão invalidam imediatamente access tokens vinculados;
+- redefinição de senha revoga todas as sessões ativas da conta;
 - tokens de recuperação expiram, são de uso único e invalidam solicitações anteriores;
 - respostas de login e recuperação evitam revelar se uma conta existe;
 - permissões são verificadas por perfil;
@@ -758,7 +789,7 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - testes automatizados: **concluídos e em evolução**;
 - Alembic e migrations: **concluídos**;
 - frontend com HTML, CSS e JavaScript: **concluído**;
-- login, sessão JWT e painel: **concluídos**;
+- login, access token JWT, refresh token rotativo e gerenciamento de sessões: **concluídos**;
 - gerenciamento da frota no frontend: **concluído**;
 - criação, devolução e acompanhamento de aluguéis: **concluídos**;
 - cadastro e gerenciamento de clientes: **concluídos**;

@@ -31,6 +31,7 @@ class RecuperacaoSenhaService:
         self,
         usuario_repository,
         token_recuperacao_repository,
+        sessao_repository,
         cliente_repository,
         email_service,
     ):
@@ -40,6 +41,10 @@ class RecuperacaoSenhaService:
 
         self.token_recuperacao_repository = (
             token_recuperacao_repository
+        )
+
+        self.sessao_repository = (
+            sessao_repository
         )
 
         self.cliente_repository = (
@@ -264,6 +269,16 @@ class RecuperacaoSenhaService:
                 "A nova senha deve ser "
                 "diferente da senha atual."
             )
+
+        # A redefinição de senha encerra todas as sessões antes
+        # de alterar a credencial. Se essa revogação falhar, a senha
+        # permanece intacta e a operação é abortada.
+        self.sessao_repository.revogar_todas_do_usuario(
+            usuario_id=usuario.id,
+            revogada_em=agora.isoformat(
+                timespec="seconds"
+            ),
+        )
 
         hash_anterior = (
             usuario.to_dict()[

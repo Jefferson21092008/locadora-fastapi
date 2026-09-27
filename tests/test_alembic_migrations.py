@@ -30,6 +30,7 @@ TABELAS_ESPERADAS = {
     "veiculos",
     "alugueis",
     "manutencoes",
+    "sessoes",
     "tokens_recuperacao_senha",
 }
 
@@ -350,7 +351,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20260927_0002"
+        assert revisao == "20260927_0003"
 
     finally:
         engine.dispose()
@@ -408,7 +409,10 @@ def test_upgrade_preserva_dados_do_schema_legado(
 
                 esperado = (
                     0
-                    if tabela == "audit_logs"
+                    if tabela in {
+                        "audit_logs",
+                        "sessoes",
+                    }
                     else 1
                 )
 

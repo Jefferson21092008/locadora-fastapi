@@ -4,6 +4,7 @@ import {
     getCurrentUser,
     getSystemStatus,
     getToken,
+    logout,
     renameCurrentUser,
 } from "/app/js/api.js";
 
@@ -201,8 +202,8 @@ renameUserForm.addEventListener(
     },
 );
 
-logoutButton.addEventListener("click", () => {
-    clearToken();
+logoutButton.addEventListener("click", async () => {
+    await logout();
     goToLogin();
 });
 

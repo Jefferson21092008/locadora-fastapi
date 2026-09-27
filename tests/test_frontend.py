@@ -225,3 +225,14 @@ def test_frontend_possui_funcao_para_renomear_usuario():
 
     assert "novo_usuario" in resposta.text
     assert "senha_atual" in resposta.text
+
+def test_frontend_renova_access_token_e_faz_logout_no_backend():
+    resposta = client.get(
+        "/app/js/api.js"
+    )
+
+    assert resposta.status_code == 200
+    assert '`${API_BASE}/auth/refresh`' in resposta.text
+    assert '`${API_BASE}/auth/logout`' in resposta.text
+    assert "refreshPromise" in resposta.text
+    assert 'method: "POST"' in resposta.text

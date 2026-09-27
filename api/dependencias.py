@@ -114,6 +114,38 @@ def get_usuario_atual(
             "Usuário inválido ou inativo."
         )
 
+    id_sessao = payload.get(
+        "sid"
+    )
+
+    # Tokens emitidos antes da Etapa 9 não possuem ``sid``. Eles
+    # continuam válidos até a expiração natural para evitar uma
+    # quebra imediata durante o deploy. Novos tokens ficam ligados
+    # a uma sessão persistente e podem ser revogados imediatamente.
+    if id_sessao is not None:
+        try:
+            id_sessao = int(
+                id_sessao
+            )
+        except (
+            TypeError,
+            ValueError,
+        ):
+            nao_autorizado(
+                "Token inválido."
+            )
+
+        if not (
+            container.sessao_service
+            .esta_ativa(
+                id_sessao=id_sessao,
+                usuario_id=id_usuario,
+            )
+        ):
+            nao_autorizado(
+                "Sessão inválida ou expirada."
+            )
+
     return usuario
 
 

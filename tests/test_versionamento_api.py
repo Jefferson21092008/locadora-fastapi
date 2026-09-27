@@ -39,6 +39,9 @@ def test_openapi_expoe_somente_rotas_versionadas():
     paths = client.get("/openapi.json").json()["paths"]
 
     assert "/api/v1/auth/login" in paths
+    assert "/api/v1/auth/refresh" in paths
+    assert "/api/v1/auth/logout" in paths
+    assert "/api/v1/auth/sessoes" in paths
     assert "/api/v1/clientes" in paths
     assert "/api/v1/veiculos" in paths
     assert "/api/v1/alugueis" in paths

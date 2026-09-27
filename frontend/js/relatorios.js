@@ -7,6 +7,7 @@ import {
     getReportSummary,
     getRevenueByType,
     getToken,
+    logout,
     getTopCustomers,
     getTopRentedVehicles,
     getVehicleResults,
@@ -308,8 +309,8 @@ async function initialize() {
     }
 }
 
-logoutButton.addEventListener("click", () => {
-    clearToken();
+logoutButton.addEventListener("click", async () => {
+    await logout();
     goToLogin();
 });
 

@@ -14,6 +14,7 @@ EXPIRACAO_MINUTOS = 30
 def criar_token_acesso(
     usuario,
     secret,
+    sessao_id=None,
 ):
     if not secret:
         raise RuntimeError(
@@ -36,6 +37,11 @@ def criar_token_acesso(
             )
         ),
     }
+
+    if sessao_id is not None:
+        payload["sid"] = str(
+            sessao_id
+        )
 
     return jwt.encode(
         payload,

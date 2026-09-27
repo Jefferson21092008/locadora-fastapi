@@ -28,6 +28,7 @@ TOKEN_RECUPERACAO_TESTE = (
 
 class ConfiguracaoFake:
     jwt_secret = JWT_SECRET_TESTE
+    public_url = "http://testserver"
 
 
 class UsuarioFake:
@@ -132,6 +133,123 @@ class AuthServiceFake:
             return False
 
         return True
+
+class SessaoServiceFake:
+    def __init__(self):
+        self.sessoes = {}
+        self.proximo_id = 1
+
+    @staticmethod
+    def validade_refresh_segundos():
+        return 7 * 24 * 60 * 60
+
+    def criar(self, usuario_id):
+        id_sessao = self.proximo_id
+        self.proximo_id += 1
+        token = f"refresh-token-{id_sessao}"
+        self.sessoes[id_sessao] = {
+            "id": id_sessao,
+            "usuario_id": usuario_id,
+            "refresh_token": token,
+            "revogada": False,
+            "criado_em": "2026-09-27T18:00:00+00:00",
+            "expira_em": "2099-09-27T18:00:00+00:00",
+            "ultimo_uso_em": None,
+        }
+        return dict(
+            self.sessoes[id_sessao]
+        )
+
+    def renovar(self, refresh_token):
+        for sessao in self.sessoes.values():
+            if (
+                sessao["refresh_token"]
+                == refresh_token
+                and not sessao["revogada"]
+            ):
+                sessao["refresh_token"] = (
+                    f"{refresh_token}-novo"
+                )
+                sessao["ultimo_uso_em"] = (
+                    "2026-09-27T19:00:00+00:00"
+                )
+                return dict(sessao)
+
+        raise RegraDeNegocio(
+            "Sessão inválida ou expirada."
+        )
+
+    def esta_ativa(
+        self,
+        id_sessao,
+        usuario_id,
+    ):
+        sessao = self.sessoes.get(
+            id_sessao
+        )
+        return bool(
+            sessao
+            and sessao["usuario_id"]
+            == usuario_id
+            and not sessao["revogada"]
+        )
+
+    def listar_ativas(self, usuario_id):
+        return [
+            dict(sessao)
+            for sessao in self.sessoes.values()
+            if (
+                sessao["usuario_id"]
+                == usuario_id
+                and not sessao["revogada"]
+            )
+        ]
+
+    def revogar(
+        self,
+        id_sessao,
+        usuario_id,
+    ):
+        sessao = self.sessoes.get(
+            id_sessao
+        )
+        if (
+            sessao is None
+            or sessao["usuario_id"]
+            != usuario_id
+            or sessao["revogada"]
+        ):
+            return False
+
+        sessao["revogada"] = True
+        return True
+
+    def revogar_por_token(
+        self,
+        refresh_token,
+    ):
+        for sessao in self.sessoes.values():
+            if (
+                sessao["refresh_token"]
+                == refresh_token
+                and not sessao["revogada"]
+            ):
+                sessao["revogada"] = True
+                return True
+        return False
+
+    def revogar_todas(self, usuario_id):
+        total = 0
+        for sessao in self.sessoes.values():
+            if (
+                sessao["usuario_id"]
+                == usuario_id
+                and not sessao["revogada"]
+            ):
+                sessao["revogada"] = True
+                total += 1
+        return total
+
 
 class ClienteServiceFake:
     def __init__(
@@ -331,6 +449,10 @@ class ContainerFake:
             AuthServiceFake()
         )
 
+        self.sessao_service = (
+            SessaoServiceFake()
+        )
+
         self.recuperacao_senha_service = (
             RecuperacaoSenhaServiceFake(
                 self.auth_service
@@ -417,6 +539,119 @@ def test_login_com_sucesso(
         dados["token_type"]
         == "bearer"
     )
+
+    assert (
+        "locadora_refresh_token"
+        in response.cookies
+    )
+    assert "HttpOnly" in (
+        response.headers["set-cookie"]
+    )
+
+
+def test_refresh_renova_access_token(
+    client,
+):
+    login = fazer_login(
+        client
+    )
+    assert login.status_code == 200
+    cookie_anterior = client.cookies.get(
+        "locadora_refresh_token"
+    )
+
+    response = client.post(
+        "/auth/refresh"
+    )
+
+    assert response.status_code == 200
+    assert response.json()[
+        "access_token"
+    ]
+    assert response.json()[
+        "token_type"
+    ] == "bearer"
+    assert client.cookies.get(
+        "locadora_refresh_token"
+    ) != cookie_anterior
+
+
+def test_refresh_sem_cookie_retorna_401(
+    client,
+):
+    client.cookies.clear()
+
+    response = client.post(
+        "/auth/refresh"
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": (
+            "Sessão inválida ou expirada."
+        )
+    }
+
+
+def test_logout_revoga_sessao_e_access_token(
+    client,
+):
+    token = obter_token(
+        client
+    )
+
+    logout = client.post(
+        "/auth/logout"
+    )
+
+    assert logout.status_code == 200
+
+    response = client.get(
+        "/auth/me",
+        headers={
+            "Authorization": (
+                f"Bearer {token}"
+            )
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {
+        "detail": (
+            "Sessão inválida ou expirada."
+        )
+    }
+
+
+def test_listar_e_revogar_sessoes(
+    client,
+):
+    token = obter_token(
+        client
+    )
+    headers = {
+        "Authorization": (
+            f"Bearer {token}"
+        )
+    }
+
+    listagem = client.get(
+        "/auth/sessoes",
+        headers=headers,
+    )
+
+    assert listagem.status_code == 200
+    assert len(listagem.json()) == 1
+
+    id_sessao = listagem.json()[0][
+        "id"
+    ]
+    revogacao = client.delete(
+        f"/auth/sessoes/{id_sessao}",
+        headers=headers,
+    )
+
+    assert revogacao.status_code == 200
 
 
 def test_login_com_senha_incorreta(

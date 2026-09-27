@@ -162,6 +162,25 @@ class EmailServiceFake:
         )
 
 
+class SessaoRepositoryFake:
+    def __init__(self):
+        self.revogacoes = []
+
+    def revogar_todas_do_usuario(
+        self,
+        *,
+        usuario_id,
+        revogada_em,
+    ):
+        self.revogacoes.append(
+            {
+                "usuario_id": usuario_id,
+                "revogada_em": revogada_em,
+            }
+        )
+        return 1
+
+
 class TokenRecuperacaoRepositoryFake:
     def __init__(self):
         self.tokens = {}
@@ -265,6 +284,10 @@ def componentes():
         EmailServiceFake()
     )
 
+    sessao_repository = (
+        SessaoRepositoryFake()
+    )
+
     service = (
         RecuperacaoSenhaService(
             usuario_repository=(
@@ -272,6 +295,9 @@ def componentes():
             ),
             token_recuperacao_repository=(
                 token_repository
+            ),
+            sessao_repository=(
+                sessao_repository
             ),
             cliente_repository=(
                 cliente_repository
@@ -694,3 +720,25 @@ def test_nova_senha_nao_pode_ser_igual_a_atual(
             token=token,
             nova_senha="senha123",
         )
+
+def test_redefinir_senha_revoga_sessoes_ativas(
+    componentes,
+):
+    service, _, _, _, _ = componentes
+
+    token = service.solicitar_recuperacao(
+        "lucas123"
+    )
+    service.redefinir_senha(
+        token=token,
+        nova_senha="novaSenha123",
+    )
+
+    assert len(
+        service.sessao_repository.revogacoes
+    ) == 1
+    assert (
+        service.sessao_repository
+        .revogacoes[0]["usuario_id"]
+        == 1
+    )

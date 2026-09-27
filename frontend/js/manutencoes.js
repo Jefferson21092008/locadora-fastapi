@@ -6,6 +6,7 @@ import {
     getCurrentUser,
     getMaintenances,
     getToken,
+    logout,
     getVehicles,
 } from "/app/js/api.js";
 
@@ -412,8 +413,8 @@ async function initialize() {
     }
 }
 
-logoutButton.addEventListener("click", () => {
-    clearToken();
+logoutButton.addEventListener("click", async () => {
+    await logout();
     goToLogin();
 });
 
