@@ -14,6 +14,8 @@ flowchart TD
 
     OBS[Observabilidade HTTP<br>Request ID + logs JSON]
 
+    ERR[Monitoramento de erros<br>Sentry]
+
     API[FastAPI<br>Routers]
 
     DEP[Dependências<br>Autenticação e autorização]
@@ -35,6 +37,7 @@ flowchart TD
     U --> F
     F --> OBS
     OBS --> API
+    API --> ERR
 
     API --> DEP
     API --> SCH
@@ -67,3 +70,18 @@ Exemplo conceitual:
 ```json
 {"level":"INFO","event":"http.request","request_id":"...","method":"GET","path":"/health","status_code":200,"duration_ms":4.12}
 ```
+
+## Monitoramento de erros
+
+A aplicação possui integração opcional com Sentry para capturar exceções não tratadas em produção com stack trace e contexto técnico. A integração só é ativada quando `LOCADORA_SENTRY_DSN` está configurada, portanto desenvolvimento local e testes continuam funcionando sem depender do serviço externo.
+
+O `request_id` criado pela camada de observabilidade é associado ao escopo isolado da requisição no Sentry. Isso permite correlacionar uma exceção exibida no monitoramento com a linha correspondente dos logs estruturados.
+
+Para reduzir exposição de dados, a configuração usa `send_default_pii=False` e um filtro `before_send`. Antes do envio, são removidos body, query string, cookies, headers, dados de ambiente da requisição e dados de usuário. A URL é mantida apenas sem query string.
+
+Variáveis usadas:
+
+- `LOCADORA_SENTRY_DSN`: ativa o envio de erros ao projeto Sentry;
+- `LOCADORA_AMBIENTE`: identifica o ambiente, como `development`, `test` ou `production`.
+
+Nesta etapa o foco é monitoramento de **erros**, não tracing de desempenho. Por isso `traces_sample_rate` permanece em `0.0`.

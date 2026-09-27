@@ -9,6 +9,10 @@ from datetime import (
 from time import perf_counter
 from uuid import uuid4
 
+from api.monitoramento import (
+    associar_request_id,
+)
+
 
 NOME_LOGGER_BASE = "locadora"
 HEADER_REQUEST_ID = "X-Request-ID"
@@ -190,6 +194,9 @@ async def middleware_observabilidade(
     """
     request_id = gerar_request_id()
     request.state.request_id = (
+        request_id
+    )
+    associar_request_id(
         request_id
     )
 
