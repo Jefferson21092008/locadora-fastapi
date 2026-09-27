@@ -5,6 +5,7 @@ import {
     deactivateVehicle,
     getCurrentUser,
     getToken,
+    logout,
     getVehicles,
     reactivateVehicle,
     updateVehicle,
@@ -457,8 +458,8 @@ async function initialize() {
     }
 }
 
-logoutButton.addEventListener("click", () => {
-    clearToken();
+logoutButton.addEventListener("click", async () => {
+    await logout();
     goToLogin();
 });
 

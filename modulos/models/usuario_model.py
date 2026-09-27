@@ -22,6 +22,9 @@ from modulos.models.base import (
 
 
 if TYPE_CHECKING:
+    from modulos.models.sessao_model import (
+        SessaoModel,
+    )
     from modulos.models.token_recuperacao_model import (
         TokenRecuperacaoModel,
     )
@@ -84,6 +87,12 @@ class UsuarioModel(Base):
 
     tokens_recuperacao: Mapped[
         list["TokenRecuperacaoModel"]
+    ] = relationship(
+        back_populates="usuario",
+    )
+
+    sessoes: Mapped[
+        list["SessaoModel"]
     ] = relationship(
         back_populates="usuario",
     )

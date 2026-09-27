@@ -49,6 +49,7 @@ def test_container_entrega_sqlalchemy_a_todos_repositories(
         repositories = [
             container.usuario_repository,
             container.token_recuperacao_repository,
+            container.sessao_repository,
             container.cliente_repository,
             container.veiculo_repository,
             container.aluguel_repository,

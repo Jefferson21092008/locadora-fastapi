@@ -19,6 +19,9 @@ from modulos.repositories.manutencao_repository import (
 from modulos.repositories.relatorio_repository import (
     RelatorioRepository,
 )
+from modulos.repositories.sessao_repository import (
+    SessaoRepository,
+)
 from modulos.repositories.token_recuperacao_repository import (
     TokenRecuperacaoRepository,
 )
@@ -52,6 +55,9 @@ from modulos.servicos.manutencao_service import (
 )
 from modulos.servicos.relatorios_service import (
     RelatorioService,
+)
+from modulos.servicos.sessao_service import (
+    SessaoService,
 )
 from modulos.servicos.recuperacao_senha_service import (
     RecuperacaoSenhaService,
@@ -152,6 +158,14 @@ class Container:
             )
         )
 
+        self.sessao_repository = (
+            SessaoRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
         self.cliente_repository = (
             ClienteRepository(
                 banco_sqlalchemy=(
@@ -215,6 +229,14 @@ class Container:
             )
         )
 
+        self.sessao_service = (
+            SessaoService(
+                sessao_repository=(
+                    self.sessao_repository
+                ),
+            )
+        )
+
         self.email_service = (
             EmailService(
                 self.config
@@ -228,6 +250,9 @@ class Container:
                 ),
                 token_recuperacao_repository=(
                     self.token_recuperacao_repository
+                ),
+                sessao_repository=(
+                    self.sessao_repository
                 ),
                 cliente_repository=(
                     self.cliente_repository

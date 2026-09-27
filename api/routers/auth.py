@@ -2,6 +2,7 @@ from fastapi import (
     APIRouter,
     Depends,
     Request,
+    Response,
 )
 
 from api.auditoria import (
@@ -16,6 +17,7 @@ from api.dependencias import (
 from api.erros import (
     muitas_tentativas,
     nao_autorizado,
+    recurso_nao_encontrado,
 )
 from api.observabilidade import (
     registrar_evento,
@@ -27,6 +29,7 @@ from api.schemas.auth import (
     MensagemAuthResponse,
     RecuperacaoSenhaRequest,
     RedefinirSenhaRequest,
+    SessaoResponse,
     TokenResponse,
     UsuarioAutenticadoResponse,
 )
@@ -40,6 +43,11 @@ from api.rate_limit import (
 from modulos.container import (
     Container,
 )
+from modulos.excecoes import (
+    RegraDeNegocio,
+)
+
+
 router = APIRouter(
     prefix="/auth",
     tags=["Autenticação"],
@@ -55,6 +63,66 @@ MENSAGEM_RECUPERACAO = (
     "as instruções de recuperação "
     "serão enviadas."
 )
+
+MENSAGEM_SESSAO_INVALIDA = (
+    "Sessão inválida ou expirada."
+)
+
+REFRESH_COOKIE = (
+    "locadora_refresh_token"
+)
+
+
+def _cookie_seguro(
+    container,
+):
+    public_url = str(
+        getattr(
+            container.config,
+            "public_url",
+            "",
+        )
+    ).strip().lower()
+
+    return public_url.startswith(
+        "https://"
+    )
+
+
+def _definir_refresh_cookie(
+    response,
+    container,
+    refresh_token,
+):
+    response.set_cookie(
+        key=REFRESH_COOKIE,
+        value=refresh_token,
+        max_age=(
+            container.sessao_service
+            .validade_refresh_segundos()
+        ),
+        httponly=True,
+        secure=_cookie_seguro(
+            container
+        ),
+        samesite="lax",
+        path="/",
+    )
+
+
+def _remover_refresh_cookie(
+    response,
+    container,
+):
+    response.delete_cookie(
+        key=REFRESH_COOKIE,
+        httponly=True,
+        secure=_cookie_seguro(
+            container
+        ),
+        samesite="lax",
+        path="/",
+    )
 
 
 # ================================================================
@@ -93,6 +161,7 @@ MENSAGEM_RECUPERACAO = (
 )
 def login(
     request: Request,
+    response: Response,
     dados: LoginRequest,
     container: Container = Depends(
         get_container
@@ -185,17 +254,282 @@ def login(
         status_code=200,
     )
 
+    sessao = (
+        container.sessao_service
+        .criar(
+            usuario.id
+        )
+    )
+
     token = criar_token_acesso(
         usuario=usuario,
         secret=(
             container.config
             .jwt_secret
         ),
+        sessao_id=sessao["id"],
+    )
+
+    _definir_refresh_cookie(
+        response=response,
+        container=container,
+        refresh_token=(
+            sessao["refresh_token"]
+        ),
     )
 
     return TokenResponse(
         access_token=token,
         token_type="bearer",
+    )
+
+
+# ================================================================
+# REFRESH TOKEN E SESSÕES
+# ================================================================
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="Renovar access token",
+    description=(
+        "Rotaciona o refresh token armazenado em cookie HttpOnly "
+        "e emite um novo access token JWT."
+    ),
+    responses={
+        401: {
+            "description": (
+                "Sessão inválida ou expirada."
+            ),
+        },
+    },
+)
+def renovar_token(
+    request: Request,
+    response: Response,
+    container: Container = Depends(
+        get_container
+    ),
+):
+    refresh_token = request.cookies.get(
+        REFRESH_COOKIE
+    )
+
+    try:
+        sessao = (
+            container.sessao_service
+            .renovar(
+                refresh_token
+            )
+        )
+
+    except RegraDeNegocio:
+        _remover_refresh_cookie(
+            response=response,
+            container=container,
+        )
+
+        registrar_evento(
+            "auth.refresh.failed",
+            request_id=request_id_atual(
+                request
+            ),
+            status_code=401,
+        )
+
+        nao_autorizado(
+            MENSAGEM_SESSAO_INVALIDA
+        )
+
+    usuario = (
+        container.auth_service
+        .buscar_por_id(
+            sessao["usuario_id"]
+        )
+    )
+
+    if (
+        usuario is None
+        or not usuario.ativo
+    ):
+        container.sessao_service.revogar(
+            id_sessao=sessao["id"],
+            usuario_id=(
+                sessao["usuario_id"]
+            ),
+        )
+        _remover_refresh_cookie(
+            response=response,
+            container=container,
+        )
+        nao_autorizado(
+            MENSAGEM_SESSAO_INVALIDA
+        )
+
+    token = criar_token_acesso(
+        usuario=usuario,
+        secret=(
+            container.config
+            .jwt_secret
+        ),
+        sessao_id=sessao["id"],
+    )
+
+    _definir_refresh_cookie(
+        response=response,
+        container=container,
+        refresh_token=(
+            sessao["refresh_token"]
+        ),
+    )
+
+    registrar_evento(
+        "auth.refresh.succeeded",
+        request_id=request_id_atual(
+            request
+        ),
+        user_id=usuario.id,
+        role=usuario.role.value,
+        status_code=200,
+    )
+
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+    )
+
+
+@router.post(
+    "/logout",
+    response_model=MensagemAuthResponse,
+    summary="Encerrar sessão atual",
+)
+def logout(
+    request: Request,
+    response: Response,
+    container: Container = Depends(
+        get_container
+    ),
+):
+    refresh_token = request.cookies.get(
+        REFRESH_COOKIE
+    )
+
+    container.sessao_service.revogar_por_token(
+        refresh_token
+    )
+
+    _remover_refresh_cookie(
+        response=response,
+        container=container,
+    )
+
+    registrar_evento(
+        "auth.logout",
+        request_id=request_id_atual(
+            request
+        ),
+        status_code=200,
+    )
+
+    return MensagemAuthResponse(
+        mensagem=(
+            "Sessão encerrada com sucesso."
+        )
+    )
+
+
+@router.get(
+    "/sessoes",
+    response_model=list[SessaoResponse],
+    summary="Listar sessões ativas",
+)
+def listar_sessoes(
+    usuario=Depends(
+        get_usuario_atual
+    ),
+    container: Container = Depends(
+        get_container
+    ),
+):
+    return [
+        SessaoResponse(
+            id=sessao["id"],
+            criado_em=(
+                sessao["criado_em"]
+            ),
+            expira_em=(
+                sessao["expira_em"]
+            ),
+            ultimo_uso_em=(
+                sessao["ultimo_uso_em"]
+            ),
+        )
+        for sessao in (
+            container.sessao_service
+            .listar_ativas(
+                usuario.id
+            )
+        )
+    ]
+
+
+@router.delete(
+    "/sessoes/{id_sessao}",
+    response_model=MensagemAuthResponse,
+    summary="Revogar uma sessão",
+)
+def revogar_sessao(
+    id_sessao: int,
+    usuario=Depends(
+        get_usuario_atual
+    ),
+    container: Container = Depends(
+        get_container
+    ),
+):
+    revogada = (
+        container.sessao_service
+        .revogar(
+            id_sessao=id_sessao,
+            usuario_id=usuario.id,
+        )
+    )
+
+    if not revogada:
+        recurso_nao_encontrado(
+            "Sessão não encontrada."
+        )
+
+    return MensagemAuthResponse(
+        mensagem=(
+            "Sessão revogada com sucesso."
+        )
+    )
+
+
+@router.delete(
+    "/sessoes",
+    response_model=MensagemAuthResponse,
+    summary="Revogar todas as sessões",
+)
+def revogar_todas_sessoes(
+    usuario=Depends(
+        get_usuario_atual
+    ),
+    container: Container = Depends(
+        get_container
+    ),
+):
+    container.sessao_service.revogar_todas(
+        usuario.id
+    )
+
+    return MensagemAuthResponse(
+        mensagem=(
+            "Todas as sessões foram revogadas."
+        )
     )
 
 

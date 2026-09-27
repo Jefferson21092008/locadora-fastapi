@@ -34,7 +34,9 @@ flowchart TD
 
     DB[(PostgreSQL<br>Neon)]
 
-    JWT[JWT<br>Autenticação]
+    JWT[Access token JWT<br>Autenticação]
+
+    SES[SessionService<br>Refresh tokens]
 
     EMAIL[Brevo API<br>E-mails]
 
@@ -48,6 +50,8 @@ flowchart TD
     API --> SCH
 
     DEP --> JWT
+    DEP --> SES
+    SES --> REP
 
     API --> SER
     SER --> REP
@@ -141,3 +145,36 @@ Durante a migração, os caminhos antigos sem `/api/v1` permanecem registrados c
 O frontend centraliza o prefixo em `frontend/js/api.js`, por meio de `API_BASE = "/api/v1"`. Assim, os módulos de tela continuam chamando funções como `login()` e `getVehicles()` sem conhecer a estratégia de versionamento.
 
 Rotas operacionais e de infraestrutura não são versionadas: `/health` continua estável para o Render, e `/app` continua sendo o ponto de entrada do frontend estático.
+
+## Refresh tokens e sessões persistentes
+
+A Etapa 9 separa a autenticação em dois componentes. O **access token** continua sendo um JWT de curta duração enviado no cabeçalho `Authorization`. O **refresh token** passa a representar uma sessão persistente e é mantido somente em cookie `HttpOnly`, impedindo que o JavaScript do frontend leia seu valor diretamente.
+
+Fluxo principal:
+
+```text
+login válido
+   ↓
+SessaoService cria refresh token aleatório
+   ↓
+SHA-256(refresh token) → tabela sessoes
+refresh token puro → cookie HttpOnly
+   ↓
+access token JWT com sid da sessão
+   ↓
+JWT expira
+   ↓
+POST /api/v1/auth/refresh
+   ↓
+refresh token é validado e rotacionado
+   ↓
+novo access token + novo cookie HttpOnly
+```
+
+A tabela `sessoes` guarda `usuario_id`, hash do refresh token, criação, expiração, último uso e estado de revogação. O valor puro do refresh token não é persistido. A rotação substitui o hash anterior, de forma que um refresh token já utilizado não pode ser reutilizado.
+
+Novos access tokens incluem a claim `sid`. `get_usuario_atual` continua validando assinatura, expiração e usuário, mas também consulta a sessão quando `sid` está presente. Isso faz com que logout, revogação individual ou revogação de todas as sessões invalide imediatamente os novos access tokens relacionados. Durante a transição, JWTs emitidos antes da Etapa 9 e sem `sid` continuam aceitos somente até a expiração natural.
+
+O frontend mantém o access token no `sessionStorage`, como antes. Ao receber `401`, `frontend/js/api.js` tenta uma única renovação automática e repete a requisição original. Uma Promise compartilhada evita que várias requisições simultâneas tentem rotacionar o mesmo refresh token ao mesmo tempo.
+
+A redefinição de senha revoga as sessões persistentes da conta antes da troca da credencial. Dessa forma, uma sessão já autenticada não permanece válida após uma recuperação de senha.

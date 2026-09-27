@@ -1,6 +1,8 @@
 const TOKEN_KEY = "locadora_access_token";
 const API_BASE = "/api/v1";
 
+let refreshPromise = null;
+
 export class ApiError extends Error {
     constructor(message, status = 0, details = null) {
         super(message);
@@ -40,7 +42,57 @@ function errorMessage(payload, fallback) {
     return fallback;
 }
 
-export async function apiRequest(path, options = {}) {
+async function readPayload(response) {
+    const contentType = response.headers.get("content-type") ?? "";
+    return contentType.includes("application/json")
+        ? response.json()
+        : response.text();
+}
+
+async function performRefresh() {
+    let response;
+
+    try {
+        response = await fetch(`${API_BASE}/auth/refresh`, {
+            method: "POST",
+        });
+    } catch (error) {
+        clearToken();
+        throw new ApiError(
+            "Não foi possível renovar a sessão.",
+            0,
+            error,
+        );
+    }
+
+    const payload = await readPayload(response);
+
+    if (!response.ok) {
+        clearToken();
+        throw new ApiError(
+            errorMessage(payload, "A sessão expirou. Faça login novamente."),
+            response.status,
+            payload,
+        );
+    }
+
+    saveToken(payload.access_token);
+    return payload.access_token;
+}
+
+export async function refreshSession() {
+    if (!refreshPromise) {
+        refreshPromise = performRefresh();
+    }
+
+    try {
+        return await refreshPromise;
+    } finally {
+        refreshPromise = null;
+    }
+}
+
+export async function apiRequest(path, options = {}, allowRefresh = true) {
     const headers = new Headers(options.headers ?? {});
     const token = getToken();
 
@@ -67,10 +119,22 @@ export async function apiRequest(path, options = {}) {
         );
     }
 
-    const contentType = response.headers.get("content-type") ?? "";
-    const payload = contentType.includes("application/json")
-        ? await response.json()
-        : await response.text();
+    if (
+        response.status === 401
+        && allowRefresh
+        && path !== "/auth/login"
+        && path !== "/auth/refresh"
+        && getToken()
+    ) {
+        try {
+            await refreshSession();
+            return apiRequest(path, options, false);
+        } catch {
+            clearToken();
+        }
+    }
+
+    const payload = await readPayload(response);
 
     if (!response.ok) {
         throw new ApiError(
@@ -81,6 +145,16 @@ export async function apiRequest(path, options = {}) {
     }
 
     return payload;
+}
+
+export async function logout() {
+    try {
+        await fetch(`${API_BASE}/auth/logout`, {
+            method: "POST",
+        });
+    } finally {
+        clearToken();
+    }
 }
 
 export async function login(usuario, senha) {
@@ -132,6 +206,22 @@ export function reactivateClient(clientId) {
 
 export function getCurrentUser() {
     return apiRequest("/auth/me");
+}
+
+export function getSessions() {
+    return apiRequest("/auth/sessoes");
+}
+
+export function revokeSession(sessionId) {
+    return apiRequest(`/auth/sessoes/${sessionId}`, {
+        method: "DELETE",
+    });
+}
+
+export function revokeAllSessions() {
+    return apiRequest("/auth/sessoes", {
+        method: "DELETE",
+    });
 }
 
 export function renameCurrentUser(

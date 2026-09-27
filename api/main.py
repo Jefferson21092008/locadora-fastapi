@@ -72,7 +72,7 @@ API REST para gerenciamento de uma locadora de veículos.
 
 ## Principais recursos
 
-- Autenticação com JWT.
+- Autenticação com access token JWT e refresh token rotativo.
 - Controle de acesso por perfil de usuário.
 - Cadastro e gerenciamento de clientes.
 - Cadastro e gerenciamento de veículos.
@@ -96,7 +96,7 @@ tags_metadata = [
     {
         "name": "Autenticação",
         "description": (
-            "Login, geração de token JWT "
+            "Login, refresh token, gerenciamento de sessões "
             "e identificação do usuário autenticado."
         ),
     },

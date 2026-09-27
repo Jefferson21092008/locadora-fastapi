@@ -14,6 +14,7 @@ from modulos.database import (
 
 from modulos.models import (
     Base,
+    SessaoModel,
     TokenRecuperacaoModel,
     UsuarioModel,
 )
@@ -54,6 +55,7 @@ def banco_orm(tmp_path):
 def test_base_registra_primeiros_models():
     assert "usuarios" in Base.metadata.tables
     assert "audit_logs" in Base.metadata.tables
+    assert "sessoes" in Base.metadata.tables
 
     assert (
         "tokens_recuperacao_senha"
@@ -74,6 +76,7 @@ def test_models_criam_tabelas_esperadas(
 
     assert "usuarios" in tabelas
     assert "audit_logs" in tabelas
+    assert "sessoes" in tabelas
 
     assert (
         "tokens_recuperacao_senha"
@@ -198,3 +201,69 @@ def test_token_recuperacao_exige_usuario_existente(
             IntegrityError
         ):
             sessao.commit()
+
+# ================================================================
+# SESSÃO
+# ================================================================
+
+
+def test_sessao_se_relaciona_ao_usuario(
+    banco_orm,
+):
+    usuario = UsuarioModel(
+        usuario="sessao123",
+        senha_hash="hash-seguro",
+        role="cliente",
+        ativo=True,
+        criado_em="2026-09-27T18:00:00+00:00",
+    )
+
+    sessao = SessaoModel(
+        refresh_token_hash="c" * 64,
+        expira_em="2026-10-04T18:00:00+00:00",
+        revogada=False,
+        criado_em="2026-09-27T18:00:00+00:00",
+        ultimo_uso_em=None,
+        revogada_em=None,
+    )
+
+    usuario.sessoes.append(
+        sessao
+    )
+
+    with banco_orm.criar_sessao() as banco_sessao:
+        banco_sessao.add(
+            usuario
+        )
+        banco_sessao.commit()
+        banco_sessao.refresh(
+            sessao
+        )
+
+        assert sessao.id is not None
+        assert sessao.usuario_id == usuario.id
+        assert sessao.usuario.usuario == "sessao123"
+
+
+def test_sessao_exige_usuario_existente(
+    banco_orm,
+):
+    sessao = SessaoModel(
+        usuario_id=999,
+        refresh_token_hash="d" * 64,
+        expira_em="2026-10-04T18:00:00+00:00",
+        revogada=False,
+        criado_em="2026-09-27T18:00:00+00:00",
+        ultimo_uso_em=None,
+        revogada_em=None,
+    )
+
+    with banco_orm.criar_sessao() as banco_sessao:
+        banco_sessao.add(
+            sessao
+        )
+
+        with pytest.raises(
+            IntegrityError
+        ):
+            banco_sessao.commit()

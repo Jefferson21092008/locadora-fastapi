@@ -129,7 +129,7 @@ class TokenResponse(BaseModel):
     access_token: str = Field(
         min_length=1,
         description=(
-            "Token JWT utilizado para acessar "
+            "Access token JWT utilizado para acessar "
             "rotas protegidas da API."
         ),
     )
@@ -142,6 +142,41 @@ class TokenResponse(BaseModel):
         examples=[
             "bearer"
         ],
+    )
+
+
+# ================================================================
+# SESSÕES
+# ================================================================
+
+
+class SessaoResponse(BaseModel):
+    id: int = Field(
+        gt=0,
+        description=(
+            "Identificador da sessão persistente."
+        ),
+    )
+
+    criado_em: str = Field(
+        min_length=1,
+        description=(
+            "Data e hora de criação da sessão."
+        ),
+    )
+
+    expira_em: str = Field(
+        min_length=1,
+        description=(
+            "Data e hora de expiração do refresh token."
+        ),
+    )
+
+    ultimo_uso_em: str | None = Field(
+        default=None,
+        description=(
+            "Última rotação do refresh token, quando existente."
+        ),
     )
 
 
