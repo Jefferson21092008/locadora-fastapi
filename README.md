@@ -71,8 +71,9 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - monitoramento opcional de exceções de produção com Sentry;
 - correlação de erros do Sentry com o `request_id` dos logs estruturados;
 - audit logs persistentes para ações sensíveis autenticadas;
-- rota administrativa `GET /auditoria` para consulta do histórico;
+- rota administrativa `GET /api/v1/auditoria` para consulta do histórico;
 - auditoria registra ator, ação, recurso, campos alterados, horário e `request_id`, sem persistir valores sensíveis;
+- API versionada sob o prefixo canônico `/api/v1`, mantendo temporariamente as rotas antigas por compatibilidade;
 - auditoria de dependências e atualizações automatizadas com Dependabot.
 
 ## Tecnologias
@@ -359,7 +360,7 @@ Endereços locais:
 
 - frontend: `http://127.0.0.1:8000/app/`;
 - Swagger: `http://127.0.0.1:8000/docs`;
-- status: `http://127.0.0.1:8000/status`;
+- status versionado: `http://127.0.0.1:8000/api/v1/status`;
 - health check: `http://127.0.0.1:8000/health`.
 
 Para encerrar preservando os dados:
@@ -487,12 +488,12 @@ O frontend é servido pela própria FastAPI. Não abra os arquivos HTML diretame
 Os módulos implementados possuem:
 
 - tela de login responsiva;
-- integração com `POST /auth/login`;
+- integração com `POST /api/v1/auth/login`;
 - armazenamento do JWT em `sessionStorage`;
-- validação da sessão com `GET /auth/me`;
+- validação da sessão com `GET /api/v1/auth/me`;
 - redirecionamento de usuários sem autenticação;
 - encerramento da sessão;
-- painel com quantidades carregadas de `GET /status`;
+- painel com quantidades carregadas de `GET /api/v1/status`;
 - tela de veículos com busca por modelo, tipo, ano ou ID;
 - filtros por disponibilidade, aluguel, manutenção e desativação;
 - resumo da situação atual da frota;
@@ -526,12 +527,28 @@ Os módulos implementados possuem:
 
 Como frontend e API usam a mesma origem, não é necessário liberar CORS para o fluxo atual. As telas reutilizam as funções centralizadas em `frontend/js/api.js`.
 
+## Versionamento da API
+
+A interface canônica da API utiliza o prefixo `/api/v1`. O frontend já consome as rotas versionadas, enquanto as rotas antigas sem o prefixo continuam temporariamente disponíveis para preservar compatibilidade durante a migração.
+
+Exemplos canônicos:
+
+```text
+POST /api/v1/auth/login
+GET /api/v1/clientes
+GET /api/v1/veiculos
+GET /api/v1/alugueis
+GET /api/v1/status
+```
+
+O Swagger e o OpenAPI exibem apenas as rotas versionadas. Rotas operacionais, como `/health`, e arquivos estáticos em `/app`, não recebem versionamento.
+
 ## Autenticação
 
 O login é realizado por:
 
 ```text
-POST /auth/login
+POST /api/v1/auth/login
 ```
 
 Em caso de sucesso, a API retorna um JWT:
@@ -552,13 +569,13 @@ Authorization: Bearer SEU_TOKEN
 Consultar o usuário autenticado:
 
 ```text
-GET /auth/me
+GET /api/v1/auth/me
 ```
 
 Alterar o nome de usuário de uma conta de cliente:
 
 ```text
-PATCH /auth/me/usuario
+PATCH /api/v1/auth/me/usuario
 ```
 
 A alteração exige a senha atual, rejeita nomes já utilizados e atualiza os registros relacionados de forma transacional.

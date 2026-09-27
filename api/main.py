@@ -196,33 +196,33 @@ registrar_handlers(
 # ================================================================
 
 
-app.include_router(
-    auth_router
+API_V1_PREFIX = "/api/v1"
+
+ROUTERS_API = (
+    auth_router,
+    clientes_router,
+    veiculos_router,
+    alugueis_router,
+    manutencoes_router,
+    relatorios_router,
+    auditoria_router,
 )
 
-app.include_router(
-    clientes_router
-)
 
-app.include_router(
-    veiculos_router
-)
+# As rotas versionadas são a interface canônica da API e aparecem
+# no OpenAPI. As rotas legadas permanecem temporariamente ativas
+# para preservar compatibilidade durante a migração do frontend e
+# de consumidores externos.
+for router in ROUTERS_API:
+    app.include_router(
+        router,
+        prefix=API_V1_PREFIX,
+    )
 
-app.include_router(
-    alugueis_router
-)
-
-app.include_router(
-    manutencoes_router
-)
-
-app.include_router(
-    relatorios_router
-)
-
-app.include_router(
-    auditoria_router
-)
+    app.include_router(
+        router,
+        include_in_schema=False,
+    )
 
 
 # ================================================================
@@ -287,6 +287,10 @@ def health(
 
 @app.get(
     "/",
+    include_in_schema=False,
+)
+@app.get(
+    f"{API_V1_PREFIX}",
     tags=["Sistema"],
     summary="Verificar a API",
     description=(
@@ -304,6 +308,10 @@ def inicio():
 
 @app.get(
     "/status",
+    include_in_schema=False,
+)
+@app.get(
+    f"{API_V1_PREFIX}/status",
     tags=["Sistema"],
     summary="Consultar status da locadora",
     description=(
