@@ -68,6 +68,8 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - logs HTTP estruturados em JSON com método, caminho, status, duração e request ID;
 - cabeçalho `X-Request-ID` em respostas HTTP para correlação;
 - eventos importantes de autenticação sem registrar senha, token ou corpo da requisição;
+- monitoramento opcional de exceções de produção com Sentry;
+- correlação de erros do Sentry com o `request_id` dos logs estruturados;
 - auditoria de dependências e atualizações automatizadas com Dependabot.
 
 ## Tecnologias
@@ -83,6 +85,7 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - Render;
 - Neon;
 - Brevo Transactional Email API;
+- Sentry SDK para monitoramento de erros;
 - GitHub Actions;
 - Ruff;
 - pip-audit;
@@ -618,7 +621,7 @@ Coverage total: 90,13%
 Coverage mínima obrigatória: 85%
 ```
 
-A suíte convencional passa a ter **455 testes**. Os quatro testes PostgreSQL são executados normalmente no CI quando `LOCADORA_TEST_DATABASE_URL` está disponível.
+A suíte convencional passa a ter **461 testes**. Os quatro testes PostgreSQL são executados normalmente no CI quando `LOCADORA_TEST_DATABASE_URL` está disponível.
 
 Os testes convencionais cobrem:
 
@@ -631,6 +634,7 @@ Os testes convencionais cobrem:
 - recuperação de senha;
 - rate limiting;
 - observabilidade HTTP e request ID;
+- monitoramento de erros e sanitização de eventos do Sentry;
 - Brevo API com mocks;
 - alteração de nome de usuário;
 - persistência da alteração em `usuarios` e `clientes`;
@@ -669,7 +673,7 @@ Os testes E2E atuais validam:
 
 Nesta etapa, as respostas da API são interceptadas pelo Playwright. Assim, os testes validam o frontend em um navegador real sem depender do banco de produção. Testes E2E full-stack, usando API e banco de testes reais, podem ser adicionados em uma evolução futura.
 
-No CI, os testes convencionais e os testes E2E são executados em jobs separados. Com os seis novos testes de observabilidade, a suíte passa a conter **457 testes automatizados**: 455 convencionais e 2 E2E.
+No CI, os testes convencionais e os testes E2E são executados em jobs separados. Com os testes de observabilidade e monitoramento, a suíte passa a conter **463 testes automatizados**: 461 convencionais e 2 E2E.
 
 Os testes PostgreSQL dependem de `LOCADORA_TEST_DATABASE_URL`. O banco configurado nessa variável deve ser exclusivamente descartável para testes.
 
@@ -702,6 +706,8 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - logs HTTP não registram query string, cabeçalhos nem corpo da requisição;
 - eventos de autenticação usam apenas campos previamente permitidos e não incluem senha ou token;
 - cada resposta HTTP recebe um `X-Request-ID` gerado pela aplicação;
+- eventos enviados ao Sentry removem body, query string, cookies, headers e dados de usuário;
+- o Sentry é ativado somente quando `LOCADORA_SENTRY_DSN` está configurada;
 - dependências são auditadas com `pip-audit`;
 - Dependabot acompanha atualizações de dependências e ferramentas.
 
@@ -737,8 +743,8 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - documentação da arquitetura: **concluída**;
 - rate limiting: **concluído**;
 - testes E2E com Playwright: **concluídos e integrados ao CI**;
-- logs estruturados e request ID: **implementados; aguardando validação do CI/deploy**;
-- monitoramento de erros: **planejado**;
+- logs estruturados e request ID: **concluídos**;
+- monitoramento de erros: **implementado; aguardando configuração do Sentry e validação do CI/deploy**;
 - audit logs: **planejados**.
 
 ## Deploy — Render + Neon

@@ -29,3 +29,6 @@ services:
 
       - key: LOCADORA_PUBLIC_URL
         value: https://locadora-fastapi.onrender.com
+
+      - key: LOCADORA_AMBIENTE
+        value: production

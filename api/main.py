@@ -26,6 +26,10 @@ from api.observabilidade import (
     middleware_observabilidade,
 )
 
+from api.monitoramento import (
+    configurar_monitoramento_erros,
+)
+
 from api.routers.veiculos import (
     router as veiculos_router,
 )
@@ -138,6 +142,7 @@ tags_metadata = [
 ]
 
 
+configurar_monitoramento_erros()
 configurar_logs()
 
 
