@@ -1,4 +1,5 @@
 const TOKEN_KEY = "locadora_access_token";
+const API_BASE = "/api/v1";
 
 export class ApiError extends Error {
     constructor(message, status = 0, details = null) {
@@ -54,7 +55,7 @@ export async function apiRequest(path, options = {}) {
     let response;
 
     try {
-        response = await fetch(path, {
+        response = await fetch(`${API_BASE}${path}`, {
             ...options,
             headers,
         });
