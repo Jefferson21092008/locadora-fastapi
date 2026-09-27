@@ -13,6 +13,10 @@ from api.erros import (
     muitas_tentativas,
     nao_autorizado,
 )
+from api.observabilidade import (
+    registrar_evento,
+    request_id_atual,
+)
 from api.schemas.auth import (
     AlterarUsuarioRequest,
     LoginRequest,
@@ -104,6 +108,13 @@ def login(
         limite=5,
         janela_segundos=60,
     ):
+        registrar_evento(
+            "auth.login.rate_limited",
+            request_id=request_id_atual(
+                request
+            ),
+            status_code=429,
+        )
         muitas_tentativas()
 
     usuario = (
@@ -116,6 +127,14 @@ def login(
     if usuario is None:
         rate_limiter.registrar(
             chave_limite
+        )
+
+        registrar_evento(
+            "auth.login.failed",
+            request_id=request_id_atual(
+                request
+            ),
+            status_code=401,
         )
 
         nao_autorizado(
@@ -136,12 +155,30 @@ def login(
             chave_limite
         )
 
+        registrar_evento(
+            "auth.login.failed",
+            request_id=request_id_atual(
+                request
+            ),
+            status_code=401,
+        )
+
         nao_autorizado(
             MENSAGEM_CREDENCIAIS_INVALIDAS
         )
 
     rate_limiter.limpar(
         chave_limite
+    )
+
+    registrar_evento(
+        "auth.login.succeeded",
+        request_id=request_id_atual(
+            request
+        ),
+        user_id=usuario.id,
+        role=usuario.role.value,
+        status_code=200,
     )
 
     token = criar_token_acesso(
@@ -319,6 +356,16 @@ def solicitar_recuperacao_senha(
         limite=3,
         janela_segundos=900,
     ):
+        registrar_evento(
+            (
+                "auth.password_recovery."
+                "rate_limited"
+            ),
+            request_id=request_id_atual(
+                request
+            ),
+            status_code=429,
+        )
         muitas_tentativas()
 
     rate_limiter.registrar(
@@ -330,6 +377,14 @@ def solicitar_recuperacao_senha(
         .solicitar_recuperacao(
             dados.usuario
         )
+    )
+
+    registrar_evento(
+        "auth.password_recovery.requested",
+        request_id=request_id_atual(
+            request
+        ),
+        status_code=200,
     )
 
     return MensagemAuthResponse(
@@ -394,6 +449,16 @@ def redefinir_senha(
         limite=5,
         janela_segundos=900,
     ):
+        registrar_evento(
+            (
+                "auth.password_reset."
+                "rate_limited"
+            ),
+            request_id=request_id_atual(
+                request
+            ),
+            status_code=429,
+        )
         muitas_tentativas()
 
     rate_limiter.registrar(
@@ -410,6 +475,14 @@ def redefinir_senha(
 
     rate_limiter.limpar(
         chave_limite
+    )
+
+    registrar_evento(
+        "auth.password_reset.succeeded",
+        request_id=request_id_atual(
+            request
+        ),
+        status_code=200,
     )
 
     return MensagemAuthResponse(

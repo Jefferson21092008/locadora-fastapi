@@ -21,6 +21,11 @@ from api.erros import (
     registrar_handlers,
 )
 
+from api.observabilidade import (
+    configurar_logs,
+    middleware_observabilidade,
+)
+
 from api.routers.veiculos import (
     router as veiculos_router,
 )
@@ -133,11 +138,18 @@ tags_metadata = [
 ]
 
 
+configurar_logs()
+
+
 app = FastAPI(
     title="Locadora API",
     description=descricao_api,
     version="1.0.0",
     openapi_tags=tags_metadata,
+)
+
+app.middleware("http")(
+    middleware_observabilidade
 )
 
 
