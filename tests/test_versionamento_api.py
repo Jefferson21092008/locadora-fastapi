@@ -1,3 +1,4 @@
+from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -25,11 +26,13 @@ def test_rota_legada_raiz_permanece_compativel():
 
 
 def test_rota_versionada_e_legada_de_auth_coexistem():
-    response_versionada = client.get("/api/v1/auth/me")
-    response_legada = client.get("/auth/me")
+    caminhos = {
+        route_context.path
+        for route_context in iter_route_contexts(app.routes)
+    }
 
-    assert response_versionada.status_code != 404
-    assert response_legada.status_code != 404
+    assert "/api/v1/auth/me" in caminhos
+    assert "/auth/me" in caminhos
 
 
 def test_openapi_expoe_somente_rotas_versionadas():
