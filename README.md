@@ -35,7 +35,7 @@ SQLite / PostgreSQL
 
 O projeto está validado localmente e em produção, com frontend, API, autenticação, banco PostgreSQL, migrations, recuperação de senha e alteração de nome de usuário funcionando de ponta a ponta.
 
-Além das funcionalidades de negócio, a versão atual também possui cobertura mínima obrigatória no CI, documentação da arquitetura, rate limiting em endpoints sensíveis de autenticação e testes E2E de frontend executados em Chromium com Playwright.
+Além das funcionalidades de negócio, a versão atual também possui cobertura mínima obrigatória no CI, documentação da arquitetura, rate limiting em endpoints sensíveis de autenticação, testes E2E de frontend executados em Chromium com Playwright e observabilidade HTTP com logs estruturados e request ID.
 
 A documentação detalhada da arquitetura está disponível em [`docs/arquitetura.md`](docs/arquitetura.md).
 
@@ -65,6 +65,9 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - identificação do cliente atrás de proxy para aplicação dos limites;
 - cobertura automatizada de testes com limite mínimo obrigatório no CI;
 - testes E2E do frontend com Playwright e Chromium;
+- logs HTTP estruturados em JSON com método, caminho, status, duração e request ID;
+- cabeçalho `X-Request-ID` em respostas HTTP para correlação;
+- eventos importantes de autenticação sem registrar senha, token ou corpo da requisição;
 - auditoria de dependências e atualizações automatizadas com Dependabot.
 
 ## Tecnologias
@@ -107,6 +110,7 @@ Locadora/
 │   ├── dependencias.py
 │   ├── erros.py
 │   ├── main.py
+│   ├── observabilidade.py
 │   ├── rate_limit.py
 │   └── seguranca.py
 ├── dados/
@@ -597,13 +601,24 @@ Para executar a mesma validação de coverage usada no CI:
 python -m pytest --ignore=tests/e2e --cov=api --cov=modulos --cov-report=term-missing --cov-fail-under=85
 ```
 
-Estado atualmente validado:
+Estado base validado antes da Etapa 5:
 
 ```text
 449 passed
 Coverage total: 89,86%
 Coverage mínima obrigatória: 85%
 ```
+
+Validação local da Etapa 5 neste patch:
+
+```text
+451 passed
+4 skipped (integração PostgreSQL sem banco de teste configurado)
+Coverage total: 90,13%
+Coverage mínima obrigatória: 85%
+```
+
+A suíte convencional passa a ter **455 testes**. Os quatro testes PostgreSQL são executados normalmente no CI quando `LOCADORA_TEST_DATABASE_URL` está disponível.
 
 Os testes convencionais cobrem:
 
@@ -615,6 +630,7 @@ Os testes convencionais cobrem:
 - autenticação JWT;
 - recuperação de senha;
 - rate limiting;
+- observabilidade HTTP e request ID;
 - Brevo API com mocks;
 - alteração de nome de usuário;
 - persistência da alteração em `usuarios` e `clientes`;
@@ -653,7 +669,7 @@ Os testes E2E atuais validam:
 
 Nesta etapa, as respostas da API são interceptadas pelo Playwright. Assim, os testes validam o frontend em um navegador real sem depender do banco de produção. Testes E2E full-stack, usando API e banco de testes reais, podem ser adicionados em uma evolução futura.
 
-No CI, os testes convencionais e os testes E2E são executados em jobs separados. Considerando as duas suítes, a validação atual executa **451 testes automatizados**: 449 convencionais e 2 E2E.
+No CI, os testes convencionais e os testes E2E são executados em jobs separados. Com os seis novos testes de observabilidade, a suíte passa a conter **457 testes automatizados**: 455 convencionais e 2 E2E.
 
 Os testes PostgreSQL dependem de `LOCADORA_TEST_DATABASE_URL`. O banco configurado nessa variável deve ser exclusivamente descartável para testes.
 
@@ -683,6 +699,9 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - recuperação e redefinição de senha possuem limites próprios de tentativas;
 - excesso de tentativas retorna HTTP `429 Too Many Requests`;
 - identificação do cliente considera o endereço encaminhado pelo proxy de produção;
+- logs HTTP não registram query string, cabeçalhos nem corpo da requisição;
+- eventos de autenticação usam apenas campos previamente permitidos e não incluem senha ou token;
+- cada resposta HTTP recebe um `X-Request-ID` gerado pela aplicação;
 - dependências são auditadas com `pip-audit`;
 - Dependabot acompanha atualizações de dependências e ferramentas.
 
@@ -718,7 +737,7 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - documentação da arquitetura: **concluída**;
 - rate limiting: **concluído**;
 - testes E2E com Playwright: **concluídos e integrados ao CI**;
-- logs estruturados: **próxima etapa**;
+- logs estruturados e request ID: **implementados; aguardando validação do CI/deploy**;
 - monitoramento de erros: **planejado**;
 - audit logs: **planejados**.
 
