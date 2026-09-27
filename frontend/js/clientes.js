@@ -1,10 +1,12 @@
 import {
     ApiError,
+    Permissions,
     clearToken,
     deactivateClient,
     getClients,
     getCurrentUser,
     getToken,
+    hasPermission,
     logout,
     reactivateClient,
 } from "/app/js/api.js";
@@ -32,6 +34,7 @@ const summaryElements = {
     inactive: document.querySelector("#clients-summary-inactive"),
 };
 
+let currentUser = null;
 let clients = [];
 let pendingClient = null;
 
@@ -162,16 +165,18 @@ function renderClients() {
                     </div>
                 </dl>
 
-                <div class="client-card__actions">
-                    <button
-                        class="card-button ${client.ativo ? "card-button--danger" : "card-button--success"}"
-                        type="button"
-                        data-action="${action}"
-                        data-id="${client.id}"
-                    >
-                        ${actionLabel}
-                    </button>
-                </div>
+                ${hasPermission(currentUser, Permissions.CLIENTES_GERENCIAR_STATUS) ? `
+                    <div class="client-card__actions">
+                        <button
+                            class="card-button ${client.ativo ? "card-button--danger" : "card-button--success"}"
+                            type="button"
+                            data-action="${action}"
+                            data-id="${client.id}"
+                        >
+                            ${actionLabel}
+                        </button>
+                    </div>
+                ` : ""}
             </article>
         `;
     }).join("");
@@ -293,13 +298,15 @@ async function initialize() {
     }
 
     try {
-        const currentUser = await getCurrentUser();
-        if (currentUser.role !== "admin") {
+        currentUser = await getCurrentUser();
+        if (!hasPermission(currentUser, Permissions.CLIENTES_LER)) {
             goToDashboard();
             return;
         }
 
-        roleBadge.textContent = "Administrador";
+        roleBadge.textContent = currentUser.role === "admin"
+            ? "Administrador"
+            : "Cliente";
         await loadClients();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {

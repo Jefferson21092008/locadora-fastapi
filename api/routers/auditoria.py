@@ -4,12 +4,16 @@ from fastapi import (
 )
 
 from api.dependencias import (
-    get_admin_atual,
+    exigir_permissao,
     get_container,
 )
 from api.schemas.auditoria import (
     AuditLogResponse,
 )
+from modulos.permissoes import (
+    Permissao,
+)
+
 from modulos.container import (
     Container,
 )
@@ -53,7 +57,9 @@ def listar_auditoria(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.AUDITORIA_LER
+        )
     ),
 ):
     return [

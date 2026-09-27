@@ -9,7 +9,7 @@ from api.auditoria import (
 )
 
 from api.dependencias import (
-    get_admin_atual,
+    exigir_permissao,
     get_container,
 )
 
@@ -20,6 +20,10 @@ from api.erros import (
 from api.schemas.clientes import (
     ClienteCreate,
     ClienteResponse,
+)
+
+from modulos.permissoes import (
+    Permissao,
 )
 
 from modulos.container import Container
@@ -84,7 +88,9 @@ def listar_clientes(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.CLIENTES_LER
+        )
     ),
 ):
     clientes = (
@@ -147,7 +153,9 @@ def buscar_cliente(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.CLIENTES_LER
+        )
     ),
 ):
     cliente = (
@@ -273,7 +281,9 @@ def desativar_cliente(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.CLIENTES_GERENCIAR_STATUS
+        )
     ),
 ):
     cliente = (
@@ -353,7 +363,9 @@ def reativar_cliente(
         get_container
     ),
     usuario_admin=Depends(
-        get_admin_atual
+        exigir_permissao(
+            Permissao.CLIENTES_GERENCIAR_STATUS
+        )
     ),
 ):
     cliente = (

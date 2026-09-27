@@ -10,6 +10,7 @@ from api.auditoria import (
 )
 
 from api.dependencias import (
+    exigir_permissao,
     get_cliente_atual,
     get_container,
     get_usuario_atual,
@@ -45,6 +46,10 @@ from modulos.container import (
 )
 from modulos.excecoes import (
     RegraDeNegocio,
+)
+from modulos.permissoes import (
+    Permissao,
+    listar_permissoes,
 )
 
 
@@ -447,7 +452,9 @@ def logout(
 )
 def listar_sessoes(
     usuario=Depends(
-        get_usuario_atual
+        exigir_permissao(
+            Permissao.SESSOES_GERENCIAR
+        )
     ),
     container: Container = Depends(
         get_container
@@ -483,7 +490,9 @@ def listar_sessoes(
 def revogar_sessao(
     id_sessao: int,
     usuario=Depends(
-        get_usuario_atual
+        exigir_permissao(
+            Permissao.SESSOES_GERENCIAR
+        )
     ),
     container: Container = Depends(
         get_container
@@ -516,7 +525,9 @@ def revogar_sessao(
 )
 def revogar_todas_sessoes(
     usuario=Depends(
-        get_usuario_atual
+        exigir_permissao(
+            Permissao.SESSOES_GERENCIAR
+        )
     ),
     container: Container = Depends(
         get_container
@@ -567,6 +578,9 @@ def meu_usuario(
         id=usuario.id,
         usuario=usuario.usuario,
         role=usuario.role.value,
+        permissoes=listar_permissoes(
+            usuario.role
+        ),
         ativo=usuario.ativo,
     )
 
@@ -616,6 +630,11 @@ def alterar_meu_usuario(
     cliente=Depends(
         get_cliente_atual
     ),
+    _usuario_autorizado=Depends(
+        exigir_permissao(
+            Permissao.CONTA_RENOMEAR
+        )
+    ),
 ):
     cliente = (
         container.cliente_service
@@ -653,6 +672,9 @@ def alterar_meu_usuario(
         id=usuario.id,
         usuario=usuario.usuario,
         role=usuario.role.value,
+        permissoes=listar_permissoes(
+            usuario.role
+        ),
         ativo=usuario.ativo,
     )
 

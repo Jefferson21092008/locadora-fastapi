@@ -1,11 +1,14 @@
 import {
     ApiError,
+    Permissions,
+    applyNavigationPermissions,
     clearToken,
     createRental,
     getCurrentUser,
     getMyRentals,
     getRentals,
     getToken,
+    hasPermission,
     logout,
     getVehicles,
     returnVehicle,
@@ -65,8 +68,12 @@ function goToLogin() {
     window.location.replace("/app/");
 }
 
-function isAdmin() {
-    return currentUser?.role === "admin";
+function can(permission) {
+    return hasPermission(currentUser, permission);
+}
+
+function canReadAllRentals() {
+    return can(Permissions.ALUGUEIS_LER);
 }
 
 function normalizeText(value) {
@@ -145,13 +152,11 @@ function clearMessage(element) {
 
 function configureCurrentUser(user) {
     currentUser = user;
-    roleBadge.textContent = isAdmin() ? "Administrador" : "Cliente";
-    newRentalButton.hidden = isAdmin();
-    for (const link of document.querySelectorAll(".admin-nav")) {
-        link.hidden = !isAdmin();
-    }
+    roleBadge.textContent = user.role === "admin" ? "Administrador" : "Cliente";
+    newRentalButton.hidden = !can(Permissions.ALUGUEIS_CRIAR);
+    applyNavigationPermissions(user);
 
-    if (isAdmin()) {
+    if (canReadAllRentals()) {
         rentalsEyebrow.textContent = "Operação";
         rentalsDescription.textContent = "Acompanhe todos os contratos e prazos da locadora.";
         rentalsListTitle.textContent = "Todos os aluguéis";
@@ -226,7 +231,7 @@ function rentalFinancialDetails(rental) {
 }
 
 function rentalCustomer(rental) {
-    if (!isAdmin()) {
+    if (!canReadAllRentals()) {
         return "";
     }
 
@@ -240,7 +245,7 @@ function rentalCustomer(rental) {
 }
 
 function rentalAction(rental) {
-    if (isAdmin() || rental.status !== "ativo") {
+    if (!can(Permissions.ALUGUEIS_DEVOLVER) || rental.status !== "ativo") {
         return "";
     }
 
@@ -257,7 +262,7 @@ function renderRentals() {
 
     if (results.length === 0) {
         emptyText.textContent = rentals.length === 0
-            ? (isAdmin()
+            ? (canReadAllRentals()
                 ? "Ainda não há aluguéis registrados na locadora."
                 : "Você ainda não possui aluguéis. Use “Novo aluguel” para começar.")
             : "Altere a busca ou o filtro para visualizar outros resultados.";
@@ -514,7 +519,7 @@ async function loadRentals({ preserveMessage = false } = {}) {
     refreshButton.disabled = true;
 
     try {
-        if (isAdmin()) {
+        if (canReadAllRentals()) {
             rentals = await getRentals();
         } else {
             [rentals, vehicles] = await Promise.all([
@@ -548,6 +553,15 @@ async function initialize() {
 
     try {
         configureCurrentUser(await getCurrentUser());
+
+        if (
+            !canReadAllRentals()
+            && !can(Permissions.ALUGUEIS_PROPRIOS_LER)
+        ) {
+            window.location.replace("/app/dashboard.html");
+            return;
+        }
+
         await loadRentals();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {

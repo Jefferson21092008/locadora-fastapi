@@ -776,9 +776,8 @@ def test_cliente_nao_pode_acessar_manutencoes(
 
     assert response.json() == {
         "detail": (
-            "Acesso permitido "
-            "apenas para "
-            "administradores."
+            "Usuário sem permissão "
+            "para esta operação."
         )
     }
 

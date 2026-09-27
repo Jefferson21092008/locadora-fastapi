@@ -637,9 +637,8 @@ def test_cliente_nao_pode_ver_relatorios(
 
     assert response.json() == {
         "detail": (
-            "Acesso permitido "
-            "apenas para "
-            "administradores."
+            "Usuário sem permissão "
+            "para esta operação."
         )
     }
 

@@ -236,3 +236,24 @@ def test_frontend_renova_access_token_e_faz_logout_no_backend():
     assert '`${API_BASE}/auth/logout`' in resposta.text
     assert "refreshPromise" in resposta.text
     assert 'method: "POST"' in resposta.text
+
+def test_frontend_consume_permissoes_rbac():
+    api_js = client.get(
+        "/app/js/api.js"
+    )
+    dashboard_js = client.get(
+        "/app/js/dashboard.js"
+    )
+
+    assert api_js.status_code == 200
+    assert dashboard_js.status_code == 200
+    assert "Permissions" in api_js.text
+    assert "hasPermission" in api_js.text
+    assert (
+        "applyNavigationPermissions"
+        in api_js.text
+    )
+    assert (
+        "Permissions.CONTA_RENOMEAR"
+        in dashboard_js.text
+    )

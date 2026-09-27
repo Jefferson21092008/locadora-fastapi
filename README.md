@@ -47,7 +47,7 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - cálculo de devolução, quilometragem, multa e pagamento;
 - abertura e finalização de manutenções;
 - relatórios administrativos e financeiros;
-- autenticação com access token JWT, refresh token rotativo e perfis de administrador e cliente;
+- autenticação com access token JWT, refresh token rotativo e RBAC com permissões granulares;
 - recuperação de senha por e-mail via Brevo API;
 - tokens temporários, de uso único e armazenados por hash;
 - alteração do nome de usuário pelo próprio cliente, com confirmação da senha atual;
@@ -733,7 +733,7 @@ Os testes E2E atuais validam:
 
 Nesta etapa, as respostas da API são interceptadas pelo Playwright. Assim, os testes validam o frontend em um navegador real sem depender do banco de produção. Testes E2E full-stack, usando API e banco de testes reais, podem ser adicionados em uma evolução futura.
 
-No CI, os testes convencionais e os testes E2E são executados em jobs separados. Com a Etapa 7, a suíte passa a conter **470 testes automatizados**: 468 convencionais e 2 E2E.
+No CI, os testes convencionais e os testes E2E são executados em jobs separados. A suíte cresce junto com cada etapa e o merge só ocorre depois que os dois grupos ficam verdes.
 
 Os testes PostgreSQL dependem de `LOCADORA_TEST_DATABASE_URL`. O banco configurado nessa variável deve ser exclusivamente descartável para testes.
 
@@ -757,7 +757,7 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - redefinição de senha revoga todas as sessões ativas da conta;
 - tokens de recuperação expiram, são de uso único e invalidam solicitações anteriores;
 - respostas de login e recuperação evitam revelar se uma conta existe;
-- permissões são verificadas por perfil;
+- o RBAC centraliza permissões por papel e cada operação protegida exige uma permissão explícita;
 - alteração de nome de usuário exige autenticação e senha atual;
 - nomes de usuário duplicados são rejeitados;
 - operações compostas usam transações e rollback;
@@ -790,6 +790,7 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - Alembic e migrations: **concluídos**;
 - frontend com HTML, CSS e JavaScript: **concluído**;
 - login, access token JWT, refresh token rotativo e gerenciamento de sessões: **concluídos**;
+- RBAC granular por permissões: **concluído**;
 - gerenciamento da frota no frontend: **concluído**;
 - criação, devolução e acompanhamento de aluguéis: **concluídos**;
 - cadastro e gerenciamento de clientes: **concluídos**;
@@ -814,6 +815,14 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - logs estruturados e request ID: **concluídos**;
 - monitoramento de erros: **concluído e validado em produção com Sentry**;
 - audit logs: **implementados; aguardando validação do CI e deploy da Etapa 7**.
+
+## RBAC granular
+
+A Etapa 10 substitui a autorização espalhada por comparações diretas de `role` por um mapa central de permissões em `modulos/permissoes.py`. Os papéis atuais continuam sendo `admin` e `cliente`, mas as rotas protegidas passam a declarar capacidades específicas, como `clientes:ler`, `veiculos:editar`, `manutencoes:finalizar`, `relatorios:ler` e `auditoria:ler`.
+
+A dependência `exigir_permissao()` aplica o controle no backend depois da autenticação. O endpoint `GET /api/v1/auth/me` também retorna as permissões efetivas do usuário, permitindo que o frontend oculte ações que aquele papel não pode executar. O backend permanece como fonte de verdade: esconder um botão não substitui a validação da API.
+
+Nesta etapa não há migration nova. As permissões são derivadas dos dois papéis já existentes e nenhuma credencial ou segredo é armazenado nessa matriz.
 
 ## Deploy — Render + Neon
 

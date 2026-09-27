@@ -1,9 +1,12 @@
 import {
     ApiError,
+    Permissions,
+    applyNavigationPermissions,
     clearToken,
     getCurrentUser,
     getSystemStatus,
     getToken,
+    hasPermission,
     logout,
     renameCurrentUser,
 } from "/app/js/api.js";
@@ -108,11 +111,11 @@ async function loadDashboard() {
 
         username.textContent = currentUser.usuario;
         role.textContent = currentUser.role === "admin" ? "Administrador" : "Cliente";
-        renameUserButton.hidden =
-            currentUser.role !== "cliente";
-        for (const link of document.querySelectorAll(".admin-nav")) {
-            link.hidden = currentUser.role !== "admin";
-        }
+        renameUserButton.hidden = !hasPermission(
+            currentUser,
+            Permissions.CONTA_RENOMEAR,
+        );
+        applyNavigationPermissions(currentUser);
         updateMetrics(status);
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
