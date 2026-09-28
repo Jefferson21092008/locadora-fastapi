@@ -238,3 +238,11 @@ novo access token → memória da nova página
 ```
 
 Esse desenho reduz a exposição do JWT a persistência no navegador sem transformar todas as rotas protegidas em autenticação baseada em cookie. A renovação utiliza uma Promise por página e, quando suportado pelo navegador, Web Locks entre abas para reduzir tentativas simultâneas de rotacionar o mesmo refresh token. Assim, as operações de negócio continuam exigindo o cabeçalho Bearer, enquanto o cookie HttpOnly é usado somente para renovação e encerramento da sessão. O backend continua sendo compatível com clientes de API que utilizam diretamente o access token retornado pelo login.
+
+## Design system e layout base
+
+A Etapa 11 consolida a camada visual sem introduzir framework de UI. `frontend/css/styles.css` concentra tokens semânticos de cor, tipografia, espaçamento, raio, sombra e movimento; as telas reutilizam os componentes já existentes para botões, formulários, cards, modais, navegação e estados de interface.
+
+Em desktop, as páginas autenticadas mantêm sidebar fixa. Em larguras menores, a navegação se transforma em uma barra superior horizontal e sticky, preservando acesso às áreas do sistema sem JavaScript adicional. Todas as páginas também expõem um link de salto para `#main-content`, melhorando navegação por teclado.
+
+As decisões e tokens compartilhados estão documentados em [`docs/design-system.md`](design-system.md).
