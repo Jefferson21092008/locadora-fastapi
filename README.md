@@ -773,6 +773,11 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - cada resposta HTTP recebe um `X-Request-ID` gerado pela aplicação;
 - eventos enviados ao Sentry removem body, query string, cookies, headers e dados de usuário;
 - o Sentry é ativado somente quando `LOCADORA_SENTRY_DSN` está configurada;
+- respostas do frontend recebem headers de hardening como `CSP`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`;
+- respostas de autenticação usam `Cache-Control: no-store`;
+- `HSTS` é enviado somente quando o ambiente está marcado como produção e a URL pública usa HTTPS;
+- a tela de redefinição remove o token de recuperação da barra de endereço após carregá-lo;
+- a decodificação JWT exige os claims básicos `sub`, `iat` e `exp`;
 - audit logs não persistem senha, token, JWT, segredo, DSN ou valores dos campos alterados;
 - a consulta de auditoria é restrita a administradores e não existem endpoints de edição ou exclusão desses registros;
 - falhas isoladas ao persistir auditoria são registradas como `audit.write_failed` e encaminhadas ao Sentry sem transformar uma operação de negócio já concluída em falso erro HTTP;
