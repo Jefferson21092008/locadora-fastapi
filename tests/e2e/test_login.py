@@ -149,6 +149,28 @@ def test_login_abre_dashboard(
         "2"
     )
 
+    expect(
+        page.locator(
+            "#dashboard-sync-label"
+        )
+    ).to_have_text(
+        "Sincronizado"
+    )
+
+    expect(
+        page.locator(
+            "#dashboard-last-updated"
+        )
+    ).to_contain_text(
+        "Atualizado às"
+    )
+
+    expect(
+        page.locator(
+            "#quick-clientes"
+        )
+    ).to_be_hidden()
+
     token_session = page.evaluate(
         "() => sessionStorage"
         ".getItem('locadora_access_token')"
