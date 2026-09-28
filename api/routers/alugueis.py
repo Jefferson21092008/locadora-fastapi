@@ -1,6 +1,9 @@
+from typing import Literal
+
 from fastapi import (
     APIRouter,
     Depends,
+    Query,
     Request,
 )
 
@@ -21,6 +24,7 @@ from api.schemas.alugueis import (
     DevolucaoResponse,
     PagamentoResponse,
 )
+from api.schemas.consultas import AlugueisConsultaResponse
 
 from modulos.permissoes import (
     Permissao,
@@ -187,6 +191,50 @@ def listar_alugueis(
 
 
 # ================================================================
+# ADMIN - CONSULTA PAGINADA
+# ================================================================
+
+
+@router.get(
+    "/consulta",
+    response_model=AlugueisConsultaResponse,
+    summary="Consultar aluguéis com paginação",
+)
+def consultar_alugueis(
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(12, ge=1, le=100),
+    busca: str = Query("", max_length=100),
+    status: Literal["todos", "ativo", "finalizado"] = "todos",
+    ordenar: Literal[
+        "id",
+        "data_inicio",
+        "data_prevista",
+        "valor",
+    ] = "id",
+    direcao: Literal["asc", "desc"] = "desc",
+    container: Container = Depends(get_container),
+    _usuario_admin=Depends(exigir_permissao(Permissao.ALUGUEIS_LER)),
+):
+    resultado = container.aluguel_service.consultar_alugueis(
+        pagina=pagina,
+        por_pagina=por_pagina,
+        busca=busca,
+        status=status,
+        ordenar=ordenar,
+        direcao=direcao,
+    )
+
+    return {
+        "items": [transformar_aluguel(item) for item in resultado.items],
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total": resultado.total,
+        "total_paginas": (resultado.total + por_pagina - 1) // por_pagina,
+        "resumo": resultado.resumo,
+    }
+
+
+# ================================================================
 # ADMIN - ALUGUÉIS ATIVOS
 # ================================================================
 
@@ -347,6 +395,49 @@ def criar_aluguel(
 # ================================================================
 # CLIENTE - MEUS ALUGUÉIS
 # ================================================================
+
+
+@router.get(
+    "/me/consulta",
+    response_model=AlugueisConsultaResponse,
+    summary="Consultar meus aluguéis com paginação",
+)
+def consultar_meus_alugueis(
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(12, ge=1, le=100),
+    busca: str = Query("", max_length=100),
+    status: Literal["todos", "ativo", "finalizado"] = "todos",
+    ordenar: Literal[
+        "id",
+        "data_inicio",
+        "data_prevista",
+        "valor",
+    ] = "id",
+    direcao: Literal["asc", "desc"] = "desc",
+    cliente=Depends(get_cliente_atual),
+    container: Container = Depends(get_container),
+    _usuario_autorizado=Depends(
+        exigir_permissao(Permissao.ALUGUEIS_PROPRIOS_LER)
+    ),
+):
+    resultado = container.aluguel_service.consultar_alugueis(
+        pagina=pagina,
+        por_pagina=por_pagina,
+        busca=busca,
+        status=status,
+        ordenar=ordenar,
+        direcao=direcao,
+        cliente_id=cliente.id,
+    )
+
+    return {
+        "items": [transformar_aluguel(item) for item in resultado.items],
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total": resultado.total,
+        "total_paginas": (resultado.total + por_pagina - 1) // por_pagina,
+        "resumo": resultado.resumo,
+    }
 
 
 @router.get(

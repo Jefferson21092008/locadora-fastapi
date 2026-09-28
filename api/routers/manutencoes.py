@@ -1,6 +1,9 @@
+from typing import Literal
+
 from fastapi import (
     APIRouter,
     Depends,
+    Query,
     Request,
 )
 
@@ -13,6 +16,7 @@ from api.dependencias import (
     get_container,
 )
 
+from api.schemas.consultas import ManutencoesConsultaResponse
 from api.schemas.manutencoes import (
     ManutencaoCreate,
     ManutencaoFinalizar,
@@ -122,6 +126,50 @@ def listar_manutencoes(
         for manutencao
         in manutencoes
     ]
+
+
+# ================================================================
+# CONSULTA PAGINADA
+# ================================================================
+
+
+@router.get(
+    "/consulta",
+    response_model=ManutencoesConsultaResponse,
+    summary="Consultar manutenções com paginação",
+)
+def consultar_manutencoes(
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(12, ge=1, le=100),
+    busca: str = Query("", max_length=100),
+    status: Literal["todos", "ativa", "finalizada"] = "todos",
+    ordenar: Literal[
+        "id",
+        "data_inicio",
+        "custo",
+        "quilometragem",
+    ] = "id",
+    direcao: Literal["asc", "desc"] = "desc",
+    container: Container = Depends(get_container),
+    _usuario_admin=Depends(exigir_permissao(Permissao.MANUTENCOES_LER)),
+):
+    resultado = container.manutencao_service.consultar_manutencoes(
+        pagina=pagina,
+        por_pagina=por_pagina,
+        busca=busca,
+        status=status,
+        ordenar=ordenar,
+        direcao=direcao,
+    )
+
+    return {
+        "items": [transformar_manutencao(item) for item in resultado.items],
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total": resultado.total,
+        "total_paginas": (resultado.total + por_pagina - 1) // por_pagina,
+        "resumo": resultado.resumo,
+    }
 
 
 # ================================================================

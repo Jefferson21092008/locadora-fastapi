@@ -3711,3 +3711,40 @@ form[aria-busy="true"] :is(input, select, textarea, button) {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Paginação e consultas server-side */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border);
+}
+
+.pagination__label {
+    min-width: 9rem;
+    text-align: center;
+    color: var(--slate-500);
+    font-size: var(--text-sm);
+    font-weight: 700;
+}
+
+.select-field--compact select {
+    min-width: 8.5rem;
+}
+
+@media (max-width: 640px) {
+    .pagination {
+        justify-content: space-between;
+    }
+
+    .pagination .secondary-button {
+        flex: 1;
+    }
+
+    .pagination__label {
+        min-width: auto;
+    }
+}

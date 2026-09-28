@@ -97,6 +97,26 @@
                             </select>
                         </label>
 
+                        <label class="select-field" for="vehicle-order">
+                            <span class="sr-only">Ordenar veículos</span>
+                            <select id="vehicle-order">
+                                <option value="modelo:asc">Modelo A–Z</option>
+                                <option value="modelo:desc">Modelo Z–A</option>
+                                <option value="ano:desc">Ano mais novo</option>
+                                <option value="diaria:asc">Menor diária</option>
+                                <option value="diaria:desc">Maior diária</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field select-field--compact" for="vehicle-page-size">
+                            <span class="sr-only">Itens por página</span>
+                            <select id="vehicle-page-size">
+                                <option value="12">12 por página</option>
+                                <option value="24">24 por página</option>
+                                <option value="48">48 por página</option>
+                            </select>
+                        </label>
+
                         <button id="refresh-vehicles-button" class="secondary-button" type="button">Atualizar</button>
                     </div>
                 </div>
@@ -121,6 +141,12 @@
                 </div>
 
                 <div id="vehicles-grid" class="vehicles-grid" aria-live="polite"></div>
+
+                <nav class="pagination" aria-label="Paginação de veículos">
+                    <button id="vehicles-page-previous" class="secondary-button" type="button">Anterior</button>
+                    <span id="vehicles-page-label" class="pagination__label" aria-live="polite">Página 0 de 0</span>
+                    <button id="vehicles-page-next" class="secondary-button" type="button">Próxima</button>
+                </nav>
             </section>
         </main>
     </div>

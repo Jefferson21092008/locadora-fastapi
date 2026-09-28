@@ -210,6 +210,22 @@ export async function apiRequest(path, options = {}, allowRefresh = true) {
     return payload;
 }
 
+
+function buildQuery(params = {}) {
+    const query = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(params)) {
+        if (value === undefined || value === null || value === "") {
+            continue;
+        }
+
+        query.set(key, String(value));
+    }
+
+    const serialized = query.toString();
+    return serialized ? `?${serialized}` : "";
+}
+
 export async function logout() {
     try {
         await fetch(`${API_BASE}/auth/logout`, {
@@ -257,6 +273,10 @@ export function createClient(data) {
 
 export function getClients() {
     return apiRequest("/clientes");
+}
+
+export function queryClients(params = {}) {
+    return apiRequest(`/clientes/consulta${buildQuery(params)}`);
 }
 
 export function deactivateClient(clientId) {
@@ -315,6 +335,10 @@ export function getVehicles() {
     return apiRequest("/veiculos");
 }
 
+export function queryVehicles(params = {}) {
+    return apiRequest(`/veiculos/consulta${buildQuery(params)}`);
+}
+
 export function createVehicle(data) {
     return apiRequest("/veiculos", {
         method: "POST",
@@ -349,6 +373,11 @@ export function getMyRentals() {
     return apiRequest("/alugueis/me");
 }
 
+export function queryRentals(params = {}, own = false) {
+    const path = own ? "/alugueis/me/consulta" : "/alugueis/consulta";
+    return apiRequest(`${path}${buildQuery(params)}`);
+}
+
 export function createRental(data) {
     return apiRequest("/alugueis", {
         method: "POST",
@@ -365,6 +394,10 @@ export function returnVehicle(vehicleId, data) {
 
 export function getMaintenances() {
     return apiRequest("/manutencoes");
+}
+
+export function queryMaintenances(params = {}) {
+    return apiRequest(`/manutencoes/consulta${buildQuery(params)}`);
 }
 
 export function createMaintenance(data) {

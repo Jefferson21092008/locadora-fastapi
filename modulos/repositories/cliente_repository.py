@@ -1,5 +1,9 @@
 from sqlalchemy import (
+    String,
+    case,
+    cast,
     func,
+    or_,
     select,
 )
 
@@ -12,6 +16,7 @@ from modulos.models.cliente_model import (
 from modulos.models.usuario_model import (
     UsuarioModel,
 )
+from modulos.consultas import ResultadoPaginado
 
 
 class ClienteRepository:
@@ -262,6 +267,79 @@ class ClienteRepository:
                 )
                 for model in models
             ]
+
+    def consultar(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="nome",
+        direcao="asc",
+    ):
+        filtros = []
+        termo = str(busca or "").strip().lower()
+
+        if termo:
+            filtros.append(
+                or_(
+                    func.lower(ClienteModel.nome).contains(termo),
+                    func.lower(ClienteModel.usuario).contains(termo),
+                    func.lower(ClienteModel.email).contains(termo),
+                    cast(ClienteModel.id, String).contains(termo),
+                )
+            )
+
+        if status == "ativo":
+            filtros.append(ClienteModel.ativo.is_(True))
+        elif status == "desativado":
+            filtros.append(ClienteModel.ativo.is_(False))
+
+        colunas_ordenacao = {
+            "id": ClienteModel.id,
+            "nome": ClienteModel.nome,
+            "usuario": ClienteModel.usuario,
+            "email": ClienteModel.email,
+        }
+        coluna = colunas_ordenacao.get(ordenar, ClienteModel.nome)
+        ordem = coluna.desc() if direcao == "desc" else coluna.asc()
+        deslocamento = (pagina - 1) * por_pagina
+
+        with self.banco_sqlalchemy.criar_sessao() as sessao:
+            total = sessao.scalar(
+                select(func.count(ClienteModel.id)).where(*filtros)
+            ) or 0
+
+            comando = (
+                select(ClienteModel)
+                .where(*filtros)
+                .order_by(ordem, ClienteModel.id.asc())
+                .offset(deslocamento)
+                .limit(por_pagina)
+            )
+            models = sessao.scalars(comando).all()
+
+            resumo = sessao.execute(
+                select(
+                    func.count(ClienteModel.id),
+                    func.sum(
+                        case((ClienteModel.ativo.is_(True), 1), else_=0)
+                    ),
+                )
+            ).one()
+
+        total_geral = int(resumo[0] or 0)
+        ativos = int(resumo[1] or 0)
+
+        return ResultadoPaginado(
+            items=[self._para_entidade(model) for model in models],
+            total=int(total),
+            resumo={
+                "total": total_geral,
+                "ativos": ativos,
+                "desativados": total_geral - ativos,
+            },
+        )
 
     # ================================================================
     # INSERÇÃO / ATUALIZAÇÃO

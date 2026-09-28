@@ -91,6 +91,25 @@
                             </select>
                         </label>
 
+                        <label class="select-field" for="maintenance-order">
+                            <span class="sr-only">Ordenar manutenções</span>
+                            <select id="maintenance-order">
+                                <option value="id:desc">Mais recentes</option>
+                                <option value="id:asc">Mais antigas</option>
+                                <option value="custo:desc">Maior custo</option>
+                                <option value="quilometragem:desc">Maior quilometragem</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field select-field--compact" for="maintenance-page-size">
+                            <span class="sr-only">Itens por página</span>
+                            <select id="maintenance-page-size">
+                                <option value="12">12 por página</option>
+                                <option value="24">24 por página</option>
+                                <option value="48">48 por página</option>
+                            </select>
+                        </label>
+
                         <button id="refresh-maintenances-button" class="secondary-button" type="button">Atualizar</button>
                     </div>
                 </div>
@@ -115,6 +134,12 @@
                 </div>
 
                 <div id="maintenances-list" class="maintenances-list" aria-live="polite"></div>
+
+                <nav class="pagination" aria-label="Paginação de manutenções">
+                    <button id="maintenances-page-previous" class="secondary-button" type="button">Anterior</button>
+                    <span id="maintenances-page-label" class="pagination__label" aria-live="polite">Página 0 de 0</span>
+                    <button id="maintenances-page-next" class="secondary-button" type="button">Próxima</button>
+                </nav>
             </section>
         </main>
     </div>

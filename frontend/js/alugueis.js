@@ -5,8 +5,7 @@ import {
     clearToken,
     createRental,
     getCurrentUser,
-    getMyRentals,
-    getRentals,
+    queryRentals,
     restoreSession,
     hasPermission,
     logout,
@@ -20,6 +19,11 @@ const newRentalButton = document.querySelector("#new-rental-button");
 const refreshButton = document.querySelector("#refresh-rentals-button");
 const searchInput = document.querySelector("#rental-search");
 const statusFilter = document.querySelector("#rental-status-filter");
+const orderSelect = document.querySelector("#rental-order");
+const pageSizeSelect = document.querySelector("#rental-page-size");
+const previousPageButton = document.querySelector("#rentals-page-previous");
+const nextPageButton = document.querySelector("#rentals-page-next");
+const pageLabel = document.querySelector("#rentals-page-label");
 const resultsCount = document.querySelector("#rentals-results-count");
 const clearFiltersButton = document.querySelector("#clear-rental-filters");
 const pageMessage = document.querySelector("#rentals-message");
@@ -65,6 +69,8 @@ const summaryElements = {
 let currentUser = null;
 let rentals = [];
 let vehicles = [];
+let searchTimer = null;
+let pagination = { pagina: 1, total: 0, total_paginas: 0 };
 
 function goToLogin() {
     window.location.replace("/app/");
@@ -165,37 +171,33 @@ function configureCurrentUser(user) {
     }
 }
 
-function updateSummary() {
+function updateSummary(resumo) {
     const counts = {
-        total: rentals.length,
-        active: rentals.filter((rental) => rental.status === "ativo").length,
-        finished: rentals.filter((rental) => rental.status === "finalizado").length,
-        late: rentals.filter(isLate).length,
+        total: resumo.total,
+        active: resumo.ativos,
+        finished: resumo.finalizados,
+        late: resumo.atrasados,
     };
 
     for (const [name, element] of Object.entries(summaryElements)) {
-        element.textContent = counts[name].toLocaleString("pt-BR");
+        element.textContent = Number(counts[name] ?? 0).toLocaleString("pt-BR");
     }
 }
 
+function updatePagination() {
+    const current = pagination.total_paginas === 0 ? 0 : pagination.pagina;
+    pageLabel.textContent = `Página ${current} de ${pagination.total_paginas}`;
+    previousPageButton.disabled = pagination.pagina <= 1;
+    nextPageButton.disabled = pagination.pagina >= pagination.total_paginas;
+}
+
+function orderParams() {
+    const [ordenar, direcao] = orderSelect.value.split(":");
+    return { ordenar, direcao };
+}
+
 function filteredRentals() {
-    const query = normalizeText(searchInput.value);
-    const selectedStatus = statusFilter.value;
-
-    return rentals.filter((rental) => {
-        const matchesStatus = selectedStatus === "todos" || rental.status === selectedStatus;
-        const searchableText = normalizeText([
-            rental.id,
-            rental.veiculo_id,
-            rental.veiculo_tipo,
-            rental.veiculo_modelo,
-            rental.cliente_id,
-            rental.cliente_nome,
-            rental.cliente_usuario,
-        ].join(" "));
-
-        return matchesStatus && searchableText.includes(query);
-    });
+    return rentals;
 }
 
 function rentalFinancialDetails(rental) {
@@ -263,13 +265,13 @@ function renderRentals() {
     const hasActiveFilters = Boolean(normalizeText(searchInput.value))
         || statusFilter.value !== "todos";
 
-    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${rentals.length.toLocaleString("pt-BR")} aluguéis`;
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} nesta página · ${pagination.total.toLocaleString("pt-BR")} resultados`;
     clearFiltersButton.hidden = !hasActiveFilters;
 
     emptyState.hidden = results.length > 0;
 
     if (results.length === 0) {
-        emptyText.textContent = rentals.length === 0
+        emptyText.textContent = !hasActiveFilters && pagination.total === 0
             ? (canReadAllRentals()
                 ? "Ainda não há aluguéis registrados na locadora."
                 : "Você ainda não possui aluguéis. Use “Novo aluguel” para começar.")
@@ -527,17 +529,46 @@ async function loadRentals({ preserveMessage = false } = {}) {
     refreshButton.disabled = true;
 
     try {
-        if (canReadAllRentals()) {
-            rentals = await getRentals();
+        const query = queryRentals({
+            pagina: pagination.pagina,
+            por_pagina: Number(pageSizeSelect.value),
+            busca: searchInput.value.trim(),
+            status: statusFilter.value,
+            ...orderParams(),
+        }, !canReadAllRentals());
+
+        if (can(Permissions.ALUGUEIS_CRIAR) && vehicles.length === 0) {
+            const [result, loadedVehicles] = await Promise.all([query, getVehicles()]);
+            if (result.total_paginas > 0 && pagination.pagina > result.total_paginas) {
+                pagination.pagina = result.total_paginas;
+                return loadRentals({ preserveMessage: true });
+            }
+            rentals = result.items;
+            vehicles = loadedVehicles;
+            pagination = {
+                pagina: result.pagina,
+                total: result.total,
+                total_paginas: result.total_paginas,
+            };
+            updateSummary(result.resumo);
         } else {
-            [rentals, vehicles] = await Promise.all([
-                getMyRentals(),
-                getVehicles(),
-            ]);
+            const result = await query;
+            if (result.total_paginas > 0 && pagination.pagina > result.total_paginas) {
+                pagination.pagina = result.total_paginas;
+                return loadRentals({ preserveMessage: true });
+            }
+            rentals = result.items;
+            pagination = {
+                pagina: result.pagina,
+                total: result.total,
+                total_paginas: result.total_paginas,
+            };
+            updateSummary(result.resumo);
         }
 
-        updateSummary();
+        updatePagination();
         renderRentals();
+        populateVehicleOptions();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
             clearToken();
@@ -590,12 +621,42 @@ logoutButton.addEventListener("click", async () => {
 
 newRentalButton.addEventListener("click", openRentalDialog);
 refreshButton.addEventListener("click", () => loadRentals());
-searchInput.addEventListener("input", renderRentals);
-statusFilter.addEventListener("change", renderRentals);
+searchInput.addEventListener("input", () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+        pagination.pagina = 1;
+        loadRentals();
+    }, 300);
+});
+statusFilter.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadRentals();
+});
+orderSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadRentals();
+});
+pageSizeSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadRentals();
+});
+previousPageButton.addEventListener("click", () => {
+    if (pagination.pagina > 1) {
+        pagination.pagina -= 1;
+        loadRentals();
+    }
+});
+nextPageButton.addEventListener("click", () => {
+    if (pagination.pagina < pagination.total_paginas) {
+        pagination.pagina += 1;
+        loadRentals();
+    }
+});
 clearFiltersButton.addEventListener("click", () => {
     searchInput.value = "";
     statusFilter.value = "todos";
-    renderRentals();
+    pagination.pagina = 1;
+    loadRentals();
     searchInput.focus();
 });
 rentalVehicleInput.addEventListener("change", updateRentalEstimate);

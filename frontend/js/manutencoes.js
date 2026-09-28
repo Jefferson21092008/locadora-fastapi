@@ -6,7 +6,7 @@ import {
     createMaintenance,
     finishMaintenance,
     getCurrentUser,
-    getMaintenances,
+    queryMaintenances,
     restoreSession,
     hasPermission,
     logout,
@@ -19,6 +19,11 @@ const newMaintenanceButton = document.querySelector("#new-maintenance-button");
 const refreshButton = document.querySelector("#refresh-maintenances-button");
 const searchInput = document.querySelector("#maintenance-search");
 const statusFilter = document.querySelector("#maintenance-status-filter");
+const orderSelect = document.querySelector("#maintenance-order");
+const pageSizeSelect = document.querySelector("#maintenance-page-size");
+const previousPageButton = document.querySelector("#maintenances-page-previous");
+const nextPageButton = document.querySelector("#maintenances-page-next");
+const pageLabel = document.querySelector("#maintenances-page-label");
 const resultsCount = document.querySelector("#maintenances-results-count");
 const clearFiltersButton = document.querySelector("#clear-maintenance-filters");
 const pageMessage = document.querySelector("#maintenances-message");
@@ -53,6 +58,8 @@ let currentUser = null;
 let maintenances = [];
 let vehicles = [];
 let pendingMaintenance = null;
+let searchTimer = null;
+let pagination = { pagina: 1, total: 0, total_paginas: 0 };
 
 function goToLogin() {
     window.location.replace("/app/");
@@ -129,16 +136,12 @@ function vehicleLabel(vehicleId) {
     return vehicle ? vehicle.modelo : `Veículo #${vehicleId}`;
 }
 
-function updateSummary() {
-    const active = maintenances.filter((maintenance) => maintenance.status === "ativa").length;
-    const finished = maintenances.filter((maintenance) => maintenance.status === "finalizada");
+function updateSummary(resumo) {
     const counts = {
-        total: maintenances.length.toLocaleString("pt-BR"),
-        active: active.toLocaleString("pt-BR"),
-        finished: finished.length.toLocaleString("pt-BR"),
-        cost: formatCurrency(
-            finished.reduce((total, maintenance) => total + Number(maintenance.custo ?? 0), 0),
-        ),
+        total: Number(resumo.total ?? 0).toLocaleString("pt-BR"),
+        active: Number(resumo.ativas ?? 0).toLocaleString("pt-BR"),
+        finished: Number(resumo.finalizadas ?? 0).toLocaleString("pt-BR"),
+        cost: formatCurrency(resumo.custo_finalizado),
     };
 
     for (const [name, element] of Object.entries(summaryElements)) {
@@ -146,21 +149,20 @@ function updateSummary() {
     }
 }
 
+function updatePagination() {
+    const current = pagination.total_paginas === 0 ? 0 : pagination.pagina;
+    pageLabel.textContent = `Página ${current} de ${pagination.total_paginas}`;
+    previousPageButton.disabled = pagination.pagina <= 1;
+    nextPageButton.disabled = pagination.pagina >= pagination.total_paginas;
+}
+
+function orderParams() {
+    const [ordenar, direcao] = orderSelect.value.split(":");
+    return { ordenar, direcao };
+}
+
 function filteredMaintenances() {
-    const query = normalizeText(searchInput.value);
-    const selectedStatus = statusFilter.value;
-
-    return maintenances
-        .filter((maintenance) => {
-            const vehicle = findVehicle(maintenance.veiculo_id);
-            const matchesStatus = selectedStatus === "todos" || maintenance.status === selectedStatus;
-            const searchableText = normalizeText(
-                `${maintenance.id} ${maintenance.veiculo_id} ${maintenance.motivo} ${vehicle?.modelo} ${vehicle?.tipo} ${vehicle?.ano}`,
-            );
-
-            return matchesStatus && searchableText.includes(query);
-        })
-        .sort((first, second) => second.id - first.id);
+    return maintenances;
 }
 
 function renderMaintenances() {
@@ -168,13 +170,13 @@ function renderMaintenances() {
     const hasActiveFilters = Boolean(normalizeText(searchInput.value))
         || statusFilter.value !== "todos";
 
-    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${maintenances.length.toLocaleString("pt-BR")} manutenções`;
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} nesta página · ${pagination.total.toLocaleString("pt-BR")} resultados`;
     clearFiltersButton.hidden = !hasActiveFilters;
 
     emptyState.hidden = results.length > 0;
 
     if (results.length === 0) {
-        emptyText.textContent = maintenances.length === 0
+        emptyText.textContent = !hasActiveFilters && pagination.total === 0
             ? "Ainda não há manutenções registradas na locadora."
             : "Altere a busca ou o filtro para visualizar outros resultados.";
     }
@@ -370,12 +372,31 @@ async function loadData({ preserveMessage = false } = {}) {
     refreshButton.disabled = true;
 
     try {
-        [maintenances, vehicles] = await Promise.all([
-            getMaintenances(),
+        const [result, loadedVehicles] = await Promise.all([
+            queryMaintenances({
+                pagina: pagination.pagina,
+                por_pagina: Number(pageSizeSelect.value),
+                busca: searchInput.value.trim(),
+                status: statusFilter.value,
+                ...orderParams(),
+            }),
             getVehicles(),
         ]);
 
-        updateSummary();
+        if (result.total_paginas > 0 && pagination.pagina > result.total_paginas) {
+            pagination.pagina = result.total_paginas;
+            return loadData({ preserveMessage: true });
+        }
+
+        maintenances = result.items;
+        vehicles = loadedVehicles;
+        pagination = {
+            pagina: result.pagina,
+            total: result.total,
+            total_paginas: result.total_paginas,
+        };
+        updateSummary(result.resumo);
+        updatePagination();
         populateAvailableVehicles();
         renderMaintenances();
     } catch (error) {
@@ -439,12 +460,42 @@ logoutButton.addEventListener("click", async () => {
 
 newMaintenanceButton.addEventListener("click", openMaintenanceDialog);
 refreshButton.addEventListener("click", () => loadData());
-searchInput.addEventListener("input", renderMaintenances);
-statusFilter.addEventListener("change", renderMaintenances);
+searchInput.addEventListener("input", () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+        pagination.pagina = 1;
+        loadData();
+    }, 300);
+});
+statusFilter.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadData();
+});
+orderSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadData();
+});
+pageSizeSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadData();
+});
+previousPageButton.addEventListener("click", () => {
+    if (pagination.pagina > 1) {
+        pagination.pagina -= 1;
+        loadData();
+    }
+});
+nextPageButton.addEventListener("click", () => {
+    if (pagination.pagina < pagination.total_paginas) {
+        pagination.pagina += 1;
+        loadData();
+    }
+});
 clearFiltersButton.addEventListener("click", () => {
     searchInput.value = "";
     statusFilter.value = "todos";
-    renderMaintenances();
+    pagination.pagina = 1;
+    loadData();
     searchInput.focus();
 });
 maintenanceForm.addEventListener("submit", submitMaintenance);

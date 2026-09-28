@@ -156,11 +156,11 @@ def test_frontend_redefinir_senha_esta_disponivel():
         ),
         (
             "/app/js/veiculos.js",
-            "getVehicles",
+            "queryVehicles",
         ),
         (
             "/app/js/alugueis.js",
-            "getMyRentals",
+            "queryRentals",
         ),
         (
             "/app/js/cadastro.js",
@@ -168,11 +168,11 @@ def test_frontend_redefinir_senha_esta_disponivel():
         ),
         (
             "/app/js/clientes.js",
-            "getClients",
+            "queryClients",
         ),
         (
             "/app/js/manutencoes.js",
-            "getMaintenances",
+            "queryMaintenances",
         ),
         (
             "/app/js/relatorios.js",
@@ -556,3 +556,74 @@ def test_relatorio_tabela_rolavel_e_focavel_por_teclado():
     assert 'role="region"' in resposta.text
     assert 'aria-label="Resultados por veículo"' in resposta.text
     assert 'tabindex="0"' in resposta.text
+
+@pytest.mark.parametrize(
+    "caminho,ordem,pagina_anterior,pagina_proxima",
+    [
+        (
+            "/app/clientes.html",
+            "client-order",
+            "clients-page-previous",
+            "clients-page-next",
+        ),
+        (
+            "/app/veiculos.html",
+            "vehicle-order",
+            "vehicles-page-previous",
+            "vehicles-page-next",
+        ),
+        (
+            "/app/alugueis.html",
+            "rental-order",
+            "rentals-page-previous",
+            "rentals-page-next",
+        ),
+        (
+            "/app/manutencoes.html",
+            "maintenance-order",
+            "maintenances-page-previous",
+            "maintenances-page-next",
+        ),
+    ],
+)
+def test_telas_operacionais_expoem_ordenacao_e_paginacao(
+    caminho,
+    ordem,
+    pagina_anterior,
+    pagina_proxima,
+):
+    resposta = client.get(caminho)
+
+    assert resposta.status_code == 200
+    assert f'id="{ordem}"' in resposta.text
+    assert f'id="{pagina_anterior}"' in resposta.text
+    assert f'id="{pagina_proxima}"' in resposta.text
+    assert "por página" in resposta.text
+
+
+def test_frontend_api_expoe_consultas_server_side():
+    resposta = client.get("/app/js/api.js")
+
+    assert resposta.status_code == 200
+    assert "/clientes/consulta" in resposta.text
+    assert "/veiculos/consulta" in resposta.text
+    assert "/alugueis/consulta" in resposta.text
+    assert "/alugueis/me/consulta" in resposta.text
+    assert "/manutencoes/consulta" in resposta.text
+    assert "URLSearchParams" in resposta.text
+
+
+def test_frontend_operacional_deixa_de_filtrar_listas_inteiras_localmente():
+    clientes = client.get("/app/js/clientes.js").text
+    veiculos = client.get("/app/js/veiculos.js").text
+    alugueis = client.get("/app/js/alugueis.js").text
+    manutencoes = client.get("/app/js/manutencoes.js").text
+
+    assert "queryClients" in clientes
+    assert "queryVehicles" in veiculos
+    assert "queryRentals" in alugueis
+    assert "queryMaintenances" in manutencoes
+    assert "total_paginas" in clientes
+    assert "total_paginas" in veiculos
+    assert "total_paginas" in alugueis
+    assert "total_paginas" in manutencoes

@@ -933,3 +933,21 @@ A versão online foi testada manualmente após o deploy com sucesso para:
 A fase de refinamento visual e de experiência foi concluída com uma camada compartilhada de UX. Além do Design System, dashboard e telas operacionais, o frontend agora inclui melhorias de navegação por teclado, retorno de foco em diálogos, estados `aria-busy`, feedback de conectividade, alvos de toque e suporte ampliado a preferências de contraste e movimento.
 
 Essas melhorias permanecem independentes das regras de negócio e do RBAC: autorização e validação continuam sendo responsabilidade do backend.
+
+## Trilha principal — Paginação e consultas server-side
+
+As telas operacionais deixam de depender do carregamento integral das coleções para busca e filtros. A API passa a oferecer consultas paginadas em endpoints dedicados, preservando as rotas legadas de listagem para compatibilidade com consumidores existentes.
+
+Endpoints adicionados:
+
+```text
+GET /api/v1/clientes/consulta
+GET /api/v1/veiculos/consulta
+GET /api/v1/alugueis/consulta
+GET /api/v1/alugueis/me/consulta
+GET /api/v1/manutencoes/consulta
+```
+
+As consultas aceitam `pagina`, `por_pagina`, `busca`, `status`, `ordenar` e `direcao`, respeitando os campos válidos de cada recurso. O PostgreSQL/SQLite executa `WHERE`, `ORDER BY`, `LIMIT` e `OFFSET`; o frontend recebe somente a página atual, os totais e o resumo operacional.
+
+As rotas antigas como `GET /api/v1/veiculos` continuam disponíveis nesta etapa porque ainda são usadas por fluxos que precisam da coleção completa, como seleção de veículo em aluguel ou manutenção. A migração é, portanto, incremental e sem quebra imediata de compatibilidade.

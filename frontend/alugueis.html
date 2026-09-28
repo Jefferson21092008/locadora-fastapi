@@ -91,6 +91,25 @@
                             </select>
                         </label>
 
+                        <label class="select-field" for="rental-order">
+                            <span class="sr-only">Ordenar aluguéis</span>
+                            <select id="rental-order">
+                                <option value="id:desc">Mais recentes</option>
+                                <option value="id:asc">Mais antigos</option>
+                                <option value="data_prevista:asc">Prazo mais próximo</option>
+                                <option value="valor:desc">Maior valor</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field select-field--compact" for="rental-page-size">
+                            <span class="sr-only">Itens por página</span>
+                            <select id="rental-page-size">
+                                <option value="12">12 por página</option>
+                                <option value="24">24 por página</option>
+                                <option value="48">48 por página</option>
+                            </select>
+                        </label>
+
                         <button id="refresh-rentals-button" class="secondary-button" type="button">Atualizar</button>
                     </div>
                 </div>
@@ -115,6 +134,12 @@
                 </div>
 
                 <div id="rentals-list" class="rentals-list" aria-live="polite"></div>
+
+                <nav class="pagination" aria-label="Paginação de aluguéis">
+                    <button id="rentals-page-previous" class="secondary-button" type="button">Anterior</button>
+                    <span id="rentals-page-label" class="pagination__label" aria-live="polite">Página 0 de 0</span>
+                    <button id="rentals-page-next" class="secondary-button" type="button">Próxima</button>
+                </nav>
             </section>
         </main>
     </div>

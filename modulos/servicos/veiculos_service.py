@@ -56,6 +56,24 @@ class VeiculoService:
     # LISTAGENS
     # ================================================================
 
+    def consultar_veiculos(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="modelo",
+        direcao="asc",
+    ):
+        return self.veiculo_repository.consultar(
+            pagina=pagina,
+            por_pagina=por_pagina,
+            busca=busca,
+            status=status,
+            ordenar=ordenar,
+            direcao=direcao,
+        )
+
     def listar_todos(self):
         return (
             self.veiculo_repository

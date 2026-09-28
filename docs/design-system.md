@@ -168,3 +168,9 @@ Uma região discreta informa quando o navegador fica offline e quando a conexão
 Os modais passam a usar `dvh` e rolagem interna para permanecer utilizáveis com teclados virtuais e viewports móveis. Controles de toque recebem alvos mínimos maiores em dispositivos coarse pointer. O CSS também reforça suporte a `prefers-contrast`, `forced-colors` e `prefers-reduced-motion`.
 
 Com esta etapa, a fase de frontend iniciada no Design System fica encerrada com uma base reutilizável para novas funcionalidades.
+
+## Paginação das telas operacionais
+
+Clientes, Veículos, Aluguéis e Manutenções passam a consumir consultas server-side. As barras de operação acrescentam ordenação e quantidade de itens por página, e cada lista possui controles Anterior/Próxima com anúncio da página atual.
+
+A busca utiliza um debounce curto antes de consultar a API, reduzindo requisições durante a digitação. Mudanças de busca, status, ordenação ou tamanho da página retornam para a primeira página. Os contadores exibem quantos itens estão na página atual e o total correspondente aos filtros executados pelo backend.

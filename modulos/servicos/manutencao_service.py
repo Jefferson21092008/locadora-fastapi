@@ -252,6 +252,24 @@ class ManutencaoService:
 
         return manutencao
 
+    def consultar_manutencoes(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="id",
+        direcao="desc",
+    ):
+        return self.manutencao_repository.consultar(
+            pagina=pagina,
+            por_pagina=por_pagina,
+            busca=busca,
+            status=status,
+            ordenar=ordenar,
+            direcao=direcao,
+        )
+
     def listar_manutencoes(self):
         return (
             self.manutencao_repository

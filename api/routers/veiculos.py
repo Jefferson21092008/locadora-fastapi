@@ -1,6 +1,9 @@
+from typing import Literal
+
 from fastapi import (
     APIRouter,
     Depends,
+    Query,
     Request,
 )
 
@@ -17,6 +20,7 @@ from api.erros import (
     recurso_nao_encontrado,
 )
 
+from api.schemas.consultas import VeiculosConsultaResponse
 from api.schemas.veiculos import (
     VeiculoCreate,
     VeiculoResponse,
@@ -94,6 +98,56 @@ def listar_veiculos(
         )
         for veiculo in veiculos
     ]
+
+
+# ================================================================
+# CONSULTA PAGINADA
+# ================================================================
+
+
+@router.get(
+    "/consulta",
+    response_model=VeiculosConsultaResponse,
+    summary="Consultar veículos com paginação",
+)
+def consultar_veiculos(
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(12, ge=1, le=100),
+    busca: str = Query("", max_length=100),
+    status: Literal[
+        "todos",
+        "disponivel",
+        "alugado",
+        "manutencao",
+        "desativado",
+    ] = "todos",
+    ordenar: Literal[
+        "id",
+        "modelo",
+        "ano",
+        "diaria",
+        "quilometragem",
+    ] = "modelo",
+    direcao: Literal["asc", "desc"] = "asc",
+    container: Container = Depends(get_container),
+):
+    resultado = container.veiculo_service.consultar_veiculos(
+        pagina=pagina,
+        por_pagina=por_pagina,
+        busca=busca,
+        status=status,
+        ordenar=ordenar,
+        direcao=direcao,
+    )
+
+    return {
+        "items": [transformar_veiculo(item) for item in resultado.items],
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total": resultado.total,
+        "total_paginas": (resultado.total + por_pagina - 1) // por_pagina,
+        "resumo": resultado.resumo,
+    }
 
 
 # ================================================================
