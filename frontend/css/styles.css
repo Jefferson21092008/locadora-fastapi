@@ -3799,3 +3799,105 @@ form[aria-busy="true"] :is(input, select, textarea, button) {
         flex: 1;
     }
 }
+
+/* ==========================================================================
+   Maintenance management — advanced operational metadata
+   ========================================================================== */
+
+.fleet-overview--six {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.maintenance-card--overdue {
+    border-color: rgba(185, 28, 28, 0.35);
+}
+
+.maintenance-card__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+.maintenance-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.7rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--slate-200);
+    border-radius: 999px;
+    background: var(--slate-50);
+    color: var(--slate-600);
+    font-size: 0.7rem;
+    font-weight: 760;
+    letter-spacing: 0.02em;
+}
+
+.maintenance-badge--type {
+    background: rgba(15, 118, 110, 0.08);
+    color: var(--teal-600);
+}
+
+.maintenance-badge--priority-alta,
+.maintenance-badge--overdue {
+    border-color: rgba(185, 28, 28, 0.2);
+    background: rgba(185, 28, 28, 0.08);
+    color: #991b1b;
+}
+
+.maintenance-badge--priority-media {
+    border-color: rgba(180, 83, 9, 0.2);
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+}
+
+.maintenance-badge--priority-baixa {
+    border-color: rgba(21, 128, 61, 0.18);
+    background: rgba(34, 197, 94, 0.08);
+    color: #166534;
+}
+
+.maintenance-card__notes {
+    margin: 0.7rem 0 0;
+    padding: 0.65rem 0.75rem;
+    border-left: 3px solid var(--slate-200);
+    color: var(--slate-600);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 1180px) {
+    .fleet-overview--six {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .fleet-overview--six article:nth-child(3),
+    .fleet-overview--six article:nth-child(6) {
+        border-right: 0;
+    }
+
+    .fleet-overview--six article:nth-child(-n + 3) {
+        border-bottom: 1px solid var(--slate-200);
+    }
+}
+
+@media (max-width: 860px) {
+    .fleet-overview--six {
+        grid-template-columns: 1fr;
+    }
+
+    .fleet-overview--six article,
+    .fleet-overview--six article:nth-child(3),
+    .fleet-overview--six article:nth-child(6) {
+        border-right: 0;
+        border-bottom: 1px solid var(--slate-200);
+    }
+
+    .fleet-overview--six article:last-child {
+        border-bottom: 0;
+    }
+
+    .maintenance-card__badges {
+        justify-content: flex-start;
+    }
+}

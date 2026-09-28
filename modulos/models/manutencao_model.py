@@ -39,8 +39,20 @@ class ManutencaoModel(Base):
             name="ck_manutencoes_custo",
         ),
         CheckConstraint(
+            "custo_estimado >= 0",
+            name="ck_manutencoes_custo_estimado",
+        ),
+        CheckConstraint(
             "status IN ('ativa', 'finalizada')",
             name="ck_manutencoes_status",
+        ),
+        CheckConstraint(
+            "tipo IN ('preventiva', 'corretiva')",
+            name="ck_manutencoes_tipo",
+        ),
+        CheckConstraint(
+            "prioridade IN ('baixa', 'media', 'alta')",
+            name="ck_manutencoes_prioridade",
         ),
         Index(
             "idx_manutencao_ativa_veiculo",
@@ -52,6 +64,11 @@ class ManutencaoModel(Base):
             postgresql_where=text(
                 "status = 'ativa'"
             ),
+        ),
+        Index(
+            "idx_manutencoes_status_previsao",
+            "status",
+            "data_prevista",
         ),
     )
 
@@ -84,8 +101,6 @@ class ManutencaoModel(Base):
         default=0,
     )
 
-    # As datas continuam em texto ISO durante a
-    # migração para preservar o domínio atual.
     data_inicio: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
@@ -100,4 +115,37 @@ class ManutencaoModel(Base):
         String(20),
         nullable=False,
         default="ativa",
+    )
+
+    tipo: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="corretiva",
+    )
+
+    prioridade: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="media",
+    )
+
+    fornecedor: Mapped[str | None] = mapped_column(
+        String(150),
+        nullable=True,
+    )
+
+    custo_estimado: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0,
+    )
+
+    data_prevista: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+    )
+
+    observacoes: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
     )

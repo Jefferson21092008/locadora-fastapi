@@ -54,6 +54,11 @@ class ManutencoesResumoResponse(BaseModel):
     ativas: int = Field(ge=0)
     finalizadas: int = Field(ge=0)
     custo_finalizado: float = Field(ge=0)
+    atrasadas: int = Field(default=0, ge=0)
+    custo_estimado_ativo: float = Field(
+        default=0,
+        ge=0,
+    )
 
 
 class ManutencoesConsultaResponse(PaginacaoResponse):

@@ -995,3 +995,36 @@ Novas dependências de runtime:
 - `reportlab` para geração de PDF.
 
 Não há migration nesta etapa.
+
+## Trilha principal — Manutenção avançada
+
+A Etapa 14 amplia o módulo de manutenção sem antecipar inspeções, danos, multas,
+caução ou combustível. A manutenção passa a registrar contexto operacional além
+do motivo e do custo final:
+
+- tipo `preventiva` ou `corretiva`;
+- prioridade `baixa`, `media` ou `alta`;
+- oficina/fornecedor responsável;
+- custo estimado;
+- previsão de conclusão;
+- observações de acompanhamento;
+- indicação derivada de manutenção atrasada.
+
+Manutenções ativas podem ser editadas por usuários com
+`manutencoes:editar`. A abertura continua alterando o veículo para o estado
+`manutencao`, e a finalização continua registrando o custo real e liberando o
+veículo na mesma transação.
+
+Endpoint adicional:
+
+```text
+PATCH /api/v1/manutencoes/{id_manutencao}
+```
+
+A consulta paginada também aceita filtros por `tipo` e `prioridade`, além de
+ordenação por previsão e custo estimado. O resumo operacional inclui quantidade
+atrasada e custo estimado ainda em aberto.
+
+A evolução exige a migration `20260928_0004_manutencao_avancada`, preservando
+os registros existentes com os padrões `corretiva`, `media` e custo estimado
+zero.

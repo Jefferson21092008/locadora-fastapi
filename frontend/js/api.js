@@ -15,6 +15,7 @@ export const Permissions = Object.freeze({
     ALUGUEIS_DEVOLVER: "alugueis:devolver",
     MANUTENCOES_LER: "manutencoes:ler",
     MANUTENCOES_CRIAR: "manutencoes:criar",
+    MANUTENCOES_EDITAR: "manutencoes:editar",
     MANUTENCOES_FINALIZAR: "manutencoes:finalizar",
     RELATORIOS_LER: "relatorios:ler",
     AUDITORIA_LER: "auditoria:ler",
@@ -472,6 +473,13 @@ export function queryMaintenances(params = {}) {
 export function createMaintenance(data) {
     return apiRequest("/manutencoes", {
         method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export function updateMaintenance(maintenanceId, data) {
+    return apiRequest(`/manutencoes/${maintenanceId}`, {
+        method: "PATCH",
         body: JSON.stringify(data),
     });
 }

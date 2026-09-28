@@ -67,6 +67,12 @@ class ManutencaoFake:
         data_inicio="2026-08-27",
         data_fim=None,
         status="ativa",
+        tipo="corretiva",
+        prioridade="media",
+        fornecedor=None,
+        custo_estimado=0.0,
+        data_prevista=None,
+        observacoes=None,
     ):
         self.id = id_manutencao
         self.veiculo_id = veiculo_id
@@ -88,6 +94,15 @@ class ManutencaoFake:
         self.data_fim = data_fim
 
         self.status = status
+        self.tipo = tipo
+        self.prioridade = prioridade
+        self.fornecedor = fornecedor
+        self.custo_estimado = float(
+            custo_estimado
+        )
+        self.data_prevista = data_prevista
+        self.observacoes = observacoes
+        self.atrasada = False
 
     @property
     def ativa(self):
@@ -225,6 +240,12 @@ class ManutencaoServiceFake:
         self,
         id_veiculo,
         motivo,
+        tipo="corretiva",
+        prioridade="media",
+        fornecedor=None,
+        custo_estimado=0,
+        data_prevista=None,
+        observacoes=None,
     ):
         if id_veiculo == 999:
             raise RecursoNaoEncontrado(
@@ -264,6 +285,12 @@ class ManutencaoServiceFake:
                 veiculo_id=id_veiculo,
                 motivo=motivo,
                 quilometragem=35000,
+                tipo=tipo,
+                prioridade=prioridade,
+                fornecedor=fornecedor,
+                custo_estimado=custo_estimado,
+                data_prevista=data_prevista,
+                observacoes=observacoes,
             )
         )
 
@@ -272,6 +299,32 @@ class ManutencaoServiceFake:
         )
 
         return nova_manutencao
+
+    def atualizar(
+        self,
+        id_manutencao,
+        alteracoes,
+    ):
+        for manutencao in self.manutencoes:
+            if manutencao.id == id_manutencao:
+                if not manutencao.ativa:
+                    raise RegraDeNegocio(
+                        "Apenas manutenções ativas "
+                        "podem ser editadas."
+                    )
+
+                for campo, valor in alteracoes.items():
+                    setattr(
+                        manutencao,
+                        campo,
+                        valor,
+                    )
+
+                return manutencao
+
+        raise RecursoNaoEncontrado(
+            "Manutenção não encontrada."
+        )
 
     # ============================================================
     # FINALIZAR
@@ -801,3 +854,47 @@ def test_manutencoes_sem_token(
             "Autenticação necessária."
         )
     }
+
+
+def test_admin_pode_abrir_manutencao_com_dados_avancados(
+    admin_client,
+):
+    response = admin_client.post(
+        "/manutencoes",
+        json={
+            "id_veiculo": 30,
+            "motivo": "Revisão programada",
+            "tipo": "preventiva",
+            "prioridade": "alta",
+            "fornecedor": "Oficina Central",
+            "custo_estimado": 850,
+            "data_prevista": "2026-09-30",
+            "observacoes": "Revisar sistema de freios.",
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["tipo"] == "preventiva"
+    assert payload["prioridade"] == "alta"
+    assert payload["fornecedor"] == "Oficina Central"
+    assert payload["custo_estimado"] == 850
+
+
+def test_admin_pode_editar_manutencao_ativa(
+    admin_client,
+):
+    response = admin_client.patch(
+        "/manutencoes/1",
+        json={
+            "prioridade": "alta",
+            "fornecedor": "Oficina Sul",
+            "custo_estimado": 950,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["prioridade"] == "alta"
+    assert payload["fornecedor"] == "Oficina Sul"
+    assert payload["custo_estimado"] == 950

@@ -122,6 +122,15 @@ class ManutencaoRepositoryFake:
             default=0,
         )
 
+    def buscar_por_id(
+        self,
+        id_manutencao,
+    ):
+        for manutencao in self.manutencoes:
+            if manutencao.id == id_manutencao:
+                return manutencao
+        return None
+
     def buscar_ativa_por_veiculo(
         self,
         id_veiculo,
@@ -166,6 +175,12 @@ class ManutencaoRepositoryFake:
             manutencao
         )
         return self.ultimo_id
+
+    def atualizar(
+        self,
+        manutencao,
+    ):
+        return None
 
     def registrar_finalizacao(
         self,
@@ -455,3 +470,27 @@ def test_finalizar_sem_manutencao_ativa():
             "manutenção ativa."
         )
     )
+
+
+def test_atualizar_detalhes_da_manutencao_ativa():
+    carro, service = criar_ambiente()
+
+    manutencao = service.abrir(
+        carro.id,
+        "Revisão",
+        tipo="preventiva",
+        prioridade="media",
+    )
+
+    atualizada = service.atualizar(
+        manutencao.id,
+        {
+            "prioridade": "alta",
+            "fornecedor": "Oficina Central",
+            "custo_estimado": 750,
+        },
+    )
+
+    assert atualizada.prioridade == "alta"
+    assert atualizada.fornecedor == "Oficina Central"
+    assert atualizada.custo_estimado == 750

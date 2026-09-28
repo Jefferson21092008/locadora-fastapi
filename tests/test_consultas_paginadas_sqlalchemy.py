@@ -268,4 +268,6 @@ def test_consulta_manutencoes_busca_dados_do_veiculo(banco_sqlalchemy):
         "ativas": 1,
         "finalizadas": 1,
         "custo_finalizado": 850.0,
+        "atrasadas": 0,
+        "custo_estimado_ativo": 0.0,
     }

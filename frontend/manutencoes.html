@@ -50,7 +50,7 @@
 
             <div id="maintenances-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
 
-            <section class="fleet-overview fleet-overview--four" aria-label="Resumo das manutenções">
+            <section class="fleet-overview fleet-overview--six" aria-label="Resumo das manutenções">
                 <article>
                     <span>Total</span>
                     <strong id="maintenances-summary-total">—</strong>
@@ -58,6 +58,14 @@
                 <article>
                     <span>Em andamento</span>
                     <strong id="maintenances-summary-active">—</strong>
+                </article>
+                <article>
+                    <span>Atrasadas</span>
+                    <strong id="maintenances-summary-overdue">—</strong>
+                </article>
+                <article>
+                    <span>Estimado em aberto</span>
+                    <strong id="maintenances-summary-estimated">—</strong>
                 </article>
                 <article>
                     <span>Finalizadas</span>
@@ -91,12 +99,33 @@
                             </select>
                         </label>
 
+                        <label class="select-field" for="maintenance-type-filter">
+                            <span class="sr-only">Filtrar por tipo</span>
+                            <select id="maintenance-type-filter">
+                                <option value="todos">Todos os tipos</option>
+                                <option value="preventiva">Preventivas</option>
+                                <option value="corretiva">Corretivas</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field" for="maintenance-priority-filter">
+                            <span class="sr-only">Filtrar por prioridade</span>
+                            <select id="maintenance-priority-filter">
+                                <option value="todos">Todas as prioridades</option>
+                                <option value="alta">Prioridade alta</option>
+                                <option value="media">Prioridade média</option>
+                                <option value="baixa">Prioridade baixa</option>
+                            </select>
+                        </label>
+
                         <label class="select-field" for="maintenance-order">
                             <span class="sr-only">Ordenar manutenções</span>
                             <select id="maintenance-order">
                                 <option value="id:desc">Mais recentes</option>
                                 <option value="id:asc">Mais antigas</option>
-                                <option value="custo:desc">Maior custo</option>
+                                <option value="data_prevista:asc">Prazo mais próximo</option>
+                                <option value="custo_estimado:desc">Maior custo estimado</option>
+                                <option value="custo:desc">Maior custo real</option>
                                 <option value="quilometragem:desc">Maior quilometragem</option>
                             </select>
                         </label>
@@ -148,7 +177,7 @@
         <form id="maintenance-form" class="modal__surface">
             <div class="modal__header">
                 <div>
-                    <p class="eyebrow">Entrada na oficina</p>
+                    <p id="maintenance-dialog-eyebrow" class="eyebrow">Entrada na oficina</p>
                     <h2 id="maintenance-dialog-title">Abrir manutenção</h2>
                 </div>
                 <button class="icon-button" type="button" data-close-maintenance-dialog aria-label="Fechar formulário">×</button>
@@ -163,10 +192,48 @@
                     <small>Somente veículos disponíveis podem entrar em manutenção.</small>
                 </div>
 
+                <div class="field">
+                    <label for="maintenance-type">Tipo</label>
+                    <select id="maintenance-type" required>
+                        <option value="corretiva">Corretiva</option>
+                        <option value="preventiva">Preventiva</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="maintenance-priority">Prioridade</label>
+                    <select id="maintenance-priority" required>
+                        <option value="baixa">Baixa</option>
+                        <option value="media" selected>Média</option>
+                        <option value="alta">Alta</option>
+                    </select>
+                </div>
+
                 <div class="field field--wide">
                     <label for="maintenance-reason">Motivo ou serviço necessário</label>
-                    <textarea id="maintenance-reason" minlength="3" maxlength="300" rows="5" required></textarea>
+                    <textarea id="maintenance-reason" minlength="3" maxlength="300" rows="4" required></textarea>
                     <small>Descreva o problema, a revisão ou o reparo que será realizado.</small>
+                </div>
+
+                <div class="field">
+                    <label for="maintenance-provider">Oficina ou fornecedor</label>
+                    <input id="maintenance-provider" type="text" maxlength="150" autocomplete="organization">
+                </div>
+
+                <div class="field">
+                    <label for="maintenance-estimated-cost">Custo estimado (R$)</label>
+                    <input id="maintenance-estimated-cost" type="number" inputmode="decimal" min="0" step="0.01" value="0">
+                </div>
+
+                <div class="field">
+                    <label for="maintenance-expected-date">Previsão de conclusão</label>
+                    <input id="maintenance-expected-date" type="date">
+                </div>
+
+                <div class="field field--wide">
+                    <label for="maintenance-notes">Observações</label>
+                    <textarea id="maintenance-notes" maxlength="500" rows="3"></textarea>
+                    <small>Registre peças, diagnósticos ou instruções úteis para acompanhar o serviço.</small>
                 </div>
             </div>
 
@@ -175,7 +242,7 @@
             <div class="modal__actions">
                 <button class="secondary-button" type="button" data-close-maintenance-dialog>Cancelar</button>
                 <button id="save-maintenance-button" class="primary-button primary-button--compact" type="submit">
-                    <span>Abrir manutenção</span>
+                    <span id="save-maintenance-label">Abrir manutenção</span>
                     <span aria-hidden="true">→</span>
                 </button>
             </div>

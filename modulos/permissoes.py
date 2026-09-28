@@ -21,6 +21,7 @@ class Permissao(str, Enum):
     )
     MANUTENCOES_LER = "manutencoes:ler"
     MANUTENCOES_CRIAR = "manutencoes:criar"
+    MANUTENCOES_EDITAR = "manutencoes:editar"
     MANUTENCOES_FINALIZAR = (
         "manutencoes:finalizar"
     )
@@ -43,6 +44,7 @@ _PERMISSOES_POR_ROLE = {
             Permissao.ALUGUEIS_LER,
             Permissao.MANUTENCOES_LER,
             Permissao.MANUTENCOES_CRIAR,
+            Permissao.MANUTENCOES_EDITAR,
             Permissao.MANUTENCOES_FINALIZAR,
             Permissao.RELATORIOS_LER,
             Permissao.AUDITORIA_LER,

@@ -74,6 +74,13 @@ class ManutencaoFake:
         self.data_inicio = "2026-09-20"
         self.data_fim = None
         self.status = "ativa"
+        self.tipo = "preventiva"
+        self.prioridade = "media"
+        self.fornecedor = "Oficina Central"
+        self.custo_estimado = 350.0
+        self.data_prevista = "2026-09-22"
+        self.observacoes = None
+        self.atrasada = False
 
 
 class AuthServiceFake:

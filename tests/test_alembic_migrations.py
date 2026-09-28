@@ -351,7 +351,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20260927_0003"
+        assert revisao == "20260928_0004"
 
     finally:
         engine.dispose()
@@ -397,6 +397,24 @@ def test_upgrade_preserva_dados_do_schema_legado(
                 "disponivel",
                 1,
                 1,
+            )
+
+            manutencao = conexao.execute(
+                text(
+                    "SELECT tipo, prioridade, "
+                    "custo_estimado, fornecedor, "
+                    "data_prevista, observacoes "
+                    "FROM manutencoes WHERE id = 1"
+                )
+            ).one()
+
+            assert tuple(manutencao) == (
+                "corretiva",
+                "media",
+                0.0,
+                None,
+                None,
+                None,
             )
 
             for tabela in TABELAS_ESPERADAS:
