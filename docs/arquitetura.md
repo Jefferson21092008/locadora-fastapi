@@ -302,3 +302,37 @@ SQLAlchemy / PostgreSQL
 O repository executa agregações no banco em vez de carregar coleções completas em memória. Ele calcula contagens por status e valores financeiros consolidados. O service mantém os cálculos derivados de negócio, como taxa da frota alugada e resultado bruto.
 
 O dashboard visual continua único para administradores e clientes. Quando o usuário possui `relatorios:ler`, o frontend carrega o resumo administrativo; caso contrário, mantém o resumo básico de `/api/v1/status`. Isso evita expor métricas financeiras a usuários sem autorização e preserva compatibilidade com o fluxo existente.
+
+## Exportações de relatórios — CSV, Excel e PDF
+
+A Etapa 13 acrescenta uma camada de transformação de relatórios sem deslocar regras de negócio para o formato de arquivo.
+
+Fluxo:
+
+```text
+Relatórios no frontend
+   ↓
+GET /api/v1/relatorios/resultado-por-veiculo/exportar/{formato}
+   ↓
+exigir_permissao(relatorios:ler)
+   ↓
+ExportacaoRelatoriosService
+   ↓
+RelatorioService.resultado_por_veiculo()
+   ↓
+RelatorioRepository / SQLAlchemy
+   ↓
+dados estruturados
+   ↓
+CSV | XLSX | PDF
+   ↓
+Response + Content-Disposition: attachment
+```
+
+`RelatorioService` e `RelatorioRepository` permanecem responsáveis pela semântica e pelas consultas do relatório. `ExportacaoRelatoriosService` recebe esses dados prontos e somente serializa o resultado para CSV, Excel ou PDF. Isso evita duplicar cálculos financeiros em três geradores diferentes.
+
+O CSV usa UTF-8 com BOM e separador `;`. O XLSX possui cabeçalho, filtro, congelamento da primeira linha de dados e formato monetário. O PDF usa layout A4 paisagem e tabela repetindo o cabeçalho entre páginas. CSV e XLSX neutralizam textos que poderiam ser interpretados como fórmulas por aplicativos de planilha.
+
+O navegador não recebe uma URL pública sem autenticação. `frontend/js/api.js` faz o download com o access token em memória e preserva o fluxo de refresh existente em caso de `401`.
+
+As respostas de exportação usam `Cache-Control: no-store`. A etapa não altera o schema do banco e não exige migration.

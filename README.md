@@ -829,7 +829,7 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - testes E2E com Playwright: **concluídos e integrados ao CI**;
 - logs estruturados e request ID: **concluídos**;
 - monitoramento de erros: **concluído e validado em produção com Sentry**;
-- audit logs: **implementados; aguardando validação do CI e deploy da Etapa 7**.
+- audit logs: **concluídos e disponíveis na interface administrativa**.
 
 ## RBAC granular
 
@@ -965,5 +965,33 @@ GET /api/v1/relatorios/dashboard
 O resumo administrativo inclui clientes ativos/inativos, distribuição da frota por status, aluguéis e manutenções ativos/finalizados, taxa da frota atualmente alugada, receita de aluguéis finalizados, custos de manutenção finalizada, resultado bruto e ticket médio dos aluguéis concluídos.
 
 Usuários sem a permissão de relatórios continuam usando o resumo básico já existente. O frontend decide qual fonte consultar a partir das permissões retornadas por `/api/v1/auth/me`; a autorização do endpoint administrativo continua sendo aplicada no backend.
+
+Não há migration nesta etapa.
+
+## Trilha principal — Exportações CSV, Excel e PDF
+
+A Etapa 13 adiciona download do relatório completo de resultado por veículo em três formatos interoperáveis:
+
+```text
+GET /api/v1/relatorios/resultado-por-veiculo/exportar/csv
+GET /api/v1/relatorios/resultado-por-veiculo/exportar/xlsx
+GET /api/v1/relatorios/resultado-por-veiculo/exportar/pdf
+```
+
+As exportações reutilizam os dados já produzidos por `RelatorioService.resultado_por_veiculo()`. A nova camada `ExportacaoRelatoriosService` não recalcula regras financeiras: ela recebe o resultado do relatório e apenas o transforma em arquivo. O endpoint continua protegido por `relatorios:ler`.
+
+Características dos formatos:
+
+- **CSV**: UTF-8 com BOM e separador `;`, facilitando abertura no Excel em ambientes pt-BR;
+- **Excel (.xlsx)**: planilha com cabeçalho, filtro, congelamento de painel, larguras de coluna e formatação monetária;
+- **PDF**: documento A4 paisagem com título, instante de geração e tabela paginável;
+- todos usam `Content-Disposition: attachment` e `Cache-Control: no-store`;
+- textos iniciados por caracteres de fórmula são neutralizados nas exportações destinadas a planilhas para reduzir risco de CSV/Excel Formula Injection.
+
+O frontend de relatórios oferece botões CSV, Excel e PDF na seção “Resultado por veículo”. O access token continua somente em memória: o download é feito pela camada autenticada de `frontend/js/api.js`, que também consegue renovar a sessão antes de repetir a solicitação.
+
+Novas dependências de runtime:
+- `openpyxl` para geração de `.xlsx`;
+- `reportlab` para geração de PDF.
 
 Não há migration nesta etapa.

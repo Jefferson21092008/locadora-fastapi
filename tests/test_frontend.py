@@ -644,3 +644,25 @@ def test_frontend_api_expoe_metricas_do_dashboard():
     assert resposta.status_code == 200
     assert "getDashboardMetrics" in resposta.text
     assert 'apiRequest("/relatorios/dashboard")' in resposta.text
+
+def test_relatorios_expoem_exportacoes_csv_excel_pdf():
+    pagina = client.get("/app/relatorios.html")
+    api_js = client.get("/app/js/api.js")
+    relatorios_js = client.get("/app/js/relatorios.js")
+
+    assert pagina.status_code == 200
+    assert 'data-export-format="csv"' in pagina.text
+    assert 'data-export-format="xlsx"' in pagina.text
+    assert 'data-export-format="pdf"' in pagina.text
+
+    assert api_js.status_code == 200
+    assert "apiDownload" in api_js.text
+    assert "downloadVehicleResultReport" in api_js.text
+    assert (
+        "/relatorios/resultado-por-veiculo/exportar/"
+        in api_js.text
+    )
+
+    assert relatorios_js.status_code == 200
+    assert "URL.createObjectURL" in relatorios_js.text
+    assert "downloadVehicleResultReport" in relatorios_js.text
