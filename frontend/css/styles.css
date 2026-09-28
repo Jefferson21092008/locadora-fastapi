@@ -4030,3 +4030,103 @@ form[aria-busy="true"] :is(input, select, textarea, button) {
         width: 100%;
     }
 }
+
+
+/* ================================================================
+   VISTORIAS E OCORRÊNCIAS
+   ================================================================ */
+
+.inspection-rental-select {
+    min-width: min(34rem, 100%);
+}
+
+.inspection-rental-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+    margin: var(--space-5) 0;
+    padding: var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+}
+
+.inspection-rental-summary > div {
+    display: grid;
+    gap: var(--space-1);
+}
+
+.inspection-rental-summary span,
+.inspection-rental-summary small {
+    color: var(--text-muted);
+}
+
+.inspection-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+}
+
+.inspection-panel {
+    padding: var(--space-5);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-sm);
+}
+
+.inspection-panel h2 {
+    margin-top: 0;
+}
+
+.stack-form {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+}
+
+.inspection-records {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+.inspection-record {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-muted);
+}
+
+.inspection-record > div {
+    display: grid;
+    gap: var(--space-1);
+}
+
+.inspection-record span,
+.inspection-record p,
+.inspection-records__empty {
+    color: var(--text-muted);
+}
+
+.inspection-record p,
+.inspection-records__empty {
+    margin: 0;
+}
+
+.inspection-record--muted {
+    opacity: 0.68;
+}
+
+@media (max-width: 900px) {
+    .inspection-rental-summary,
+    .inspection-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .inspection-rental-select {
+        min-width: 100%;
+    }
+}

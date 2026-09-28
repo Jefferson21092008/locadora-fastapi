@@ -407,3 +407,23 @@ def test_registrar_faz_rollback_se_cliente_nao_existir(
         assert model_veiculo.status == "disponivel"
         assert model_veiculo.disponivel is True
         assert model_veiculo.alugado_por is None
+
+
+def test_buscar_por_id_consulta_banco(
+    contexto,
+):
+    repository, cliente, veiculo = contexto
+
+    aluguel = registrar_aluguel_ativo(
+        repository,
+        cliente,
+        veiculo,
+    )
+
+    encontrado = repository.buscar_por_id(
+        aluguel.id
+    )
+
+    assert encontrado is not None
+    assert encontrado.id == aluguel.id
+    assert encontrado.veiculo_id == veiculo.id

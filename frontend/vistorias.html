@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#08111f">
+    <meta name="description" content="Vistorias e ocorrências operacionais dos aluguéis da Locadora.">
+    <title>Vistorias | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <a class="skip-link" href="#main-content">Ir para o conteúdo principal</a>
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item" href="/app/reservas.html">Reservas</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
+                <a class="nav-item admin-nav nav-item--active" href="/app/vistorias.html" aria-current="page" hidden>Vistorias</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+                <a class="nav-item admin-nav" href="/app/auditoria.html" hidden>Auditoria</a>
+            </nav>
+
+            <p class="sidebar__note">Registre retirada, devolução, combustível, danos, multas e cauções sem antecipar a liquidação financeira.</p>
+        </aside>
+
+        <main id="main-content" class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Operação do aluguel</p>
+                    <h1>Vistorias e ocorrências</h1>
+                    <p>Consolide o estado do veículo e as pendências operacionais ligadas a cada aluguel.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="inspection-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-content" aria-labelledby="inspection-selector-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Aluguel</p>
+                        <h2 id="inspection-selector-title">Selecione o aluguel</h2>
+                    </div>
+
+                    <div class="fleet-filters">
+                        <label class="select-field inspection-rental-select" for="inspection-rental">
+                            <span class="sr-only">Aluguel para vistoria</span>
+                            <select id="inspection-rental">
+                                <option value="">Selecione um aluguel</option>
+                            </select>
+                        </label>
+                        <button id="refresh-inspection-button" class="secondary-button" type="button">Atualizar</button>
+                    </div>
+                </div>
+
+                <div id="inspection-empty" class="empty-state">
+                    <strong>Escolha um aluguel</strong>
+                    <p>As inspeções, danos, multas e caução aparecerão aqui.</p>
+                </div>
+
+                <div id="inspection-content" hidden>
+                    <section class="fleet-overview fleet-overview--four" aria-label="Resumo da vistoria">
+                        <article>
+                            <span>Combustível na retirada</span>
+                            <strong id="inspection-fuel-start">—</strong>
+                        </article>
+                        <article>
+                            <span>Combustível na devolução</span>
+                            <strong id="inspection-fuel-end">—</strong>
+                        </article>
+                        <article>
+                            <span>Combustível faltante</span>
+                            <strong id="inspection-fuel-missing">—</strong>
+                        </article>
+                        <article>
+                            <span>Pendências estimadas</span>
+                            <strong id="inspection-pending-total">—</strong>
+                        </article>
+                    </section>
+
+                    <div id="inspection-rental-summary" class="inspection-rental-summary"></div>
+
+                    <section class="inspection-grid" aria-label="Operações de vistoria">
+                        <article class="inspection-panel">
+                            <p class="eyebrow">Condição do veículo</p>
+                            <h2>Nova inspeção</h2>
+                            <form id="inspection-form" class="stack-form">
+                                <div class="field">
+                                    <label for="inspection-type">Momento</label>
+                                    <select id="inspection-type" required>
+                                        <option value="retirada">Retirada</option>
+                                        <option value="devolucao">Devolução</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="inspection-odometer">Quilometragem do odômetro</label>
+                                    <input id="inspection-odometer" type="number" inputmode="decimal" min="0" step="0.1" required>
+                                </div>
+                                <div class="field">
+                                    <label for="inspection-fuel">Combustível (%)</label>
+                                    <input id="inspection-fuel" type="number" inputmode="numeric" min="0" max="100" step="1" required>
+                                </div>
+                                <div class="field">
+                                    <label for="inspection-notes">Observações</label>
+                                    <textarea id="inspection-notes" maxlength="500" rows="3"></textarea>
+                                </div>
+                                <button class="primary-button primary-button--compact" type="submit">Registrar inspeção</button>
+                            </form>
+                            <div id="inspection-records" class="inspection-records"></div>
+                        </article>
+
+                        <article class="inspection-panel">
+                            <p class="eyebrow">Ocorrência</p>
+                            <h2>Danos</h2>
+                            <form id="damage-form" class="stack-form">
+                                <div class="field">
+                                    <label for="damage-description">Descrição</label>
+                                    <textarea id="damage-description" minlength="3" maxlength="500" rows="3" required></textarea>
+                                </div>
+                                <div class="field">
+                                    <label for="damage-value">Valor estimado</label>
+                                    <input id="damage-value" type="number" inputmode="decimal" min="0" step="0.01" value="0" required>
+                                </div>
+                                <button class="primary-button primary-button--compact" type="submit">Registrar dano</button>
+                            </form>
+                            <div id="damage-records" class="inspection-records"></div>
+                        </article>
+
+                        <article class="inspection-panel">
+                            <p class="eyebrow">Ocorrência</p>
+                            <h2>Multas de trânsito</h2>
+                            <form id="traffic-fine-form" class="stack-form">
+                                <div class="field">
+                                    <label for="traffic-fine-description">Descrição</label>
+                                    <textarea id="traffic-fine-description" minlength="3" maxlength="500" rows="3" required></textarea>
+                                </div>
+                                <div class="field">
+                                    <label for="traffic-fine-value">Valor</label>
+                                    <input id="traffic-fine-value" type="number" inputmode="decimal" min="0" step="0.01" value="0" required>
+                                </div>
+                                <div class="field">
+                                    <label for="traffic-fine-date">Data da ocorrência</label>
+                                    <input id="traffic-fine-date" type="date" required>
+                                </div>
+                                <button class="primary-button primary-button--compact" type="submit">Registrar multa</button>
+                            </form>
+                            <div id="traffic-fine-records" class="inspection-records"></div>
+                        </article>
+
+                        <article class="inspection-panel">
+                            <p class="eyebrow">Garantia</p>
+                            <h2>Caução</h2>
+                            <form id="deposit-form" class="stack-form">
+                                <div class="field">
+                                    <label for="deposit-value">Valor da caução</label>
+                                    <input id="deposit-value" type="number" inputmode="decimal" min="0.01" step="0.01" required>
+                                </div>
+                                <div class="field">
+                                    <label for="deposit-released">Valor já liberado</label>
+                                    <input id="deposit-released" type="number" inputmode="decimal" min="0" step="0.01" value="0" required>
+                                </div>
+                                <div class="field">
+                                    <label for="deposit-notes">Observações</label>
+                                    <textarea id="deposit-notes" maxlength="500" rows="3"></textarea>
+                                </div>
+                                <button class="primary-button primary-button--compact" type="submit">Salvar caução</button>
+                            </form>
+                            <div id="deposit-record" class="inspection-records"></div>
+                        </article>
+                    </section>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="/app/js/ui.js"></script>
+    <script type="module" src="/app/js/vistorias.js"></script>
+</body>
+</html>

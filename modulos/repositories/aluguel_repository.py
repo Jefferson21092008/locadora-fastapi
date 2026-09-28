@@ -209,6 +209,23 @@ class AluguelRepository:
                 model
             )
 
+    def buscar_por_id(
+        self,
+        id_aluguel,
+    ):
+        with (
+            self.banco_sqlalchemy
+            .criar_sessao()
+        ) as sessao:
+            model = sessao.get(
+                AluguelModel,
+                id_aluguel,
+            )
+
+            return self._para_entidade(
+                model
+            )
+
     # ================================================================
     # NOVO ALUGUEL
     # ================================================================

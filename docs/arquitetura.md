@@ -430,3 +430,105 @@ A migration `20260928_0005_reservas` cria a tabela `reservas`, constraints de
 status/período e os índices `idx_reservas_veiculo_periodo` e
 `idx_reservas_cliente_status`. A migration tolera o cenário de testes/adoção em
 que `Base.metadata.create_all()` já criou a tabela antes do Alembic.
+
+
+## Vistorias e ocorrências operacionais
+
+A Etapa 16 introduz um agregado operacional para acompanhar o estado físico e
+financeiro ainda não liquidado de cada aluguel.
+
+```text
+frontend/vistorias.html
+        ↓
+api/routers/vistorias.py
+        ↓
+VistoriaService
+        ↓
+VistoriaRepository
+        ↓
+InspecaoAluguelModel
+DanoAluguelModel
+MultaTransitoModel
+CaucaoAluguelModel
+        ↓
+PostgreSQL / SQLite
+```
+
+O módulo não substitui `AluguelService`. O aluguel continua responsável por
+criação, prazo e devolução. `VistoriaService` concentra apenas informações
+operacionais vinculadas a um aluguel existente.
+
+### Inspeções
+
+Cada aluguel pode possuir uma inspeção de `retirada` e uma de `devolucao`. A
+restrição também existe no banco por `UNIQUE (aluguel_id, tipo)`. A inspeção
+armazena quilometragem do odômetro, combustível em percentual e observações.
+
+Quando as duas inspeções existem, o resumo calcula:
+
+```text
+combustivel_faltante =
+    max(combustivel_retirada - combustivel_devolucao, 0)
+```
+
+Esse resultado é informativo. A Etapa 16 não converte automaticamente a
+diferença em cobrança.
+
+### Danos e multas de trânsito
+
+Danos armazenam descrição e valor estimado. Multas de trânsito armazenam
+descrição, valor e data da ocorrência. Ambos mantêm histórico: um registro
+incorreto é cancelado em vez de apagado.
+
+As multas de trânsito são diferentes do campo `multa` de `Aluguel`, que
+representa exclusivamente a penalidade por atraso da devolução.
+
+O resumo considera somente ocorrências ainda ativas:
+
+```text
+pendencias_estimadas_total =
+    danos_ativos_total + multas_ativas_total
+```
+
+### Caução
+
+A caução é única por aluguel. O registro persiste `valor` e
+`valor_liberado`. O domínio deriva o estado:
+
+```text
+valor_liberado == 0       -> retida
+0 < valor_liberado < valor -> parcial
+valor_liberado == valor    -> liberada
+```
+
+O valor ainda retido é calculado por `valor - valor_liberado`.
+
+### Autorização e auditoria
+
+As capacidades administrativas adicionadas são:
+
+- `vistorias:ler`;
+- `vistorias:registrar`;
+- `danos:gerenciar`;
+- `multas:gerenciar`;
+- `caucoes:gerenciar`.
+
+Criação de inspeção, registro/cancelamento de dano, registro/cancelamento de
+multa e atualização de caução são auditados.
+
+### Persistência
+
+A migration `20260928_0006_vistorias_ocorrencias` cria:
+
+- `inspecoes`;
+- `danos`;
+- `multas_transito`;
+- `caucoes`.
+
+Todas as tabelas apontam para `alugueis`. Constraints protegem tipos, status,
+valores não negativos e combustível entre 0% e 100%.
+
+A Etapa 16 preserva uma separação importante: os valores registrados aqui ainda
+não são incorporados ao pagamento da devolução. A próxima etapa financeira pode
+consumir esse agregado operacional como fonte de encargos e liberações de
+caução sem mover regras de inspeção para o módulo de pagamentos.

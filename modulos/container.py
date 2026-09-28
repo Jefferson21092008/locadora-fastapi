@@ -34,6 +34,9 @@ from modulos.repositories.usuario_repository import (
 from modulos.repositories.veiculo_repository import (
     VeiculoRepository,
 )
+from modulos.repositories.vistoria_repository import (
+    VistoriaRepository,
+)
 
 from modulos.servicos.admin_service import (
     AdminService,
@@ -73,6 +76,9 @@ from modulos.servicos.recuperacao_senha_service import (
 )
 from modulos.servicos.veiculos_service import (
     VeiculoService,
+)
+from modulos.servicos.vistoria_service import (
+    VistoriaService,
 )
 
 from modulos.usuarios import Role
@@ -223,6 +229,14 @@ class Container:
             )
         )
 
+        self.vistoria_repository = (
+            VistoriaRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
     # ================================================================
     # SERVICES
     # ================================================================
@@ -349,6 +363,17 @@ class Container:
                 ),
                 reserva_service=(
                     self.reserva_service
+                ),
+            )
+        )
+
+        self.vistoria_service = (
+            VistoriaService(
+                aluguel_repository=(
+                    self.aluguel_repository
+                ),
+                vistoria_repository=(
+                    self.vistoria_repository
                 ),
             )
         )
