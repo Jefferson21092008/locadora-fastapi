@@ -308,3 +308,45 @@ def test_frontend_remove_token_de_recuperacao_da_url():
     assert resposta.status_code == 200
     assert "window.history.replaceState" in resposta.text
     assert "window.location.pathname" in resposta.text
+
+
+def test_frontend_design_system_define_tokens_compartilhados():
+    resposta = client.get(
+        "/app/css/styles.css"
+    )
+
+    assert resposta.status_code == 200
+    assert "--surface-subtle:" in resposta.text
+    assert "--space-4:" in resposta.text
+    assert "--shadow-md:" in resposta.text
+    assert "--transition-base:" in resposta.text
+    assert ".skip-link" in resposta.text
+
+
+@pytest.mark.parametrize(
+    "caminho",
+    [
+        "/app/",
+        "/app/dashboard.html",
+        "/app/veiculos.html",
+        "/app/alugueis.html",
+        "/app/clientes.html",
+        "/app/manutencoes.html",
+        "/app/relatorios.html",
+        "/app/cadastro.html",
+        "/app/esqueci-senha.html",
+        "/app/redefinir-senha.html",
+    ],
+)
+def test_paginas_frontend_possuem_link_de_salto_acessivel(
+    caminho,
+):
+    resposta = client.get(
+        caminho
+    )
+
+    assert resposta.status_code == 200
+    assert 'class="skip-link"' in resposta.text
+    assert 'href="#main-content"' in resposta.text
+    assert 'id="main-content"' in resposta.text
+    assert 'name="theme-color"' in resposta.text

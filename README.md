@@ -39,6 +39,8 @@ Além das funcionalidades de negócio, a versão atual também possui cobertura 
 
 A documentação detalhada da arquitetura está disponível em [`docs/arquitetura.md`](docs/arquitetura.md).
 
+A base visual e os tokens compartilhados do frontend estão documentados em [`docs/design-system.md`](docs/design-system.md).
+
 ## Funcionalidades
 
 - cadastro, consulta, ativação e desativação de clientes;
@@ -54,7 +56,7 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 - prevenção de nomes de usuário duplicados;
 - atualização transacional do nome de usuário nas tabelas relacionadas;
 - CLI e API REST usando a mesma camada de negócio;
-- frontend responsivo com login JWT, renovação automática de sessão e painel conectado à API;
+- frontend responsivo com design system próprio, login JWT, renovação automática de sessão e painel conectado à API;
 - transações e rollback em operações compostas;
 - documentação OpenAPI/Swagger;
 - health check para produção;
