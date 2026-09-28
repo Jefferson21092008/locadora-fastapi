@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
@@ -12,6 +14,7 @@ class ManutencaoService:
         self,
         veiculo_service,
         manutencao_repository,
+        reserva_repository=None,
     ):
         if veiculo_service is None:
             raise ValueError(
@@ -28,6 +31,9 @@ class ManutencaoService:
         )
         self.manutencao_repository = (
             manutencao_repository
+        )
+        self.reserva_repository = (
+            reserva_repository
         )
 
     def buscar_por_id(
@@ -69,6 +75,58 @@ class ManutencaoService:
             .listar_ativas()
         )
 
+    def _validar_reservas_para_manutencao(
+        self,
+        id_veiculo,
+        data_prevista,
+    ):
+        if (
+            self.reserva_repository is None
+            or not self.reserva_repository.possui_ativa_veiculo(
+                id_veiculo
+            )
+        ):
+            return
+
+        if not data_prevista:
+            raise RegraDeNegocio(
+                "Informe uma previsão de conclusão "
+                "para validar as reservas futuras."
+            )
+
+        try:
+            fim_manutencao = (
+                date.fromisoformat(
+                    data_prevista
+                )
+                + timedelta(days=1)
+            )
+        except ValueError as erro:
+            raise RegraDeNegocio(
+                "Data prevista de conclusão inválida."
+            ) from erro
+
+        conflito_reserva = (
+            self.reserva_repository
+            .buscar_conflitante(
+                veiculo_id=id_veiculo,
+                data_inicio=(
+                    date.today()
+                    .isoformat()
+                ),
+                data_fim=(
+                    fim_manutencao
+                    .isoformat()
+                ),
+            )
+        )
+
+        if conflito_reserva is not None:
+            raise RegraDeNegocio(
+                "A manutenção prevista conflita "
+                "com uma reserva futura."
+            )
+
     def abrir(
         self,
         id_veiculo,
@@ -103,6 +161,11 @@ class ManutencaoService:
                 "Esse veículo já possui "
                 "uma manutenção ativa."
             )
+
+        self._validar_reservas_para_manutencao(
+            id_veiculo,
+            data_prevista,
+        )
 
         manutencao = Manutencao(
             id_manutencao=0,
@@ -197,6 +260,18 @@ class ManutencaoService:
             raise RegraDeNegocio(
                 mensagem
             )
+
+        try:
+            self._validar_reservas_para_manutencao(
+                manutencao.veiculo_id,
+                manutencao.data_prevista,
+            )
+        except Exception:
+            manutencao.__dict__.clear()
+            manutencao.__dict__.update(
+                estado_anterior
+            )
+            raise
 
         try:
             self.manutencao_repository.atualizar(

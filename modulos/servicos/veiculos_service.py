@@ -15,6 +15,7 @@ class VeiculoService:
     def __init__(
         self,
         veiculo_repository,
+        reserva_repository=None,
     ):
         """Recebe o repository por injeção de dependência."""
         if veiculo_repository is None:
@@ -24,6 +25,9 @@ class VeiculoService:
 
         self.veiculo_repository = (
             veiculo_repository
+        )
+        self.reserva_repository = (
+            reserva_repository
         )
 
     # ================================================================
@@ -247,6 +251,17 @@ class VeiculoService:
         if veiculo is None:
             raise RecursoNaoEncontrado(
                 "Veículo não encontrado."
+            )
+
+        if (
+            self.reserva_repository is not None
+            and self.reserva_repository.possui_ativa_veiculo(
+                id_veiculo
+            )
+        ):
+            raise RegraDeNegocio(
+                "Não é possível desativar um veículo "
+                "com reserva futura ativa."
             )
 
         sucesso, mensagem = (

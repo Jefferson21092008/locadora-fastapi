@@ -17,6 +17,10 @@ export const Permissions = Object.freeze({
     MANUTENCOES_CRIAR: "manutencoes:criar",
     MANUTENCOES_EDITAR: "manutencoes:editar",
     MANUTENCOES_FINALIZAR: "manutencoes:finalizar",
+    RESERVAS_LER: "reservas:ler",
+    RESERVAS_CRIAR: "reservas:criar",
+    RESERVAS_PROPRIAS_LER: "reservas:proprias:ler",
+    RESERVAS_CANCELAR: "reservas:cancelar",
     RELATORIOS_LER: "relatorios:ler",
     AUDITORIA_LER: "auditoria:ler",
     CONTA_RENOMEAR: "conta:renomear",
@@ -488,6 +492,32 @@ export function finishMaintenance(vehicleId, data) {
     return apiRequest(`/manutencoes/${vehicleId}/finalizar`, {
         method: "PATCH",
         body: JSON.stringify(data),
+    });
+}
+
+export function getReservations() {
+    return apiRequest("/reservas");
+}
+
+export function queryReservations(params = {}, own = false) {
+    const path = own ? "/reservas/me/consulta" : "/reservas/consulta";
+    return apiRequest(`${path}${buildQuery(params)}`);
+}
+
+export function createReservation(data) {
+    return apiRequest("/reservas", {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export function cancelReservation(reservationId, own = false) {
+    const path = own
+        ? `/reservas/me/${reservationId}/cancelar`
+        : `/reservas/${reservationId}/cancelar`;
+
+    return apiRequest(path, {
+        method: "PATCH",
     });
 }
 

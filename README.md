@@ -48,6 +48,7 @@ As telas operacionais reutilizam essa base para manter busca, filtros, contagem 
 - cadastro, consulta, ativação e desativação de clientes;
 - cadastro, busca, edição e controle de veículos;
 - criação e finalização de aluguéis;
+- criação, consulta e cancelamento de reservas futuras de veículos;
 - cálculo de devolução, quilometragem, multa e pagamento;
 - abertura e finalização de manutenções;
 - relatórios administrativos e financeiros;
@@ -143,6 +144,7 @@ Locadora/
 │   │   ├── manutencoes.js
 │   │   ├── redefinir-senha.js
 │   │   ├── relatorios.js
+│   │   ├── reservas.js
 │   │   └── veiculos.js
 │   ├── alugueis.html
 │   ├── auditoria.html
@@ -154,6 +156,7 @@ Locadora/
 │   ├── manutencoes.html
 │   ├── redefinir-senha.html
 │   ├── relatorios.html
+│   ├── reservas.html
 │   └── veiculos.html
 ├── docs/
 │   └── arquitetura.md
@@ -161,7 +164,9 @@ Locadora/
 │   ├── versions/
 │   │   ├── 20260903_0001_schema_inicial.py
 │   │   ├── 20260927_0002_audit_logs.py
-│   │   └── 20260927_0003_sessoes_refresh.py
+│   │   ├── 20260927_0003_sessoes_refresh.py
+│   │   ├── 20260928_0004_manutencao_avancada.py
+│   │   └── 20260928_0005_reservas.py
 │   ├── env.py
 │   ├── README
 │   └── script.py.mako
@@ -181,6 +186,7 @@ Locadora/
 │   ├── locadora.py
 │   ├── manutencoes.py
 │   ├── pagamentos.py
+│   ├── reservas.py
 │   ├── seguranca.py
 │   ├── usuarios.py
 │   └── veiculos.py
@@ -211,7 +217,7 @@ O diretório `scripts/legacy/` preserva apenas o histórico da antiga migração
 
 ### Entidades
 
-Os arquivos de domínio em `modulos/` representam clientes, veículos, aluguéis, manutenções, usuários, pagamentos e registros de auditoria. Eles concentram regras próprias do domínio e não executam SQL.
+Os arquivos de domínio em `modulos/` representam clientes, veículos, aluguéis, reservas, manutenções, usuários, pagamentos e registros de auditoria. Eles concentram regras próprias do domínio e não executam SQL.
 
 ### Models
 
@@ -1028,3 +1034,47 @@ atrasada e custo estimado ainda em aberto.
 A evolução exige a migration `20260928_0004_manutencao_avancada`, preservando
 os registros existentes com os padrões `corretiva`, `media` e custo estimado
 zero.
+
+## Trilha principal — Reservas futuras de veículos
+
+A Etapa 15 adiciona reservas para períodos futuros sem alterar o estado atual do
+veículo. Um veículo pode estar disponível hoje e, ao mesmo tempo, possuir um
+período futuro comprometido por uma reserva.
+
+Fluxos principais:
+
+```text
+POST /api/v1/reservas
+GET  /api/v1/reservas
+GET  /api/v1/reservas/consulta
+GET  /api/v1/reservas/me
+GET  /api/v1/reservas/me/consulta
+PATCH /api/v1/reservas/me/{id_reserva}/cancelar
+PATCH /api/v1/reservas/{id_reserva}/cancelar
+```
+
+A criação exige início posterior à data atual e fim posterior ao início. O
+período é tratado como intervalo semiaberto `[inicio, fim)`, permitindo que uma
+reserva termine no mesmo dia em que outra começa, mas rejeitando qualquer
+sobreposição real para o mesmo veículo.
+
+Antes de registrar a reserva, `ReservaService` verifica conflitos com outras
+reservas ativas, aluguéis ativos e manutenção em andamento. Uma manutenção sem
+previsão de conclusão impede a reserva; quando existe previsão, o conflito é
+avaliado pelo período conhecido.
+
+Reservas possuem estados persistidos `ativa`, `cancelada` e `convertida`. O
+estado `expirada` é derivado da data final e não precisa ser armazenado. No dia
+de início, o fluxo de aluguel reconhece uma reserva do mesmo cliente e pode
+convertê-la em aluguel quando o período solicitado está contido no período
+reservado. Reservas de outros clientes impedem o aluguel conflitante.
+
+O frontend oferece uma tela própria com consulta server-side, busca, filtros,
+ordenação, paginação, criação pelo cliente e cancelamento conforme RBAC.
+Administradores podem consultar toda a agenda e cancelar reservas; clientes
+consultam e administram apenas o próprio fluxo.
+
+A etapa usa a migration `20260928_0005_reservas`, com índices por veículo/período
+e cliente/status. A checagem de conflitos é feita na camada de aplicação nesta
+etapa; proteção contra corrida entre transações concorrentes será tratada na
+etapa específica de concorrência e consistência transacional.

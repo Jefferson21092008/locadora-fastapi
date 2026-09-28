@@ -113,7 +113,7 @@ Cada registro contém apenas metadados controlados:
 
 A tabela `audit_logs` é escrita pelo `AuditoriaRepository` e consultada por meio de `GET /api/v1/auditoria`, rota restrita a administradores. A API não oferece endpoints para editar ou excluir registros de auditoria.
 
-São auditadas, nesta etapa, ações autenticadas de alteração de estado: cadastro/edição/ativação de veículos, ativação/desativação de clientes, abertura/finalização de manutenção, criação/devolução de aluguel e alteração do próprio nome de usuário. Login e recuperação de senha continuam registrados como eventos estruturados da camada de observabilidade, sem duplicação na tabela de auditoria.
+São auditadas, nesta etapa, ações autenticadas de alteração de estado: cadastro/edição/ativação de veículos, ativação/desativação de clientes, abertura/finalização de manutenção, criação/devolução de aluguel, criação/cancelamento de reserva e alteração do próprio nome de usuário. Login e recuperação de senha continuam registrados como eventos estruturados da camada de observabilidade, sem duplicação na tabela de auditoria.
 
 Por segurança, valores de campos não entram no histórico e nomes sensíveis como senha, token, JWT, segredo, API key ou DSN são filtrados pelo `AuditoriaService`.
 
@@ -375,3 +375,58 @@ status e prazo.
 A consulta server-side de manutenções foi ampliada com filtros por tipo e
 prioridade. O resumo global passa a informar manutenções atrasadas e o custo
 estimado das manutenções em aberto.
+
+## Reservas futuras de veículos
+
+A Etapa 15 introduz `Reserva` como agregado próprio, separado de `Aluguel`. A
+reserva representa uma intenção futura e, por isso, não muda o status corrente
+do veículo.
+
+```text
+frontend/reservas.html
+   ↓
+api/routers/reservas.py
+   ↓
+ReservaService
+   ↓
+ReservaRepository
+   ↓
+ReservaModel
+   ↓
+PostgreSQL / SQLite
+```
+
+O contrato de período usa datas ISO e a semântica `[inicio, fim)`. No repository,
+duas reservas do mesmo veículo conflitam quando `existente.inicio < novo.fim` e
+`existente.fim > novo.inicio`. Isso permite períodos consecutivos sem criar uma
+falsa sobreposição.
+
+`ReservaService` centraliza a validação cruzada. Além de outra reserva ativa, ele
+considera aluguel ativo e manutenção ativa. Como manutenção é um evento iniciado
+no presente, uma manutenção sem `data_prevista` bloqueia qualquer nova reserva
+do veículo; com previsão conhecida, apenas períodos sobrepostos são rejeitados.
+
+A autorização usa capacidades específicas:
+
+- `reservas:criar`;
+- `reservas:proprias:ler`;
+- `reservas:ler`;
+- `reservas:cancelar`.
+
+Clientes criam e consultam as próprias reservas. Administradores consultam a
+agenda global. Cancelamentos passam pelo service e são auditados. O estado
+`expirada` é derivado a partir de uma reserva ainda persistida como `ativa`,
+enquanto `cancelada` e `convertida` são estados persistidos.
+
+O início de um aluguel consulta reservas antes de alterar a frota. Se houver uma
+reserva de outro cliente, a operação é bloqueada. Se houver uma reserva do mesmo
+cliente começando naquele dia e o aluguel couber no período reservado, ela é
+marcada como `convertida`. Caso a criação do aluguel falhe depois da conversão,
+a aplicação tenta restaurar a reserva. A atomicidade completa entre essas
+operações e proteção contra corridas simultâneas ficam reservadas para a etapa
+de concorrência e consistência transacional.
+
+A migration `20260928_0005_reservas` cria a tabela `reservas`, constraints de
+status/período e os índices `idx_reservas_veiculo_periodo` e
+`idx_reservas_cliente_status`. A migration tolera o cenário de testes/adoção em
+que `Base.metadata.create_all()` já criou a tabela antes do Alembic.

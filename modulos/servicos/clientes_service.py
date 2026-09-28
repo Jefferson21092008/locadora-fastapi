@@ -18,6 +18,7 @@ class ClienteService:
         auth_service,
         cliente_repository,
         aluguel_repository,
+        reserva_repository=None,
     ):
         """
         Recebe as dependências já montadas pelo Container.
@@ -44,6 +45,9 @@ class ClienteService:
         )
         self.aluguel_repository = (
             aluguel_repository
+        )
+        self.reserva_repository = (
+            reserva_repository
         )
 
     # ================================================================
@@ -532,6 +536,21 @@ class ClienteService:
             is not None
         )
 
+
+    def possui_reserva_ativa(
+        self,
+        cliente,
+    ):
+        if self.reserva_repository is None:
+            return False
+
+        return (
+            self.reserva_repository
+            .possui_ativa_cliente(
+                cliente.id
+            )
+        )
+
     # ================================================================
     # DESATIVAÇÃO
     # ================================================================
@@ -559,6 +578,16 @@ class ClienteService:
             raise RegraDeNegocio(
                 "Não é possível desativar "
                 "um cliente com aluguel ativo."
+            )
+
+        if (
+            self.possui_reserva_ativa(
+                cliente
+            )
+        ):
+            raise RegraDeNegocio(
+                "Não é possível desativar "
+                "um cliente com reserva ativa."
             )
 
         if self.auth_service is None:

@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from modulos.alugueis import Aluguel
 from modulos.pagamentos import Pagamento
 
@@ -14,6 +16,7 @@ class AluguelService:
         self,
         veiculo_service,
         aluguel_repository,
+        reserva_service=None,
     ):
         """Recebe as dependências prontas por injeção."""
         if veiculo_service is None:
@@ -28,6 +31,7 @@ class AluguelService:
 
         self.veiculo_service = veiculo_service
         self.aluguel_repository = aluguel_repository
+        self.reserva_service = reserva_service
 
     # ================================================================
     # CONSULTAS
@@ -134,9 +138,47 @@ class AluguelService:
                     "anos."
                 )
 
+        reserva_para_converter = None
+
+        if self.reserva_service is not None:
+            data_inicio = date.today()
+            data_fim = (
+                data_inicio
+                + timedelta(
+                    days=dias
+                )
+            )
+
+            reserva_para_converter = (
+                self.reserva_service
+                .validar_inicio_aluguel(
+                    cliente=cliente,
+                    id_veiculo=id_veiculo,
+                    data_inicio=(
+                        data_inicio.isoformat()
+                    ),
+                    data_fim=(
+                        data_fim.isoformat()
+                    ),
+                )
+            )
+
+            if reserva_para_converter is not None:
+                self.reserva_service.converter_para_aluguel(
+                    reserva_para_converter
+                )
+
         if not veiculo.alugar(
             cliente.usuario
         ):
+            if (
+                self.reserva_service is not None
+                and reserva_para_converter is not None
+            ):
+                self.reserva_service.restaurar_apos_falha(
+                    reserva_para_converter
+                )
+
             raise RegraDeNegocio(
                 "Não foi possível alugar "
                 "esse veículo."
@@ -163,10 +205,17 @@ class AluguelService:
             )
 
         except Exception:
-            # O SQLite fez rollback.
-            # Precisamos desfazer também a mudança
-            # no objeto que está na memória.
+            # O banco fez rollback. Também desfazemos o estado
+            # do objeto em memória e, quando aplicável, da reserva.
             veiculo.devolver()
+
+            if (
+                self.reserva_service is not None
+                and reserva_para_converter is not None
+            ):
+                self.reserva_service.restaurar_apos_falha(
+                    reserva_para_converter
+                )
 
             raise
 

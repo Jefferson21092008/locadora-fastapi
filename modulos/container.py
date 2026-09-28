@@ -19,6 +19,9 @@ from modulos.repositories.manutencao_repository import (
 from modulos.repositories.relatorio_repository import (
     RelatorioRepository,
 )
+from modulos.repositories.reserva_repository import (
+    ReservaRepository,
+)
 from modulos.repositories.sessao_repository import (
     SessaoRepository,
 )
@@ -58,6 +61,9 @@ from modulos.servicos.manutencao_service import (
 )
 from modulos.servicos.relatorios_service import (
     RelatorioService,
+)
+from modulos.servicos.reserva_service import (
+    ReservaService,
 )
 from modulos.servicos.sessao_service import (
     SessaoService,
@@ -201,6 +207,14 @@ class Container:
             )
         )
 
+        self.reserva_repository = (
+            ReservaRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
         self.relatorio_repository = (
             RelatorioRepository(
                 banco_sqlalchemy=(
@@ -271,6 +285,9 @@ class Container:
                 veiculo_repository=(
                     self.veiculo_repository
                 ),
+                reserva_repository=(
+                    self.reserva_repository
+                ),
             )
         )
 
@@ -278,6 +295,26 @@ class Container:
             ManutencaoService(
                 veiculo_service=(
                     self.veiculo_service
+                ),
+                manutencao_repository=(
+                    self.manutencao_repository
+                ),
+                reserva_repository=(
+                    self.reserva_repository
+                ),
+            )
+        )
+
+        self.reserva_service = (
+            ReservaService(
+                veiculo_service=(
+                    self.veiculo_service
+                ),
+                reserva_repository=(
+                    self.reserva_repository
+                ),
+                aluguel_repository=(
+                    self.aluguel_repository
                 ),
                 manutencao_repository=(
                     self.manutencao_repository
@@ -296,6 +333,9 @@ class Container:
                 aluguel_repository=(
                     self.aluguel_repository
                 ),
+                reserva_repository=(
+                    self.reserva_repository
+                ),
             )
         )
 
@@ -306,6 +346,9 @@ class Container:
                 ),
                 aluguel_repository=(
                     self.aluguel_repository
+                ),
+                reserva_service=(
+                    self.reserva_service
                 ),
             )
         )

@@ -89,6 +89,16 @@ class VeiculoRepositoryFake:
         return None
 
 
+
+
+class ReservaRepositoryFake:
+    def __init__(self, possui_reserva=False):
+        self.possui_reserva = possui_reserva
+
+    def possui_ativa_veiculo(self, id_veiculo):
+        return self.possui_reserva
+
+
 def criar_service():
     return VeiculoService(
         veiculo_repository=(
@@ -350,6 +360,40 @@ def test_desativar_veiculo():
     assert (
         resultado.ativo
         is False
+    )
+
+
+
+
+def test_nao_desativar_veiculo_com_reserva_ativa():
+    repository = VeiculoRepositoryFake()
+    service = VeiculoService(
+        veiculo_repository=repository,
+        reserva_repository=(
+            ReservaRepositoryFake(
+                possui_reserva=True
+            )
+        ),
+    )
+    carro = service.cadastrar(
+        "carro",
+        "Civic",
+        2025,
+        100,
+        0.50,
+    )
+
+    with pytest.raises(
+        RegraDeNegocio
+    ) as erro:
+        service.desativar(
+            carro.id
+        )
+
+    assert carro.ativo is True
+    assert erro.value.mensagem == (
+        "Não é possível desativar um veículo "
+        "com reserva futura ativa."
     )
 
 

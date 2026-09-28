@@ -60,6 +60,9 @@ from api.routers.manutencoes import (
 from api.routers.relatorios import (
     router as relatorios_router,
 )
+from api.routers.reservas import (
+    router as reservas_router,
+)
 
 from modulos.container import (
     Container,
@@ -82,6 +85,7 @@ API REST para gerenciamento de uma locadora de veículos.
 - Cadastro e gerenciamento de veículos.
 - Controle de aluguéis e devoluções.
 - Controle de manutenções.
+- Reservas futuras de veículos.
 - Relatórios administrativos e financeiros.
 
 ## Respostas de erro
@@ -130,6 +134,13 @@ tags_metadata = [
         "description": (
             "Controle do histórico e das "
             "manutenções da frota."
+        ),
+    },
+    {
+        "name": "Reservas",
+        "description": (
+            "Reservas futuras, cancelamentos e "
+            "consulta de disponibilidade por período."
         ),
     },
     {
@@ -212,6 +223,7 @@ ROUTERS_API = (
     veiculos_router,
     alugueis_router,
     manutencoes_router,
+    reservas_router,
     relatorios_router,
     auditoria_router,
 )
@@ -350,6 +362,11 @@ def status(
 
         "manutencoes": len(
             container.manutencao_repository
+            .listar_colecao()
+        ),
+
+        "reservas": len(
+            container.reserva_repository
             .listar_colecao()
         ),
     }

@@ -56,6 +56,7 @@ def test_base_registra_primeiros_models():
     assert "usuarios" in Base.metadata.tables
     assert "audit_logs" in Base.metadata.tables
     assert "sessoes" in Base.metadata.tables
+    assert "reservas" in Base.metadata.tables
 
     assert (
         "tokens_recuperacao_senha"
@@ -77,6 +78,7 @@ def test_models_criam_tabelas_esperadas(
     assert "usuarios" in tabelas
     assert "audit_logs" in tabelas
     assert "sessoes" in tabelas
+    assert "reservas" in tabelas
 
     assert (
         "tokens_recuperacao_senha"
