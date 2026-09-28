@@ -9,7 +9,7 @@ import {
     restoreSession,
     hasPermission,
     logout,
-    getVehicles,
+    queryVehicles,
     reactivateVehicle,
     updateVehicle,
 } from "/app/js/api.js";
@@ -20,6 +20,11 @@ const newVehicleButton = document.querySelector("#new-vehicle-button");
 const refreshButton = document.querySelector("#refresh-vehicles-button");
 const searchInput = document.querySelector("#vehicle-search");
 const statusFilter = document.querySelector("#status-filter");
+const orderSelect = document.querySelector("#vehicle-order");
+const pageSizeSelect = document.querySelector("#vehicle-page-size");
+const previousPageButton = document.querySelector("#vehicles-page-previous");
+const nextPageButton = document.querySelector("#vehicles-page-next");
+const pageLabel = document.querySelector("#vehicles-page-label");
 const resultsCount = document.querySelector("#vehicles-results-count");
 const clearFiltersButton = document.querySelector("#clear-vehicle-filters");
 const pageMessage = document.querySelector("#vehicles-message");
@@ -63,6 +68,8 @@ const statusLabels = {
 
 let currentUser = null;
 let vehicles = [];
+let searchTimer = null;
+let pagination = { pagina: 1, total: 0, total_paginas: 0 };
 let pendingStatusAction = null;
 
 function goToLogin() {
@@ -120,38 +127,34 @@ function can(permission) {
     return hasPermission(currentUser, permission);
 }
 
-function updateSummary() {
+function updateSummary(resumo) {
     const counts = {
-        total: vehicles.length,
-        disponivel: 0,
-        alugado: 0,
-        manutencao: 0,
-        desativado: 0,
+        total: resumo.total,
+        disponivel: resumo.disponiveis,
+        alugado: resumo.alugados,
+        manutencao: resumo.manutencao,
+        desativado: resumo.desativados,
     };
 
-    for (const vehicle of vehicles) {
-        if (Object.hasOwn(counts, vehicle.status)) {
-            counts[vehicle.status] += 1;
-        }
-    }
-
     for (const [name, element] of Object.entries(summaryElements)) {
-        element.textContent = counts[name].toLocaleString("pt-BR");
+        element.textContent = Number(counts[name] ?? 0).toLocaleString("pt-BR");
     }
 }
 
+function updatePagination() {
+    const current = pagination.total_paginas === 0 ? 0 : pagination.pagina;
+    pageLabel.textContent = `Página ${current} de ${pagination.total_paginas}`;
+    previousPageButton.disabled = pagination.pagina <= 1;
+    nextPageButton.disabled = pagination.pagina >= pagination.total_paginas;
+}
+
+function orderParams() {
+    const [ordenar, direcao] = orderSelect.value.split(":");
+    return { ordenar, direcao };
+}
+
 function filteredVehicles() {
-    const query = normalizeText(searchInput.value);
-    const selectedStatus = statusFilter.value;
-
-    return vehicles.filter((vehicle) => {
-        const matchesStatus = selectedStatus === "todos" || vehicle.status === selectedStatus;
-        const searchableText = normalizeText(
-            `${vehicle.id} ${vehicle.tipo} ${vehicle.modelo} ${vehicle.ano}`,
-        );
-
-        return matchesStatus && searchableText.includes(query);
-    });
+    return vehicles;
 }
 
 function vehicleActions(vehicle) {
@@ -199,7 +202,7 @@ function renderVehicles() {
     const hasActiveFilters = Boolean(normalizeText(searchInput.value))
         || statusFilter.value !== "todos";
 
-    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${vehicles.length.toLocaleString("pt-BR")} veículos`;
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} nesta página · ${pagination.total.toLocaleString("pt-BR")} resultados`;
     clearFiltersButton.hidden = !hasActiveFilters;
 
     emptyState.hidden = results.length > 0;
@@ -280,8 +283,26 @@ async function loadVehicles({ preserveMessage = false } = {}) {
     refreshButton.disabled = true;
 
     try {
-        vehicles = await getVehicles();
-        updateSummary();
+        const result = await queryVehicles({
+            pagina: pagination.pagina,
+            por_pagina: Number(pageSizeSelect.value),
+            busca: searchInput.value.trim(),
+            status: statusFilter.value,
+            ...orderParams(),
+        });
+        if (result.total_paginas > 0 && pagination.pagina > result.total_paginas) {
+            pagination.pagina = result.total_paginas;
+            return loadVehicles({ preserveMessage: true });
+        }
+
+        vehicles = result.items;
+        pagination = {
+            pagina: result.pagina,
+            total: result.total,
+            total_paginas: result.total_paginas,
+        };
+        updateSummary(result.resumo);
+        updatePagination();
         renderVehicles();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
@@ -485,12 +506,42 @@ logoutButton.addEventListener("click", async () => {
 
 newVehicleButton.addEventListener("click", openCreateDialog);
 refreshButton.addEventListener("click", () => loadVehicles());
-searchInput.addEventListener("input", renderVehicles);
-statusFilter.addEventListener("change", renderVehicles);
+searchInput.addEventListener("input", () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+        pagination.pagina = 1;
+        loadVehicles();
+    }, 300);
+});
+statusFilter.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadVehicles();
+});
+orderSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadVehicles();
+});
+pageSizeSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadVehicles();
+});
+previousPageButton.addEventListener("click", () => {
+    if (pagination.pagina > 1) {
+        pagination.pagina -= 1;
+        loadVehicles();
+    }
+});
+nextPageButton.addEventListener("click", () => {
+    if (pagination.pagina < pagination.total_paginas) {
+        pagination.pagina += 1;
+        loadVehicles();
+    }
+});
 clearFiltersButton.addEventListener("click", () => {
     searchInput.value = "";
     statusFilter.value = "todos";
-    renderVehicles();
+    pagination.pagina = 1;
+    loadVehicles();
     searchInput.focus();
 });
 vehicleForm.addEventListener("submit", saveVehicle);

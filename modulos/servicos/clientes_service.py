@@ -722,6 +722,24 @@ class ClienteService:
     # LISTAGENS
     # ================================================================
 
+    def consultar_clientes(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="nome",
+        direcao="asc",
+    ):
+        return self.cliente_repository.consultar(
+            pagina=pagina,
+            por_pagina=por_pagina,
+            busca=busca,
+            status=status,
+            ordenar=ordenar,
+            direcao=direcao,
+        )
+
     def listar_clientes(self):
         return (
             self.cliente_repository

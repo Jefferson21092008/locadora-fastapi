@@ -83,6 +83,25 @@
                             </select>
                         </label>
 
+                        <label class="select-field" for="client-order">
+                            <span class="sr-only">Ordenar clientes</span>
+                            <select id="client-order">
+                                <option value="nome:asc">Nome A–Z</option>
+                                <option value="nome:desc">Nome Z–A</option>
+                                <option value="id:desc">Mais recentes</option>
+                                <option value="id:asc">Mais antigos</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field select-field--compact" for="client-page-size">
+                            <span class="sr-only">Itens por página</span>
+                            <select id="client-page-size">
+                                <option value="12">12 por página</option>
+                                <option value="24">24 por página</option>
+                                <option value="48">48 por página</option>
+                            </select>
+                        </label>
+
                         <button id="refresh-clients-button" class="secondary-button" type="button">Atualizar</button>
                     </div>
                 </div>
@@ -107,6 +126,12 @@
                 </div>
 
                 <div id="clients-grid" class="clients-grid" aria-live="polite"></div>
+
+                <nav class="pagination" aria-label="Paginação de clientes">
+                    <button id="clients-page-previous" class="secondary-button" type="button">Anterior</button>
+                    <span id="clients-page-label" class="pagination__label" aria-live="polite">Página 0 de 0</span>
+                    <button id="clients-page-next" class="secondary-button" type="button">Próxima</button>
+                </nav>
             </section>
         </main>
     </div>

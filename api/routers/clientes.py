@@ -1,6 +1,9 @@
+from typing import Literal
+
 from fastapi import (
     APIRouter,
     Depends,
+    Query,
     Request,
 )
 
@@ -21,6 +24,7 @@ from api.schemas.clientes import (
     ClienteCreate,
     ClienteResponse,
 )
+from api.schemas.consultas import ClientesConsultaResponse
 
 from modulos.permissoes import (
     Permissao,
@@ -105,6 +109,45 @@ def listar_clientes(
         for cliente
         in clientes
     ]
+
+
+# ================================================================
+# CONSULTA PAGINADA
+# ================================================================
+
+
+@router.get(
+    "/consulta",
+    response_model=ClientesConsultaResponse,
+    summary="Consultar clientes com paginação",
+)
+def consultar_clientes(
+    pagina: int = Query(1, ge=1),
+    por_pagina: int = Query(12, ge=1, le=100),
+    busca: str = Query("", max_length=100),
+    status: Literal["todos", "ativo", "desativado"] = "todos",
+    ordenar: Literal["id", "nome", "usuario", "email"] = "nome",
+    direcao: Literal["asc", "desc"] = "asc",
+    container: Container = Depends(get_container),
+    _usuario_admin=Depends(exigir_permissao(Permissao.CLIENTES_LER)),
+):
+    resultado = container.cliente_service.consultar_clientes(
+        pagina=pagina,
+        por_pagina=por_pagina,
+        busca=busca,
+        status=status,
+        ordenar=ordenar,
+        direcao=direcao,
+    )
+
+    return {
+        "items": [transformar_cliente(item) for item in resultado.items],
+        "pagina": pagina,
+        "por_pagina": por_pagina,
+        "total": resultado.total,
+        "total_paginas": (resultado.total + por_pagina - 1) // por_pagina,
+        "resumo": resultado.resumo,
+    }
 
 
 # ================================================================

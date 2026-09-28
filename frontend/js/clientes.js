@@ -4,7 +4,7 @@ import {
     applyNavigationPermissions,
     clearToken,
     deactivateClient,
-    getClients,
+    queryClients,
     getCurrentUser,
     restoreSession,
     hasPermission,
@@ -17,6 +17,11 @@ const logoutButton = document.querySelector("#logout-button");
 const refreshButton = document.querySelector("#refresh-clients-button");
 const searchInput = document.querySelector("#client-search");
 const statusFilter = document.querySelector("#client-status-filter");
+const orderSelect = document.querySelector("#client-order");
+const pageSizeSelect = document.querySelector("#client-page-size");
+const previousPageButton = document.querySelector("#clients-page-previous");
+const nextPageButton = document.querySelector("#clients-page-next");
+const pageLabel = document.querySelector("#clients-page-label");
 const resultsCount = document.querySelector("#clients-results-count");
 const clearFiltersButton = document.querySelector("#clear-client-filters");
 const pageMessage = document.querySelector("#clients-message");
@@ -40,6 +45,8 @@ const summaryElements = {
 let currentUser = null;
 let clients = [];
 let pendingClient = null;
+let searchTimer = null;
+let pagination = { pagina: 1, total: 0, total_paginas: 0 };
 
 function goToLogin() {
     window.location.replace("/app/");
@@ -100,32 +107,32 @@ function clientInitials(name) {
         .toUpperCase();
 }
 
-function updateSummary() {
-    const activeClients = clients.filter((client) => client.ativo).length;
+function updateSummary(resumo) {
     const counts = {
-        total: clients.length,
-        active: activeClients,
-        inactive: clients.length - activeClients,
+        total: resumo.total,
+        active: resumo.ativos,
+        inactive: resumo.desativados,
     };
 
     for (const [name, element] of Object.entries(summaryElements)) {
-        element.textContent = counts[name].toLocaleString("pt-BR");
+        element.textContent = Number(counts[name] ?? 0).toLocaleString("pt-BR");
     }
 }
 
+function updatePagination() {
+    const current = pagination.total_paginas === 0 ? 0 : pagination.pagina;
+    pageLabel.textContent = `Página ${current} de ${pagination.total_paginas}`;
+    previousPageButton.disabled = pagination.pagina <= 1;
+    nextPageButton.disabled = pagination.pagina >= pagination.total_paginas;
+}
+
+function orderParams() {
+    const [ordenar, direcao] = orderSelect.value.split(":");
+    return { ordenar, direcao };
+}
+
 function filteredClients() {
-    const query = normalizeText(searchInput.value);
-    const selectedStatus = statusFilter.value;
-
-    return clients.filter((client) => {
-        const clientStatus = client.ativo ? "ativo" : "desativado";
-        const matchesStatus = selectedStatus === "todos" || selectedStatus === clientStatus;
-        const searchableText = normalizeText(
-            `${client.id} ${client.nome} ${client.usuario} ${client.email}`,
-        );
-
-        return matchesStatus && searchableText.includes(query);
-    });
+    return clients;
 }
 
 function renderClients() {
@@ -133,13 +140,13 @@ function renderClients() {
     const hasActiveFilters = Boolean(normalizeText(searchInput.value))
         || statusFilter.value !== "todos";
 
-    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${clients.length.toLocaleString("pt-BR")} clientes`;
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} nesta página · ${pagination.total.toLocaleString("pt-BR")} resultados`;
     clearFiltersButton.hidden = !hasActiveFilters;
 
     emptyState.hidden = results.length > 0;
 
     if (results.length === 0) {
-        emptyText.textContent = clients.length === 0
+        emptyText.textContent = !hasActiveFilters && pagination.total === 0
             ? "Ainda não há clientes cadastrados na locadora."
             : "Altere a busca ou o filtro para visualizar outros resultados.";
     }
@@ -277,8 +284,26 @@ async function loadClients({ preserveMessage = false } = {}) {
     refreshButton.disabled = true;
 
     try {
-        clients = await getClients();
-        updateSummary();
+        const result = await queryClients({
+            pagina: pagination.pagina,
+            por_pagina: Number(pageSizeSelect.value),
+            busca: searchInput.value.trim(),
+            status: statusFilter.value,
+            ...orderParams(),
+        });
+        if (result.total_paginas > 0 && pagination.pagina > result.total_paginas) {
+            pagination.pagina = result.total_paginas;
+            return loadClients({ preserveMessage: true });
+        }
+
+        clients = result.items;
+        pagination = {
+            pagina: result.pagina,
+            total: result.total,
+            total_paginas: result.total_paginas,
+        };
+        updateSummary(result.resumo);
+        updatePagination();
         renderClients();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
@@ -336,12 +361,42 @@ logoutButton.addEventListener("click", async () => {
 });
 
 refreshButton.addEventListener("click", () => loadClients());
-searchInput.addEventListener("input", renderClients);
-statusFilter.addEventListener("change", renderClients);
+searchInput.addEventListener("input", () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+        pagination.pagina = 1;
+        loadClients();
+    }, 300);
+});
+statusFilter.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadClients();
+});
+orderSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadClients();
+});
+pageSizeSelect.addEventListener("change", () => {
+    pagination.pagina = 1;
+    loadClients();
+});
+previousPageButton.addEventListener("click", () => {
+    if (pagination.pagina > 1) {
+        pagination.pagina -= 1;
+        loadClients();
+    }
+});
+nextPageButton.addEventListener("click", () => {
+    if (pagination.pagina < pagination.total_paginas) {
+        pagination.pagina += 1;
+        loadClients();
+    }
+});
 clearFiltersButton.addEventListener("click", () => {
     searchInput.value = "";
     statusFilter.value = "todos";
-    renderClients();
+    pagination.pagina = 1;
+    loadClients();
     searchInput.focus();
 });
 confirmStatusButton.addEventListener("click", confirmStatusChange);

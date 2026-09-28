@@ -246,3 +246,31 @@ A Etapa 11 consolida a camada visual sem introduzir framework de UI. `frontend/c
 Em desktop, as páginas autenticadas mantêm sidebar fixa. Em larguras menores, a navegação se transforma em uma barra superior horizontal e sticky, preservando acesso às áreas do sistema sem JavaScript adicional. Todas as páginas também expõem um link de salto para `#main-content`, melhorando navegação por teclado.
 
 As decisões e tokens compartilhados estão documentados em [`docs/design-system.md`](design-system.md).
+
+## Paginação e consultas server-side — trilha principal
+
+A etapa de consultas server-side completa a busca e os filtros visuais já introduzidos durante a fase de frontend. A diferença é que o recorte deixa de ser calculado sobre uma coleção inteira no navegador e passa a ser executado na camada de persistência.
+
+Fluxo:
+
+```text
+interface operacional
+   ↓
+query string: pagina / por_pagina / busca / status / ordem
+   ↓
+FastAPI
+   ↓
+Service
+   ↓
+Repository SQLAlchemy
+   ↓
+WHERE + ORDER BY + LIMIT + OFFSET
+   ↓
+PostgreSQL / SQLite
+```
+
+Foram adicionadas consultas dedicadas para clientes, veículos, aluguéis e manutenções. Aluguéis possuem duas variantes: uma administrativa para toda a locadora e outra vinculada ao cliente autenticado. O escopo do cliente é aplicado no repository antes da contagem e da paginação.
+
+As respostas paginadas mantêm um contrato uniforme com `items`, `pagina`, `por_pagina`, `total`, `total_paginas` e `resumo`. O `resumo` representa o conjunto completo permitido ao usuário, enquanto `total` representa a quantidade correspondente à busca e aos filtros atuais.
+
+As rotas de listagem anteriores não foram removidas. Elas continuam disponíveis temporariamente para compatibilidade e para fluxos internos que realmente necessitam da coleção completa. Não há migration nesta etapa: a mudança atua sobre consultas e contratos HTTP, não sobre o schema do banco.

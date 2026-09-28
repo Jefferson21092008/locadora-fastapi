@@ -1,4 +1,10 @@
+from datetime import date
+
 from sqlalchemy import (
+    String,
+    case,
+    cast,
+    func,
     or_,
     select,
 )
@@ -6,6 +12,7 @@ from sqlalchemy import (
 from modulos.alugueis import (
     Aluguel,
 )
+from modulos.consultas import ResultadoPaginado
 from modulos.models.aluguel_model import (
     AluguelModel,
 )
@@ -435,6 +442,98 @@ class AluguelRepository:
             except Exception:
                 sessao.rollback()
                 raise
+
+    def consultar(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="id",
+        direcao="desc",
+        cliente_id=None,
+    ):
+        escopo = []
+        filtros = []
+        termo = str(busca or "").strip().lower()
+
+        if cliente_id is not None:
+            escopo.append(AluguelModel.cliente_id == cliente_id)
+
+        if termo:
+            filtros.append(
+                or_(
+                    func.lower(AluguelModel.cliente_nome).contains(termo),
+                    func.lower(AluguelModel.cliente_usuario).contains(termo),
+                    func.lower(AluguelModel.veiculo_modelo).contains(termo),
+                    func.lower(AluguelModel.veiculo_tipo).contains(termo),
+                    cast(AluguelModel.id, String).contains(termo),
+                    cast(AluguelModel.veiculo_id, String).contains(termo),
+                    cast(AluguelModel.cliente_id, String).contains(termo),
+                )
+            )
+
+        if status != "todos":
+            filtros.append(AluguelModel.status == status)
+
+        colunas_ordenacao = {
+            "id": AluguelModel.id,
+            "data_inicio": AluguelModel.data_inicio,
+            "data_prevista": AluguelModel.data_prevista,
+            "valor": AluguelModel.valor,
+        }
+        coluna = colunas_ordenacao.get(ordenar, AluguelModel.id)
+        ordem = coluna.desc() if direcao == "desc" else coluna.asc()
+        deslocamento = (pagina - 1) * por_pagina
+        hoje = date.today().isoformat()
+
+        with self.banco_sqlalchemy.criar_sessao() as sessao:
+            total = sessao.scalar(
+                select(func.count(AluguelModel.id)).where(*escopo, *filtros)
+            ) or 0
+
+            comando = (
+                select(AluguelModel)
+                .where(*escopo, *filtros)
+                .order_by(ordem, AluguelModel.id.desc())
+                .offset(deslocamento)
+                .limit(por_pagina)
+            )
+            models = sessao.scalars(comando).all()
+
+            resumo = sessao.execute(
+                select(
+                    func.count(AluguelModel.id),
+                    func.sum(
+                        case((AluguelModel.status == "ativo", 1), else_=0)
+                    ),
+                    func.sum(
+                        case((AluguelModel.status == "finalizado", 1), else_=0)
+                    ),
+                    func.sum(
+                        case(
+                            (
+                                (AluguelModel.status == "ativo")
+                                & (AluguelModel.data_prevista < hoje),
+                                1,
+                            ),
+                            else_=0,
+                        )
+                    ),
+                )
+                .where(*escopo)
+            ).one()
+
+        return ResultadoPaginado(
+            items=self._para_entidades(models),
+            total=int(total),
+            resumo={
+                "total": int(resumo[0] or 0),
+                "ativos": int(resumo[1] or 0),
+                "finalizados": int(resumo[2] or 0),
+                "atrasados": int(resumo[3] or 0),
+            },
+        )
 
     # ================================================================
     # LISTAGENS

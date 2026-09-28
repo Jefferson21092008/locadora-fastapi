@@ -326,6 +326,26 @@ class AluguelService:
     # LISTAGENS
     # ================================================================
 
+    def consultar_alugueis(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="id",
+        direcao="desc",
+        cliente_id=None,
+    ):
+        return self.aluguel_repository.consultar(
+            pagina=pagina,
+            por_pagina=por_pagina,
+            busca=busca,
+            status=status,
+            ordenar=ordenar,
+            direcao=direcao,
+            cliente_id=cliente_id,
+        )
+
     def listar_alugueis(self):
         return (
             self.aluguel_repository

@@ -1,10 +1,16 @@
 from sqlalchemy import (
+    String,
+    case,
+    cast,
+    func,
+    or_,
     select,
 )
 
 from modulos.manutencoes import (
     Manutencao,
 )
+from modulos.consultas import ResultadoPaginado
 from modulos.models.manutencao_model import (
     ManutencaoModel,
 )
@@ -185,6 +191,104 @@ class ManutencaoRepository:
             return self._para_entidades(
                 models
             )
+
+    def consultar(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="id",
+        direcao="desc",
+    ):
+        filtros = []
+        termo = str(busca or "").strip().lower()
+
+        if termo:
+            filtros.append(
+                or_(
+                    func.lower(ManutencaoModel.motivo).contains(termo),
+                    func.lower(VeiculoModel.modelo).contains(termo),
+                    func.lower(VeiculoModel.tipo).contains(termo),
+                    cast(ManutencaoModel.id, String).contains(termo),
+                    cast(ManutencaoModel.veiculo_id, String).contains(termo),
+                    cast(VeiculoModel.ano, String).contains(termo),
+                )
+            )
+
+        if status != "todos":
+            filtros.append(ManutencaoModel.status == status)
+
+        colunas_ordenacao = {
+            "id": ManutencaoModel.id,
+            "data_inicio": ManutencaoModel.data_inicio,
+            "custo": ManutencaoModel.custo,
+            "quilometragem": ManutencaoModel.quilometragem,
+        }
+        coluna = colunas_ordenacao.get(ordenar, ManutencaoModel.id)
+        ordem = coluna.desc() if direcao == "desc" else coluna.asc()
+        deslocamento = (pagina - 1) * por_pagina
+
+        with self.banco_sqlalchemy.criar_sessao() as sessao:
+            base = (
+                select(ManutencaoModel)
+                .join(
+                    VeiculoModel,
+                    VeiculoModel.id == ManutencaoModel.veiculo_id,
+                )
+                .where(*filtros)
+            )
+            total = sessao.scalar(
+                select(func.count(ManutencaoModel.id))
+                .join(
+                    VeiculoModel,
+                    VeiculoModel.id == ManutencaoModel.veiculo_id,
+                )
+                .where(*filtros)
+            ) or 0
+
+            comando = (
+                base
+                .order_by(ordem, ManutencaoModel.id.desc())
+                .offset(deslocamento)
+                .limit(por_pagina)
+            )
+            models = sessao.scalars(comando).all()
+
+            resumo = sessao.execute(
+                select(
+                    func.count(ManutencaoModel.id),
+                    func.sum(
+                        case((ManutencaoModel.status == "ativa", 1), else_=0)
+                    ),
+                    func.sum(
+                        case(
+                            (ManutencaoModel.status == "finalizada", 1),
+                            else_=0,
+                        )
+                    ),
+                    func.sum(
+                        case(
+                            (
+                                ManutencaoModel.status == "finalizada",
+                                ManutencaoModel.custo,
+                            ),
+                            else_=0.0,
+                        )
+                    ),
+                )
+            ).one()
+
+        return ResultadoPaginado(
+            items=self._para_entidades(models),
+            total=int(total),
+            resumo={
+                "total": int(resumo[0] or 0),
+                "ativas": int(resumo[1] or 0),
+                "finalizadas": int(resumo[2] or 0),
+                "custo_finalizado": float(resumo[3] or 0.0),
+            },
+        )
 
     # ================================================================
     # ABERTURA

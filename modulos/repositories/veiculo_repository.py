@@ -1,5 +1,13 @@
-from sqlalchemy import select
+from sqlalchemy import (
+    String,
+    case,
+    cast,
+    func,
+    or_,
+    select,
+)
 
+from modulos.consultas import ResultadoPaginado
 from modulos.models.veiculo_model import VeiculoModel
 from modulos.veiculos import StatusVeiculo, Veiculo
 
@@ -181,6 +189,86 @@ class VeiculoRepository:
     def listar_alugados(self):
         return self._listar_por_status(
             StatusVeiculo.ALUGADO
+        )
+
+    def consultar(
+        self,
+        pagina=1,
+        por_pagina=12,
+        busca="",
+        status="todos",
+        ordenar="modelo",
+        direcao="asc",
+    ):
+        filtros = []
+        termo = str(busca or "").strip().lower()
+
+        if termo:
+            filtros.append(
+                or_(
+                    func.lower(VeiculoModel.modelo).contains(termo),
+                    func.lower(VeiculoModel.tipo).contains(termo),
+                    cast(VeiculoModel.id, String).contains(termo),
+                    cast(VeiculoModel.ano, String).contains(termo),
+                )
+            )
+
+        if status != "todos":
+            filtros.append(VeiculoModel.status == status)
+
+        colunas_ordenacao = {
+            "id": VeiculoModel.id,
+            "modelo": VeiculoModel.modelo,
+            "ano": VeiculoModel.ano,
+            "diaria": VeiculoModel.diaria,
+            "quilometragem": VeiculoModel.quilometragem,
+        }
+        coluna = colunas_ordenacao.get(ordenar, VeiculoModel.modelo)
+        ordem = coluna.desc() if direcao == "desc" else coluna.asc()
+        deslocamento = (pagina - 1) * por_pagina
+
+        with self.banco_sqlalchemy.criar_sessao() as sessao:
+            total = sessao.scalar(
+                select(func.count(VeiculoModel.id)).where(*filtros)
+            ) or 0
+
+            comando = (
+                select(VeiculoModel)
+                .where(*filtros)
+                .order_by(ordem, VeiculoModel.id.asc())
+                .offset(deslocamento)
+                .limit(por_pagina)
+            )
+            models = sessao.scalars(comando).all()
+
+            resumo = sessao.execute(
+                select(
+                    func.count(VeiculoModel.id),
+                    func.sum(
+                        case((VeiculoModel.status == "disponivel", 1), else_=0)
+                    ),
+                    func.sum(
+                        case((VeiculoModel.status == "alugado", 1), else_=0)
+                    ),
+                    func.sum(
+                        case((VeiculoModel.status == "manutencao", 1), else_=0)
+                    ),
+                    func.sum(
+                        case((VeiculoModel.status == "desativado", 1), else_=0)
+                    ),
+                )
+            ).one()
+
+        return ResultadoPaginado(
+            items=self._para_entidades(models),
+            total=int(total),
+            resumo={
+                "total": int(resumo[0] or 0),
+                "disponiveis": int(resumo[1] or 0),
+                "alugados": int(resumo[2] or 0),
+                "manutencao": int(resumo[3] or 0),
+                "desativados": int(resumo[4] or 0),
+            },
         )
 
     # ================================================================
