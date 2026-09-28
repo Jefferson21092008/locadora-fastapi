@@ -19,6 +19,8 @@ def test_admin_recebe_permissoes_administrativas():
     assert Permissao.ALUGUEIS_LER in permissoes
     assert Permissao.MANUTENCOES_LER in permissoes
     assert Permissao.MANUTENCOES_EDITAR in permissoes
+    assert Permissao.RESERVAS_LER in permissoes
+    assert Permissao.RESERVAS_CANCELAR in permissoes
     assert Permissao.RELATORIOS_LER in permissoes
     assert Permissao.AUDITORIA_LER in permissoes
 
@@ -34,6 +36,9 @@ def test_cliente_recebe_apenas_permissoes_do_proprio_fluxo():
         in permissoes
     )
     assert Permissao.ALUGUEIS_DEVOLVER in permissoes
+    assert Permissao.RESERVAS_CRIAR in permissoes
+    assert Permissao.RESERVAS_PROPRIAS_LER in permissoes
+    assert Permissao.RESERVAS_CANCELAR in permissoes
     assert Permissao.CONTA_RENOMEAR in permissoes
     assert Permissao.CLIENTES_LER not in permissoes
     assert Permissao.RELATORIOS_LER not in permissoes

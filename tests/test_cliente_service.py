@@ -284,6 +284,16 @@ class AluguelRepositoryFake:
         return None
 
 
+
+
+class ReservaRepositoryFake:
+    def __init__(self, possui_reserva=False):
+        self.possui_reserva = possui_reserva
+
+    def possui_ativa_cliente(self, cliente_id):
+        return self.possui_reserva
+
+
 class AluguelFake:
     def __init__(
         self,
@@ -303,6 +313,7 @@ class AluguelFake:
 def criar_service(
     alugueis=None,
     auth_service_configurado=True,
+    possui_reserva=False,
 ):
     usuario_repository = (
         UsuarioRepositoryFake()
@@ -337,6 +348,11 @@ def criar_service(
         ),
         aluguel_repository=(
             aluguel_repository
+        ),
+        reserva_repository=(
+            ReservaRepositoryFake(
+                possui_reserva
+            )
         ),
     )
 
@@ -638,6 +654,34 @@ def test_nao_desativar_cliente_com_aluguel_ativo():
     assert erro.value.mensagem == (
         "Não é possível desativar "
         "um cliente com aluguel ativo."
+    )
+
+
+
+
+def test_nao_desativar_cliente_com_reserva_ativa():
+    service = criar_service(
+        possui_reserva=True
+    )
+    cliente = cadastrar_cliente(
+        service
+    )
+    conta = service.buscar_conta_do_cliente(
+        cliente
+    )
+
+    with pytest.raises(
+        RegraDeNegocio
+    ) as erro:
+        service.desativar(
+            cliente.id
+        )
+
+    assert cliente.ativo is True
+    assert conta.ativo is True
+    assert erro.value.mensagem == (
+        "Não é possível desativar "
+        "um cliente com reserva ativa."
     )
 
 

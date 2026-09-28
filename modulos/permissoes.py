@@ -25,6 +25,10 @@ class Permissao(str, Enum):
     MANUTENCOES_FINALIZAR = (
         "manutencoes:finalizar"
     )
+    RESERVAS_LER = "reservas:ler"
+    RESERVAS_CRIAR = "reservas:criar"
+    RESERVAS_PROPRIAS_LER = "reservas:proprias:ler"
+    RESERVAS_CANCELAR = "reservas:cancelar"
     RELATORIOS_LER = "relatorios:ler"
     AUDITORIA_LER = "auditoria:ler"
     CONTA_RENOMEAR = "conta:renomear"
@@ -46,6 +50,8 @@ _PERMISSOES_POR_ROLE = {
             Permissao.MANUTENCOES_CRIAR,
             Permissao.MANUTENCOES_EDITAR,
             Permissao.MANUTENCOES_FINALIZAR,
+            Permissao.RESERVAS_LER,
+            Permissao.RESERVAS_CANCELAR,
             Permissao.RELATORIOS_LER,
             Permissao.AUDITORIA_LER,
             Permissao.SESSOES_GERENCIAR,
@@ -56,6 +62,9 @@ _PERMISSOES_POR_ROLE = {
             Permissao.ALUGUEIS_CRIAR,
             Permissao.ALUGUEIS_PROPRIOS_LER,
             Permissao.ALUGUEIS_DEVOLVER,
+            Permissao.RESERVAS_CRIAR,
+            Permissao.RESERVAS_PROPRIAS_LER,
+            Permissao.RESERVAS_CANCELAR,
             Permissao.CONTA_RENOMEAR,
             Permissao.SESSOES_GERENCIAR,
         }

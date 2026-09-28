@@ -198,8 +198,28 @@ class ManutencaoRepositoryFake:
         )
 
 
+
+
+class ReservaRepositoryFake:
+    def __init__(self, possui_reserva=True, conflito=None):
+        self.possui_reserva = possui_reserva
+        self.conflito = conflito
+
+    def possui_ativa_veiculo(self, id_veiculo):
+        return self.possui_reserva
+
+    def buscar_conflitante(
+        self,
+        veiculo_id,
+        data_inicio,
+        data_fim,
+    ):
+        return self.conflito
+
+
 def criar_ambiente(
     falhar_finalizacao=False,
+    reserva_repository=None,
 ):
     dados = DadosFake()
     veiculos = []
@@ -226,6 +246,9 @@ def criar_ambiente(
                         falhar_finalizacao
                     ),
                 )
+            ),
+            reserva_repository=(
+                reserva_repository
             ),
         )
     )
@@ -328,6 +351,67 @@ def test_nao_abrir_duas_manutencoes_ativas():
     assert len(
         service.listar_manutencoes()
     ) == 1
+
+
+
+
+def test_manutencao_com_reserva_exige_previsao():
+    carro, service = criar_ambiente(
+        reserva_repository=(
+            ReservaRepositoryFake()
+        )
+    )
+
+    with pytest.raises(
+        RegraDeNegocio
+    ) as erro:
+        service.abrir(
+            carro.id,
+            "Revisão preventiva",
+        )
+
+    assert carro.status.value == "disponivel"
+    assert erro.value.mensagem == (
+        "Informe uma previsão de conclusão "
+        "para validar as reservas futuras."
+    )
+
+
+def test_edicao_de_manutencao_nao_pode_invadir_reserva():
+    reservas = ReservaRepositoryFake(
+        conflito=None
+    )
+    carro, service = criar_ambiente(
+        reserva_repository=reservas
+    )
+    manutencao = service.abrir(
+        carro.id,
+        "Revisão preventiva",
+        data_prevista="2099-01-10",
+    )
+    previsao_original = (
+        manutencao.data_prevista
+    )
+    reservas.conflito = object()
+
+    with pytest.raises(
+        RegraDeNegocio
+    ) as erro:
+        service.atualizar(
+            manutencao.id,
+            {
+                "data_prevista": "2099-01-20",
+            },
+        )
+
+    assert (
+        manutencao.data_prevista
+        == previsao_original
+    )
+    assert erro.value.mensagem == (
+        "A manutenção prevista conflita "
+        "com uma reserva futura."
+    )
 
 
 def test_finalizar_manutencao():

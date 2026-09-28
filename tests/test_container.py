@@ -21,6 +21,9 @@ from modulos.servicos.manutencao_service import (
 from modulos.servicos.relatorios_service import (
     RelatorioService,
 )
+from modulos.servicos.reserva_service import (
+    ReservaService,
+)
 from modulos.servicos.exportacao_relatorios_service import (
     ExportacaoRelatoriosService,
 )
@@ -105,6 +108,11 @@ def test_container_cria_services(
     )
 
     assert isinstance(
+        container.reserva_service,
+        ReservaService,
+    )
+
+    assert isinstance(
         container.exportacao_relatorios_service,
         ExportacaoRelatoriosService,
     )
@@ -168,6 +176,24 @@ def test_services_compartilham_repositories(
         container.manutencao_service
         .manutencao_repository
         is container.manutencao_repository
+    )
+
+    assert (
+        container.reserva_service
+        .reserva_repository
+        is container.reserva_repository
+    )
+
+    assert (
+        container.aluguel_service
+        .reserva_service
+        is container.reserva_service
+    )
+
+    assert (
+        container.cliente_service
+        .reserva_repository
+        is container.reserva_repository
     )
 
 

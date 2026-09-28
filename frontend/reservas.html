@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#08111f">
+    <meta name="description" content="Reservas futuras de veículos da Locadora.">
+    <title>Reservas | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <a class="skip-link" href="#main-content">Ir para o conteúdo principal</a>
+
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item nav-item--active" href="/app/reservas.html" aria-current="page">Reservas</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+                <a class="nav-item admin-nav" href="/app/auditoria.html" hidden>Auditoria</a>
+            </nav>
+
+            <p class="sidebar__note">Planeje usos futuros da frota sem perder a disponibilidade atual dos veículos.</p>
+        </aside>
+
+        <main id="main-content" class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Planejamento</p>
+                    <h1>Reservas</h1>
+                    <p id="reservations-description">Acompanhe períodos reservados e evite conflitos futuros.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="new-reservation-button" class="primary-button primary-button--compact" type="button" hidden>
+                        <span>Nova reserva</span>
+                        <span aria-hidden="true">+</span>
+                    </button>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="reservations-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-overview fleet-overview--five" aria-label="Resumo das reservas">
+                <article>
+                    <span>Total</span>
+                    <strong id="reservations-summary-total">—</strong>
+                </article>
+                <article>
+                    <span>Ativas</span>
+                    <strong id="reservations-summary-active">—</strong>
+                </article>
+                <article>
+                    <span>Expiradas</span>
+                    <strong id="reservations-summary-expired">—</strong>
+                </article>
+                <article>
+                    <span>Canceladas</span>
+                    <strong id="reservations-summary-cancelled">—</strong>
+                </article>
+                <article>
+                    <span>Convertidas</span>
+                    <strong id="reservations-summary-converted">—</strong>
+                </article>
+            </section>
+
+            <section class="fleet-content" aria-labelledby="reservations-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Agenda da frota</p>
+                        <h2 id="reservations-list-title">Períodos reservados</h2>
+                    </div>
+
+                    <div class="fleet-filters">
+                        <label class="search-field" for="reservation-search">
+                            <span class="sr-only">Buscar reserva</span>
+                            <input id="reservation-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="reservations-list" aria-describedby="reservations-results-count" placeholder="Buscar por veículo ou cliente">
+                        </label>
+
+                        <label class="select-field" for="reservation-status-filter">
+                            <span class="sr-only">Filtrar por status</span>
+                            <select id="reservation-status-filter">
+                                <option value="todos">Todos os status</option>
+                                <option value="ativa">Ativas</option>
+                                <option value="expirada">Expiradas</option>
+                                <option value="cancelada">Canceladas</option>
+                                <option value="convertida">Convertidas em aluguel</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field" for="reservation-order">
+                            <span class="sr-only">Ordenar reservas</span>
+                            <select id="reservation-order">
+                                <option value="data_inicio:asc">Início mais próximo</option>
+                                <option value="data_inicio:desc">Início mais distante</option>
+                                <option value="data_fim:asc">Fim mais próximo</option>
+                                <option value="id:desc">Mais recentes</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field select-field--compact" for="reservation-page-size">
+                            <span class="sr-only">Itens por página</span>
+                            <select id="reservation-page-size">
+                                <option value="12">12 por página</option>
+                                <option value="24">24 por página</option>
+                                <option value="48">48 por página</option>
+                            </select>
+                        </label>
+
+                        <button id="refresh-reservations-button" class="secondary-button" type="button">Atualizar</button>
+                    </div>
+                </div>
+
+                <div class="results-meta">
+                    <p id="reservations-results-count" class="results-meta__count" aria-live="polite">
+                        Preparando resultados...
+                    </p>
+                    <button id="clear-reservation-filters" class="text-button" type="button" hidden>
+                        Limpar filtros
+                    </button>
+                </div>
+
+                <div id="reservations-loading" class="loading-state" role="status">
+                    <span class="loading-state__spinner" aria-hidden="true"></span>
+                    <span>Carregando reservas...</span>
+                </div>
+
+                <div id="reservations-empty" class="empty-state" hidden>
+                    <strong>Nenhuma reserva encontrada</strong>
+                    <p id="reservations-empty-text">Altere a busca ou o filtro para visualizar outros resultados.</p>
+                </div>
+
+                <div id="reservations-list" class="reservations-list" aria-live="polite"></div>
+
+                <nav class="pagination" aria-label="Paginação de reservas">
+                    <button id="reservations-page-previous" class="secondary-button" type="button">Anterior</button>
+                    <span id="reservations-page-label" class="pagination__label" aria-live="polite">Página 0 de 0</span>
+                    <button id="reservations-page-next" class="secondary-button" type="button">Próxima</button>
+                </nav>
+            </section>
+        </main>
+    </div>
+
+    <dialog id="reservation-dialog" class="modal modal--small" aria-labelledby="reservation-dialog-title" aria-describedby="reservation-dialog-description">
+        <form id="reservation-form" class="modal__surface">
+            <div class="modal__header">
+                <div>
+                    <p class="eyebrow">Planejamento futuro</p>
+                    <h2 id="reservation-dialog-title">Nova reserva</h2>
+                </div>
+                <button class="icon-button" type="button" data-close-reservation-dialog aria-label="Fechar formulário">×</button>
+            </div>
+
+            <p id="reservation-dialog-description" class="modal__description">
+                A reserva não altera o status atual do veículo. Ela apenas bloqueia o período futuro escolhido.
+            </p>
+
+            <div class="form-grid">
+                <div class="field field--wide">
+                    <label for="reservation-vehicle">Veículo</label>
+                    <select id="reservation-vehicle" required>
+                        <option value="">Selecione um veículo</option>
+                    </select>
+                    <small>Veículos desativados não podem receber novas reservas.</small>
+                </div>
+
+                <div class="field">
+                    <label for="reservation-start">Retirada</label>
+                    <input id="reservation-start" type="date" required>
+                </div>
+
+                <div class="field">
+                    <label for="reservation-end">Devolução prevista</label>
+                    <input id="reservation-end" type="date" required>
+                </div>
+            </div>
+
+            <div id="reservation-form-message" class="form-message" role="status" aria-live="polite"></div>
+
+            <div class="modal__actions">
+                <button class="secondary-button" type="button" data-close-reservation-dialog>Cancelar</button>
+                <button id="save-reservation-button" class="primary-button primary-button--compact" type="submit">
+                    <span>Confirmar reserva</span>
+                    <span aria-hidden="true">→</span>
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <script type="module" src="/app/js/reservas.js"></script>
+    <script type="module" src="/app/js/ui.js"></script>
+</body>
+</html>

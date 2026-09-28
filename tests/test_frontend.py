@@ -183,6 +183,10 @@ def test_frontend_redefinir_senha_esta_disponivel():
             "getAuditLogs",
         ),
         (
+            "/app/js/reservas.js",
+            "queryReservations",
+        ),
+        (
             "/app/js/esqueci-senha.js",
             "requestPasswordReset",
         ),
@@ -269,6 +273,7 @@ def test_frontend_nao_persiste_access_token_no_web_storage():
         "/app/js/manutencoes.js",
         "/app/js/relatorios.js",
         "/app/js/auditoria.js",
+        "/app/js/reservas.js",
     ],
 )
 def test_paginas_protegidas_restauram_sessao_sem_web_storage(
@@ -339,6 +344,7 @@ def test_frontend_design_system_define_tokens_compartilhados():
         "/app/manutencoes.html",
         "/app/relatorios.html",
         "/app/auditoria.html",
+        "/app/reservas.html",
         "/app/cadastro.html",
         "/app/esqueci-senha.html",
         "/app/redefinir-senha.html",
@@ -499,6 +505,7 @@ def test_frontend_ui_compartilhada_adiciona_melhorias_de_ux():
         "/app/manutencoes.html",
         "/app/relatorios.html",
         "/app/auditoria.html",
+        "/app/reservas.html",
         "/app/cadastro.html",
         "/app/esqueci-senha.html",
         "/app/redefinir-senha.html",
@@ -691,3 +698,30 @@ def test_manutencoes_expoem_campos_avancados_e_edicao():
     assert "custo_estimado" in manutencoes_js.text
     assert "data_prevista" in manutencoes_js.text
     assert "maintenance.atrasada" in manutencoes_js.text
+
+def test_reservas_frontend_expoe_fluxo_futuro():
+    response = client.get(
+        "/app/reservas.html"
+    )
+
+    assert response.status_code == 200
+    assert "Reservas" in response.text
+    assert "reservation-start" in response.text
+    assert "reservation-end" in response.text
+    assert "reservation-status-filter" in response.text
+
+    api_response = client.get(
+        "/app/js/api.js"
+    )
+    assert api_response.status_code == 200
+    assert 'RESERVAS_CRIAR: "reservas:criar"' in api_response.text
+    assert '"/reservas"' in api_response.text
+    assert '"/reservas/me/consulta"' in api_response.text
+
+    js_response = client.get(
+        "/app/js/reservas.js"
+    )
+    assert js_response.status_code == 200
+    assert "queryReservations" in js_response.text
+    assert "createReservation" in js_response.text
+    assert "cancelReservation" in js_response.text

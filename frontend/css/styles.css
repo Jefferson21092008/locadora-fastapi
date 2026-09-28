@@ -3901,3 +3901,132 @@ form[aria-busy="true"] :is(input, select, textarea, button) {
         justify-content: flex-start;
     }
 }
+
+/* ==========================================================================
+   Reservas futuras
+   ========================================================================== */
+
+.fleet-overview--five {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.reservations-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.reservation-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+
+.reservation-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.reservation-card__header h3 {
+    margin: 0.25rem 0 0;
+}
+
+.reservation-card__header p,
+.reservation-card__id {
+    margin: 0;
+    color: var(--slate-500);
+    font-size: 0.875rem;
+}
+
+.reservation-card__details {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.reservation-card__details div {
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    background: var(--slate-50);
+}
+
+.reservation-card__details dt {
+    margin-bottom: 0.2rem;
+    color: var(--slate-500);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.reservation-card__details dd {
+    margin: 0;
+    font-weight: 700;
+}
+
+.reservation-card__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.reservation-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.8rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.reservation-status--ativa {
+    background: rgba(13, 148, 136, 0.12);
+    color: #0f766e;
+}
+
+.reservation-status--convertida {
+    background: rgba(37, 99, 235, 0.12);
+    color: #1d4ed8;
+}
+
+.reservation-status--cancelada,
+.reservation-status--expirada {
+    background: var(--slate-100);
+    color: var(--slate-600);
+}
+
+@media (max-width: 1100px) {
+    .fleet-overview--five {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .reservation-card__details {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .fleet-overview--five,
+    .reservation-card__details {
+        grid-template-columns: 1fr;
+    }
+
+    .reservation-card__header {
+        flex-direction: column;
+    }
+
+    .reservation-card__actions {
+        justify-content: stretch;
+    }
+
+    .reservation-card__actions .card-button {
+        width: 100%;
+    }
+}
