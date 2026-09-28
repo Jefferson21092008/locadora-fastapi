@@ -105,6 +105,19 @@ def test_frontend_manutencoes_esta_disponivel():
     assert "/app/js/manutencoes.js" in resposta.text
 
 
+def test_frontend_vistorias_esta_disponivel():
+    resposta = client.get(
+        "/app/vistorias.html"
+    )
+
+    assert resposta.status_code == 200
+    assert 'id="inspection-form"' in resposta.text
+    assert 'id="damage-form"' in resposta.text
+    assert 'id="traffic-fine-form"' in resposta.text
+    assert 'id="deposit-form"' in resposta.text
+    assert "/app/js/vistorias.js" in resposta.text
+
+
 def test_frontend_relatorios_esta_disponivel():
     resposta = client.get(
         "/app/relatorios.html"
@@ -173,6 +186,10 @@ def test_frontend_redefinir_senha_esta_disponivel():
         (
             "/app/js/manutencoes.js",
             "queryMaintenances",
+        ),
+        (
+            "/app/js/vistorias.js",
+            "getInspectionSummary",
         ),
         (
             "/app/js/relatorios.js",
@@ -271,6 +288,7 @@ def test_frontend_nao_persiste_access_token_no_web_storage():
         "/app/js/alugueis.js",
         "/app/js/clientes.js",
         "/app/js/manutencoes.js",
+        "/app/js/vistorias.js",
         "/app/js/relatorios.js",
         "/app/js/auditoria.js",
         "/app/js/reservas.js",
@@ -725,3 +743,18 @@ def test_reservas_frontend_expoe_fluxo_futuro():
     assert "queryReservations" in js_response.text
     assert "createReservation" in js_response.text
     assert "cancelReservation" in js_response.text
+
+
+def test_frontend_vistorias_consume_permissoes_e_endpoints():
+    api_js = client.get(
+        "/app/js/api.js"
+    )
+    pagina = client.get(
+        "/app/alugueis.html"
+    )
+
+    assert api_js.status_code == 200
+    assert "VISTORIAS_LER" in api_js.text
+    assert '"/app/vistorias.html"' in api_js.text
+    assert "/vistorias/alugueis/" in api_js.text
+    assert "/app/vistorias.html" in pagina.text

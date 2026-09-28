@@ -49,6 +49,8 @@ As telas operacionais reutilizam essa base para manter busca, filtros, contagem 
 - cadastro, busca, edição e controle de veículos;
 - criação e finalização de aluguéis;
 - criação, consulta e cancelamento de reservas futuras de veículos;
+- vistorias de retirada/devolução com quilometragem e combustível;
+- registro de danos, multas de trânsito e cauções por aluguel;
 - cálculo de devolução, quilometragem, multa e pagamento;
 - abertura e finalização de manutenções;
 - relatórios administrativos e financeiros;
@@ -145,6 +147,7 @@ Locadora/
 │   │   ├── redefinir-senha.js
 │   │   ├── relatorios.js
 │   │   ├── reservas.js
+│   │   ├── vistorias.js
 │   │   └── veiculos.js
 │   ├── alugueis.html
 │   ├── auditoria.html
@@ -157,6 +160,7 @@ Locadora/
 │   ├── redefinir-senha.html
 │   ├── relatorios.html
 │   ├── reservas.html
+│   ├── vistorias.html
 │   └── veiculos.html
 ├── docs/
 │   └── arquitetura.md
@@ -166,7 +170,8 @@ Locadora/
 │   │   ├── 20260927_0002_audit_logs.py
 │   │   ├── 20260927_0003_sessoes_refresh.py
 │   │   ├── 20260928_0004_manutencao_avancada.py
-│   │   └── 20260928_0005_reservas.py
+│   │   ├── 20260928_0005_reservas.py
+│   │   └── 20260928_0006_vistorias_ocorrencias.py
 │   ├── env.py
 │   ├── README
 │   └── script.py.mako
@@ -188,6 +193,7 @@ Locadora/
 │   ├── pagamentos.py
 │   ├── reservas.py
 │   ├── seguranca.py
+│   ├── vistorias.py
 │   ├── usuarios.py
 │   └── veiculos.py
 ├── scripts/
@@ -217,7 +223,7 @@ O diretório `scripts/legacy/` preserva apenas o histórico da antiga migração
 
 ### Entidades
 
-Os arquivos de domínio em `modulos/` representam clientes, veículos, aluguéis, reservas, manutenções, usuários, pagamentos e registros de auditoria. Eles concentram regras próprias do domínio e não executam SQL.
+Os arquivos de domínio em `modulos/` representam clientes, veículos, aluguéis, reservas, manutenções, vistorias, usuários, pagamentos e registros de auditoria. Eles concentram regras próprias do domínio e não executam SQL.
 
 ### Models
 
@@ -1078,3 +1084,69 @@ A etapa usa a migration `20260928_0005_reservas`, com índices por veículo/per�
 e cliente/status. A checagem de conflitos é feita na camada de aplicação nesta
 etapa; proteção contra corrida entre transações concorrentes será tratada na
 etapa específica de concorrência e consistência transacional.
+
+
+## Trilha principal — Vistorias, danos, multas, caução e combustível
+
+A Etapa 16 separa o registro operacional da vistoria do processamento financeiro.
+Isso permite registrar o estado real do veículo e as ocorrências relacionadas ao
+aluguel antes da futura Etapa 17, que será responsável por pagamentos e
+liquidação financeira.
+
+O módulo usa a seguinte composição:
+
+```text
+frontend/vistorias.html
+        ↓
+api/routers/vistorias.py
+        ↓
+VistoriaService
+        ↓
+VistoriaRepository
+        ↓
+InspecaoAluguelModel / DanoAluguelModel
+MultaTransitoModel / CaucaoAluguelModel
+        ↓
+PostgreSQL / SQLite
+```
+
+As inspeções possuem dois momentos: `retirada` e `devolucao`. Cada aluguel aceita
+no máximo uma inspeção de cada tipo. A inspeção registra quilometragem do
+odômetro, nível de combustível entre 0% e 100% e observações. Quando as duas
+inspeções existem, o sistema calcula a diferença de combustível devolvida abaixo
+do nível inicial sem transformar essa diferença automaticamente em cobrança.
+
+Danos e multas de trânsito ficam ligados ao aluguel e podem ser cancelados sem
+apagar o histórico. Os valores ativos compõem um resumo de pendências estimadas.
+A multa de trânsito é independente da multa por atraso já existente em
+`Aluguel`.
+
+A caução é um registro único por aluguel. O sistema armazena o valor total e o
+valor já liberado e deriva o estado como `retida`, `parcial` ou `liberada`.
+Nenhum desses valores é liquidado automaticamente nesta etapa.
+
+Principais rotas:
+
+```text
+GET   /api/v1/vistorias/alugueis/{id_aluguel}
+POST  /api/v1/vistorias/alugueis/{id_aluguel}/inspecoes
+POST  /api/v1/vistorias/alugueis/{id_aluguel}/danos
+PATCH /api/v1/vistorias/danos/{id_dano}/cancelar
+POST  /api/v1/vistorias/alugueis/{id_aluguel}/multas
+PATCH /api/v1/vistorias/multas/{id_multa}/cancelar
+PUT   /api/v1/vistorias/alugueis/{id_aluguel}/caucao
+```
+
+A autorização administrativa usa `vistorias:ler`, `vistorias:registrar`,
+`danos:gerenciar`, `multas:gerenciar` e `caucoes:gerenciar`. Escritas sensíveis
+também entram na trilha de auditoria.
+
+A migration `20260928_0006_vistorias_ocorrencias` cria as tabelas `inspecoes`,
+`danos`, `multas_transito` e `caucoes`, com foreign keys para `alugueis`,
+constraints de domínio e índices para as consultas operacionais. A migration
+também tolera o cenário em que `Base.metadata.create_all()` já criou as tabelas.
+
+A Etapa 16 deliberadamente não soma danos, multas de trânsito, combustível ou
+caução ao pagamento existente da devolução. Esses registros passam a ser a
+fonte operacional que a Etapa 17 poderá usar para montar a liquidação financeira
+sem duplicar regras de vistoria.

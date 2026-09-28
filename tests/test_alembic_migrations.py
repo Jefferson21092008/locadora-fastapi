@@ -31,6 +31,10 @@ TABELAS_ESPERADAS = {
     "alugueis",
     "manutencoes",
     "reservas",
+    "inspecoes",
+    "danos",
+    "multas_transito",
+    "caucoes",
     "sessoes",
     "tokens_recuperacao_senha",
 }
@@ -352,7 +356,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20260928_0005"
+        assert revisao == "20260928_0006"
 
     finally:
         engine.dispose()
@@ -431,6 +435,10 @@ def test_upgrade_preserva_dados_do_schema_legado(
                     if tabela in {
                         "audit_logs",
                         "reservas",
+                        "inspecoes",
+                        "danos",
+                        "multas_transito",
+                        "caucoes",
                         "sessoes",
                     }
                     else 1

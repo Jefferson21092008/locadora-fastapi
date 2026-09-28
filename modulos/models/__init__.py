@@ -8,6 +8,12 @@ from modulos.models.sessao_model import SessaoModel
 from modulos.models.token_recuperacao_model import TokenRecuperacaoModel
 from modulos.models.usuario_model import UsuarioModel
 from modulos.models.veiculo_model import VeiculoModel
+from modulos.models.vistoria_model import (
+    CaucaoAluguelModel,
+    DanoAluguelModel,
+    InspecaoAluguelModel,
+    MultaTransitoModel,
+)
 
 
 __all__ = [
@@ -21,4 +27,8 @@ __all__ = [
     "UsuarioModel",
     "TokenRecuperacaoModel",
     "VeiculoModel",
+    "InspecaoAluguelModel",
+    "DanoAluguelModel",
+    "MultaTransitoModel",
+    "CaucaoAluguelModel",
 ]

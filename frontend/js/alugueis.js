@@ -249,15 +249,28 @@ function rentalCustomer(rental) {
 }
 
 function rentalAction(rental) {
-    if (!can(Permissions.ALUGUEIS_DEVOLVER) || rental.status !== "ativo") {
-        return "";
+    const actions = [];
+
+    if (can(Permissions.VISTORIAS_LER)) {
+        actions.push(`
+            <a class="card-button" href="/app/vistorias.html?aluguel=${rental.id}">
+                Abrir vistoria
+            </a>
+        `);
     }
 
-    return `
-        <button class="card-button card-button--success" type="button" data-action="return" data-id="${rental.id}">
-            Devolver veículo
-        </button>
-    `;
+    if (
+        can(Permissions.ALUGUEIS_DEVOLVER)
+        && rental.status === "ativo"
+    ) {
+        actions.push(`
+            <button class="card-button card-button--success" type="button" data-action="return" data-id="${rental.id}">
+                Devolver veículo
+            </button>
+        `);
+    }
+
+    return actions.join("");
 }
 
 function renderRentals() {

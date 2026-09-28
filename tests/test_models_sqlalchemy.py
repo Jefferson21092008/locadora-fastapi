@@ -57,6 +57,10 @@ def test_base_registra_primeiros_models():
     assert "audit_logs" in Base.metadata.tables
     assert "sessoes" in Base.metadata.tables
     assert "reservas" in Base.metadata.tables
+    assert "inspecoes" in Base.metadata.tables
+    assert "danos" in Base.metadata.tables
+    assert "multas_transito" in Base.metadata.tables
+    assert "caucoes" in Base.metadata.tables
 
     assert (
         "tokens_recuperacao_senha"
@@ -79,6 +83,10 @@ def test_models_criam_tabelas_esperadas(
     assert "audit_logs" in tabelas
     assert "sessoes" in tabelas
     assert "reservas" in tabelas
+    assert "inspecoes" in tabelas
+    assert "danos" in tabelas
+    assert "multas_transito" in tabelas
+    assert "caucoes" in tabelas
 
     assert (
         "tokens_recuperacao_senha"

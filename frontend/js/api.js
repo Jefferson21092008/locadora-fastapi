@@ -21,6 +21,11 @@ export const Permissions = Object.freeze({
     RESERVAS_CRIAR: "reservas:criar",
     RESERVAS_PROPRIAS_LER: "reservas:proprias:ler",
     RESERVAS_CANCELAR: "reservas:cancelar",
+    VISTORIAS_LER: "vistorias:ler",
+    VISTORIAS_REGISTRAR: "vistorias:registrar",
+    DANOS_GERENCIAR: "danos:gerenciar",
+    MULTAS_GERENCIAR: "multas:gerenciar",
+    CAUCOES_GERENCIAR: "caucoes:gerenciar",
     RELATORIOS_LER: "relatorios:ler",
     AUDITORIA_LER: "auditoria:ler",
     CONTA_RENOMEAR: "conta:renomear",
@@ -35,6 +40,7 @@ export function hasPermission(user, permission) {
 const NAVIGATION_PERMISSIONS = Object.freeze({
     "/app/clientes.html": Permissions.CLIENTES_LER,
     "/app/manutencoes.html": Permissions.MANUTENCOES_LER,
+    "/app/vistorias.html": Permissions.VISTORIAS_LER,
     "/app/relatorios.html": Permissions.RELATORIOS_LER,
     "/app/auditoria.html": Permissions.AUDITORIA_LER,
 });
@@ -518,6 +524,50 @@ export function cancelReservation(reservationId, own = false) {
 
     return apiRequest(path, {
         method: "PATCH",
+    });
+}
+
+export function getInspectionSummary(rentalId) {
+    return apiRequest(`/vistorias/alugueis/${rentalId}`);
+}
+
+export function createInspection(rentalId, data) {
+    return apiRequest(`/vistorias/alugueis/${rentalId}/inspecoes`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export function createDamage(rentalId, data) {
+    return apiRequest(`/vistorias/alugueis/${rentalId}/danos`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export function cancelDamage(damageId) {
+    return apiRequest(`/vistorias/danos/${damageId}/cancelar`, {
+        method: "PATCH",
+    });
+}
+
+export function createTrafficFine(rentalId, data) {
+    return apiRequest(`/vistorias/alugueis/${rentalId}/multas`, {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export function cancelTrafficFine(fineId) {
+    return apiRequest(`/vistorias/multas/${fineId}/cancelar`, {
+        method: "PATCH",
+    });
+}
+
+export function saveDeposit(rentalId, data) {
+    return apiRequest(`/vistorias/alugueis/${rentalId}/caucao`, {
+        method: "PUT",
+        body: JSON.stringify(data),
     });
 }
 

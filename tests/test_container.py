@@ -33,6 +33,9 @@ from modulos.servicos.sessao_service import (
 from modulos.servicos.veiculos_service import (
     VeiculoService,
 )
+from modulos.servicos.vistoria_service import (
+    VistoriaService,
+)
 
 
 class ConfiguracaoFake:
@@ -117,6 +120,11 @@ def test_container_cria_services(
         ExportacaoRelatoriosService,
     )
 
+    assert isinstance(
+        container.vistoria_service,
+        VistoriaService,
+    )
+
 
 def test_container_cria_admin_padrao(
     container,
@@ -194,6 +202,18 @@ def test_services_compartilham_repositories(
         container.cliente_service
         .reserva_repository
         is container.reserva_repository
+    )
+
+    assert (
+        container.vistoria_service
+        .aluguel_repository
+        is container.aluguel_repository
+    )
+
+    assert (
+        container.vistoria_service
+        .vistoria_repository
+        is container.vistoria_repository
     )
 
 
