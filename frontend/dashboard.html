@@ -225,6 +225,7 @@
 <dialog
     id="rename-user-dialog"
     class="modal modal--small"
+    aria-labelledby="rename-user-title"
 >
     <form
         id="rename-user-form"
@@ -235,7 +236,7 @@
                 <p class="eyebrow">
                     Configurações da conta
                 </p>
-                <h2>Alterar nome de usuário</h2>
+                <h2 id="rename-user-title">Alterar nome de usuário</h2>
             </div>
 
             <button
@@ -313,6 +314,7 @@
     </form>
 </dialog>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/dashboard.js"></script>
 </body>
 </html>

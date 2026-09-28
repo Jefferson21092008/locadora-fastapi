@@ -50,9 +50,10 @@
                             autocomplete="username"
                             maxlength="100"
                             required
+                            aria-describedby="login-user-hint"
                             autofocus
                         >
-                        <span class="field__hint">Use seu nome de usuário, não o e-mail.</span>
+                        <span id="login-user-hint" class="field__hint">Use seu nome de usuário, não o e-mail.</span>
                     </div>
 
                     <div class="field">
@@ -89,6 +90,7 @@
         </section>
     </main>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/auth.js"></script>
 </body>
 </html>

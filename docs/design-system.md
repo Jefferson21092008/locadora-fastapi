@@ -142,3 +142,29 @@ A autorização efetiva continua no backend. O frontend apenas esconde ou exibe 
 A navegação administrativa passa a incluir Auditoria ao lado de Clientes, Manutenções e Relatórios. O dashboard também expõe um atalho condicionado ao RBAC.
 
 Todas essas telas continuam usando os mesmos tokens, estados de foco e regras responsivas definidos neste documento.
+
+## UX final, responsividade e acessibilidade — Etapa 14
+
+A Etapa 14 fecha a fase de refinamento do frontend com uma camada compartilhada de UX em `frontend/js/ui.js`. Essa camada não altera regras de negócio nem autorização: ela complementa as páginas com comportamento consistente de teclado, foco, estados de formulário e conectividade.
+
+### Teclado e busca
+
+Campos de busca recebem o atalho `/` quando o foco não está em outro campo editável. A tecla `Esc` limpa a busca ativa e dispara o mesmo evento usado pela filtragem da tela. As buscas também passam a declarar, por ARIA, qual região de resultados controlam e qual contador descreve o recorte atual.
+
+### Foco em diálogos
+
+A interface registra o elemento que abriu cada `dialog` e devolve o foco a esse elemento quando a janela é fechada. Os diálogos operacionais também passam a declarar explicitamente seus títulos e, quando aplicável, suas descrições com `aria-labelledby` e `aria-describedby`.
+
+### Estados assíncronos
+
+Formulários refletem `aria-busy` enquanto seu botão de envio está desabilitado durante uma operação assíncrona. Regiões de status usam anúncios atômicos para evitar mensagens fragmentadas em leitores de tela.
+
+### Conectividade
+
+Uma região discreta informa quando o navegador fica offline e quando a conexão é restaurada. Esse aviso é apenas informativo; a API continua sendo responsável por comunicar falhas reais das requisições.
+
+### Mobile e preferências do usuário
+
+Os modais passam a usar `dvh` e rolagem interna para permanecer utilizáveis com teclados virtuais e viewports móveis. Controles de toque recebem alvos mínimos maiores em dispositivos coarse pointer. O CSS também reforça suporte a `prefers-contrast`, `forced-colors` e `prefers-reduced-motion`.
+
+Com esta etapa, a fase de frontend iniciada no Design System fica encerrada com uma base reutilizável para novas funcionalidades.

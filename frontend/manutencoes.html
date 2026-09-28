@@ -79,7 +79,7 @@
                     <div class="fleet-filters">
                         <label class="search-field" for="maintenance-search">
                             <span class="sr-only">Buscar manutenção</span>
-                            <input id="maintenance-search" type="search" placeholder="Buscar por veículo, motivo ou ID">
+                            <input id="maintenance-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="maintenances-list" aria-describedby="maintenances-results-count" placeholder="Buscar por veículo, motivo ou ID">
                         </label>
 
                         <label class="select-field" for="maintenance-status-filter">
@@ -119,12 +119,12 @@
         </main>
     </div>
 
-    <dialog id="maintenance-dialog" class="modal">
+    <dialog id="maintenance-dialog" class="modal" aria-labelledby="maintenance-dialog-title">
         <form id="maintenance-form" class="modal__surface">
             <div class="modal__header">
                 <div>
                     <p class="eyebrow">Entrada na oficina</p>
-                    <h2>Abrir manutenção</h2>
+                    <h2 id="maintenance-dialog-title">Abrir manutenção</h2>
                 </div>
                 <button class="icon-button" type="button" data-close-maintenance-dialog aria-label="Fechar formulário">×</button>
             </div>
@@ -157,7 +157,7 @@
         </form>
     </dialog>
 
-    <dialog id="finish-maintenance-dialog" class="modal modal--small">
+    <dialog id="finish-maintenance-dialog" class="modal modal--small" aria-labelledby="finish-maintenance-title" aria-describedby="finish-maintenance-description">
         <form id="finish-maintenance-form" class="modal__surface">
             <div class="modal__header">
                 <div>
@@ -171,7 +171,7 @@
 
             <div class="field">
                 <label for="maintenance-cost">Custo total (R$)</label>
-                <input id="maintenance-cost" type="number" min="0" step="0.01" required>
+                <input id="maintenance-cost" type="number" inputmode="decimal" min="0" step="0.01" required>
             </div>
 
             <div id="finish-maintenance-message" class="form-message" role="status" aria-live="polite"></div>
@@ -186,6 +186,7 @@
         </form>
     </dialog>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/manutencoes.js"></script>
 </body>
 </html>

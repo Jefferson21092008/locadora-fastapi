@@ -66,9 +66,10 @@
                                 minlength="3"
                                 maxlength="30"
                                 pattern="[A-Za-z0-9_.-]+"
+                                aria-describedby="register-user-hint"
                                 required
                             >
-                            <span class="field__hint">Letras, números, ponto, hífen ou underline.</span>
+                            <span id="register-user-hint" class="field__hint">Letras, números, ponto, hífen ou underline.</span>
                         </div>
 
                         <div class="field">
@@ -98,9 +99,10 @@
                                 autocomplete="new-password"
                                 minlength="8"
                                 maxlength="128"
+                                aria-describedby="register-password-hint"
                                 required
                             >
-                            <span class="field__hint">Use pelo menos uma letra e um número.</span>
+                            <span id="register-password-hint" class="field__hint">Use pelo menos uma letra e um número.</span>
                         </div>
 
                         <div class="field">
@@ -132,6 +134,7 @@
         </section>
     </main>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/cadastro.js"></script>
 </body>
 </html>

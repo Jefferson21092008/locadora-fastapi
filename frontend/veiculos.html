@@ -83,7 +83,7 @@
                     <div class="fleet-filters">
                         <label class="search-field" for="vehicle-search">
                             <span class="sr-only">Buscar veículo</span>
-                            <input id="vehicle-search" type="search" placeholder="Buscar por modelo, tipo ou ID">
+                            <input id="vehicle-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="vehicles-grid" aria-describedby="vehicles-results-count" placeholder="Buscar por modelo, tipo ou ID">
                         </label>
 
                         <label class="select-field" for="status-filter">
@@ -125,7 +125,7 @@
         </main>
     </div>
 
-    <dialog id="vehicle-dialog" class="modal">
+    <dialog id="vehicle-dialog" class="modal" aria-labelledby="vehicle-dialog-title">
         <form id="vehicle-form" class="modal__surface">
             <div class="modal__header">
                 <div>
@@ -155,17 +155,17 @@
 
                 <div class="field">
                     <label for="vehicle-year">Ano</label>
-                    <input id="vehicle-year" type="number" min="1886" required>
+                    <input id="vehicle-year" type="number" inputmode="numeric" min="1886" required>
                 </div>
 
                 <div class="field">
                     <label for="vehicle-daily-rate">Diária (R$)</label>
-                    <input id="vehicle-daily-rate" type="number" min="0.01" step="0.01" required>
+                    <input id="vehicle-daily-rate" type="number" inputmode="decimal" min="0.01" step="0.01" required>
                 </div>
 
                 <div class="field">
                     <label for="vehicle-km-rate">Preço por km (R$)</label>
-                    <input id="vehicle-km-rate" type="number" min="0" step="0.01" required>
+                    <input id="vehicle-km-rate" type="number" inputmode="decimal" min="0" step="0.01" required>
                 </div>
             </div>
 
@@ -181,7 +181,7 @@
         </form>
     </dialog>
 
-    <dialog id="status-dialog" class="modal modal--small">
+    <dialog id="status-dialog" class="modal modal--small" aria-labelledby="status-dialog-title" aria-describedby="status-dialog-text">
         <div class="modal__surface">
             <div class="modal__header">
                 <div>
@@ -205,6 +205,7 @@
         </div>
     </dialog>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/veiculos.js"></script>
 </body>
 </html>
