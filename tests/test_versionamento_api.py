@@ -47,6 +47,7 @@ def test_openapi_expoe_somente_rotas_versionadas():
     assert "/api/v1/alugueis" in paths
     assert "/api/v1/manutencoes" in paths
     assert "/api/v1/relatorios/resumo" in paths
+    assert "/api/v1/relatorios/dashboard" in paths
     assert "/api/v1/auditoria" in paths
     assert "/api/v1/status" in paths
     assert "/api/v1/clientes/consulta" in paths

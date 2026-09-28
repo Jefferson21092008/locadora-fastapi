@@ -47,7 +47,11 @@ class AluguelRepositoryFake:
 
 
 class RelatorioRepositoryFake:
-    pass
+    def __init__(self, metricas=None):
+        self.metricas = metricas or {}
+
+    def metricas_dashboard(self):
+        return dict(self.metricas)
 
 
 class AluguelFake:
@@ -219,3 +223,34 @@ def test_gerar_resumo():
     assert resumo[
         "total_arrecadado"
     ] == 500
+
+def test_metricas_dashboard_calcula_taxa_e_resultado():
+    metricas = {
+        "clientes_ativos": 4,
+        "clientes_inativos": 1,
+        "veiculos_disponiveis": 5,
+        "veiculos_alugados": 3,
+        "veiculos_manutencao": 2,
+        "veiculos_desativados": 1,
+        "alugueis_ativos": 3,
+        "alugueis_finalizados": 10,
+        "manutencoes_ativas": 2,
+        "manutencoes_finalizadas": 7,
+        "receita_alugueis": 12000.0,
+        "custos_manutencao": 2500.0,
+        "ticket_medio": 1200.0,
+    }
+
+    service = RelatorioService(
+        aluguel_repository=AluguelRepositoryFake(),
+        veiculo_repository=VeiculoRepositoryFake(),
+        cliente_repository=ClienteRepositoryFake(),
+        relatorio_repository=RelatorioRepositoryFake(metricas),
+    )
+
+    resultado = service.metricas_dashboard()
+
+    assert resultado["veiculos_ativos"] == 10
+    assert resultado["taxa_frota_alugada"] == 30.0
+    assert resultado["resultado_bruto"] == 9500.0
+    assert resultado["ticket_medio"] == 1200.0

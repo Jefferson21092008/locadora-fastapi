@@ -6,6 +6,34 @@ from pydantic import (
 
 
 # ================================================================
+# DASHBOARD
+# ================================================================
+
+
+class DashboardMetricasResponse(BaseModel):
+    clientes_ativos: int = Field(ge=0)
+    clientes_inativos: int = Field(ge=0)
+
+    veiculos_ativos: int = Field(ge=0)
+    veiculos_disponiveis: int = Field(ge=0)
+    veiculos_alugados: int = Field(ge=0)
+    veiculos_manutencao: int = Field(ge=0)
+    veiculos_desativados: int = Field(ge=0)
+
+    alugueis_ativos: int = Field(ge=0)
+    alugueis_finalizados: int = Field(ge=0)
+
+    manutencoes_ativas: int = Field(ge=0)
+    manutencoes_finalizadas: int = Field(ge=0)
+
+    receita_alugueis: float = Field(ge=0)
+    custos_manutencao: float = Field(ge=0)
+    resultado_bruto: float
+    ticket_medio: float = Field(ge=0)
+    taxa_frota_alugada: float = Field(ge=0, le=100)
+
+
+# ================================================================
 # RESUMO GERAL
 # ================================================================
 

@@ -48,6 +48,7 @@ def criar_veiculo(
     id_veiculo,
     modelo,
     tipo="Carro",
+    status="disponivel",
 ):
     return VeiculoModel(
         id=id_veiculo,
@@ -57,10 +58,14 @@ def criar_veiculo(
         diaria=100,
         preco_km=0.5,
         quilometragem=0,
-        status="disponivel",
-        disponivel=True,
-        alugado_por=None,
-        ativo=True,
+        status=status,
+        disponivel=(status == "disponivel"),
+        alugado_por=(
+            "cliente"
+            if status == "alugado"
+            else None
+        ),
+        ativo=(status != "desativado"),
     )
 
 
@@ -68,6 +73,7 @@ def criar_cliente(
     id_cliente,
     usuario,
     nome,
+    ativo=True,
 ):
     return ClienteModel(
         id=id_cliente,
@@ -75,7 +81,7 @@ def criar_cliente(
         usuario=usuario,
         email=f"{usuario}@email.com",
         senha_hash="hash",
-        ativo=True,
+        ativo=ativo,
         usuario_id=None,
     )
 
@@ -478,3 +484,59 @@ def test_resultado_por_veiculo_nao_duplica_receitas_e_custos(
             "resultado_bruto": 700.0,
         }
     ]
+
+def test_metricas_dashboard_agrega_operacao_e_financeiro(
+    banco_orm,
+    repository,
+):
+    with banco_orm.criar_sessao() as sessao:
+        sessao.add_all(
+            [
+                criar_veiculo(1, "Civic"),
+                criar_veiculo(2, "Corolla", status="alugado"),
+                criar_veiculo(3, "Onix", status="manutencao"),
+                criar_veiculo(4, "Argo", status="desativado"),
+                criar_cliente(1, "lucas", "Lucas"),
+                criar_cliente(2, "maria", "Maria", ativo=False),
+            ]
+        )
+        sessao.flush()
+        sessao.add_all(
+            [
+                criar_aluguel(
+                    1, 1, "lucas", "Lucas",
+                    1, "Civic", 600,
+                ),
+                criar_aluguel(
+                    2, 1, "lucas", "Lucas",
+                    2, "Corolla", 999,
+                    status="ativo",
+                ),
+                criar_manutencao(
+                    1, 1, 150,
+                ),
+                criar_manutencao(
+                    2, 3, 900,
+                    status="ativa",
+                ),
+            ]
+        )
+        sessao.commit()
+
+    resultado = repository.metricas_dashboard()
+
+    assert resultado == {
+        "clientes_ativos": 1,
+        "clientes_inativos": 1,
+        "veiculos_disponiveis": 1,
+        "veiculos_alugados": 1,
+        "veiculos_manutencao": 1,
+        "veiculos_desativados": 1,
+        "alugueis_ativos": 1,
+        "alugueis_finalizados": 1,
+        "manutencoes_ativas": 1,
+        "manutencoes_finalizadas": 1,
+        "receita_alugueis": 600.0,
+        "custos_manutencao": 150.0,
+        "ticket_medio": 600.0,
+    }
