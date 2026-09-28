@@ -21,6 +21,7 @@ from api.schemas.manutencoes import (
     ManutencaoCreate,
     ManutencaoFinalizar,
     ManutencaoResponse,
+    ManutencaoUpdate,
 )
 
 from modulos.permissoes import (
@@ -68,6 +69,30 @@ def transformar_manutencao(
         ),
 
         status=manutencao.status,
+
+        tipo=manutencao.tipo,
+
+        prioridade=(
+            manutencao.prioridade
+        ),
+
+        fornecedor=(
+            manutencao.fornecedor
+        ),
+
+        custo_estimado=(
+            manutencao.custo_estimado
+        ),
+
+        data_prevista=(
+            manutencao.data_prevista
+        ),
+
+        observacoes=(
+            manutencao.observacoes
+        ),
+
+        atrasada=manutencao.atrasada,
     )
 
 
@@ -143,10 +168,23 @@ def consultar_manutencoes(
     por_pagina: int = Query(12, ge=1, le=100),
     busca: str = Query("", max_length=100),
     status: Literal["todos", "ativa", "finalizada"] = "todos",
+    tipo: Literal[
+        "todos",
+        "preventiva",
+        "corretiva",
+    ] = "todos",
+    prioridade: Literal[
+        "todos",
+        "baixa",
+        "media",
+        "alta",
+    ] = "todos",
     ordenar: Literal[
         "id",
         "data_inicio",
+        "data_prevista",
         "custo",
+        "custo_estimado",
         "quilometragem",
     ] = "id",
     direcao: Literal["asc", "desc"] = "desc",
@@ -158,6 +196,8 @@ def consultar_manutencoes(
         por_pagina=por_pagina,
         busca=busca,
         status=status,
+        tipo=tipo,
+        prioridade=prioridade,
         ordenar=ordenar,
         direcao=direcao,
     )
@@ -365,6 +405,16 @@ def abrir_manutencao(
             ),
 
             motivo=dados.motivo,
+            tipo=dados.tipo,
+            prioridade=dados.prioridade,
+            fornecedor=dados.fornecedor,
+            custo_estimado=(
+                dados.custo_estimado
+            ),
+            data_prevista=(
+                dados.data_prevista
+            ),
+            observacoes=dados.observacoes,
         )
     )
 
@@ -378,6 +428,105 @@ def abrir_manutencao(
         campos_alterados=(
             "status",
             "motivo",
+            "tipo",
+            "prioridade",
+            "fornecedor",
+            "custo_estimado",
+            "data_prevista",
+            "observacoes",
+        ),
+    )
+
+    return transformar_manutencao(
+        manutencao
+    )
+
+
+# ================================================================
+# EDITAR MANUTENÇÃO ATIVA
+# ================================================================
+
+
+@router.patch(
+    "/{id_manutencao}",
+    response_model=ManutencaoResponse,
+    summary="Editar manutenção ativa",
+    description=(
+        "Atualiza os detalhes operacionais de uma "
+        "manutenção que ainda está em andamento."
+    ),
+    responses={
+        400: {
+            "description": (
+                "A alteração viola uma regra "
+                "de negócio."
+            ),
+        },
+        401: {
+            "description": (
+                "Autenticação necessária ou "
+                "token inválido."
+            ),
+        },
+        403: {
+            "description": (
+                "Usuário sem permissão para editar "
+                "manutenções."
+            ),
+        },
+        404: {
+            "description": (
+                "Manutenção não encontrada."
+            ),
+        },
+        422: {
+            "description": (
+                "Os dados enviados não passaram "
+                "pela validação."
+            ),
+        },
+    },
+)
+def atualizar_manutencao(
+    request: Request,
+    id_manutencao: int,
+    dados: ManutencaoUpdate,
+
+    container: Container = Depends(
+        get_container
+    ),
+
+    usuario_admin=Depends(
+        exigir_permissao(
+            Permissao.MANUTENCOES_EDITAR
+        )
+    ),
+):
+    alteracoes = dados.model_dump(
+        exclude_unset=True
+    )
+
+    manutencao = (
+        container.manutencao_service
+        .atualizar(
+            id_manutencao=(
+                id_manutencao
+            ),
+            alteracoes=alteracoes,
+        )
+    )
+
+    registrar_auditoria(
+        request=request,
+        container=container,
+        ator=usuario_admin,
+        acao="manutencao.atualizada",
+        recurso="manutencao",
+        recurso_id=manutencao.id,
+        campos_alterados=tuple(
+            sorted(
+                alteracoes
+            )
         ),
     )
 

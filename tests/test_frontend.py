@@ -666,3 +666,28 @@ def test_relatorios_expoem_exportacoes_csv_excel_pdf():
     assert relatorios_js.status_code == 200
     assert "URL.createObjectURL" in relatorios_js.text
     assert "downloadVehicleResultReport" in relatorios_js.text
+
+
+def test_manutencoes_expoem_campos_avancados_e_edicao():
+    pagina = client.get("/app/manutencoes.html")
+    api_js = client.get("/app/js/api.js")
+    manutencoes_js = client.get("/app/js/manutencoes.js")
+
+    assert pagina.status_code == 200
+    assert 'id="maintenance-type"' in pagina.text
+    assert 'id="maintenance-priority"' in pagina.text
+    assert 'id="maintenance-provider"' in pagina.text
+    assert 'id="maintenance-estimated-cost"' in pagina.text
+    assert 'id="maintenance-expected-date"' in pagina.text
+    assert 'id="maintenance-notes"' in pagina.text
+    assert 'id="maintenance-type-filter"' in pagina.text
+    assert 'id="maintenance-priority-filter"' in pagina.text
+
+    assert api_js.status_code == 200
+    assert "MANUTENCOES_EDITAR" in api_js.text
+    assert "updateMaintenance" in api_js.text
+
+    assert manutencoes_js.status_code == 200
+    assert "custo_estimado" in manutencoes_js.text
+    assert "data_prevista" in manutencoes_js.text
+    assert "maintenance.atrasada" in manutencoes_js.text

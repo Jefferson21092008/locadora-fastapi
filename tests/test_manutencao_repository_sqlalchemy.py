@@ -411,3 +411,49 @@ def test_indice_impede_duas_manutencoes_ativas_no_mesmo_veiculo(
         )
 
         assert quantidade == 0
+
+
+def test_atualizar_detalhes_avancados_persiste_no_banco(
+    contexto,
+):
+    repository, veiculo = contexto
+
+    manutencao = Manutencao(
+        id_manutencao=0,
+        veiculo_id=veiculo.id,
+        motivo="Revisão preventiva",
+        quilometragem=veiculo.quilometragem,
+        tipo="preventiva",
+        prioridade="media",
+        custo_estimado=500,
+        fornecedor="Oficina Central",
+    )
+
+    assert veiculo.enviar_para_manutencao() is True
+    manutencao.id = repository.registrar(
+        manutencao,
+        veiculo,
+    )
+
+    sucesso, _ = manutencao.atualizar_detalhes(
+        prioridade="alta",
+        custo_estimado=750,
+        fornecedor="Oficina Norte",
+        observacoes="Trocar pastilhas se necessário.",
+    )
+    assert sucesso is True
+
+    repository.atualizar(
+        manutencao
+    )
+
+    persistida = repository.buscar_por_id(
+        manutencao.id
+    )
+
+    assert persistida is not None
+    assert persistida.tipo == "preventiva"
+    assert persistida.prioridade == "alta"
+    assert persistida.custo_estimado == 750
+    assert persistida.fornecedor == "Oficina Norte"
+    assert persistida.observacoes == "Trocar pastilhas se necessário."

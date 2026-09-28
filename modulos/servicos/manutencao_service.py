@@ -1,10 +1,9 @@
-from modulos.manutencoes import (
-    Manutencao,
-)
-
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
+)
+from modulos.manutencoes import (
+    Manutencao,
 )
 
 
@@ -31,9 +30,16 @@ class ManutencaoService:
             manutencao_repository
         )
 
-    # ================================================================
-    # BUSCAS
-    # ================================================================
+    def buscar_por_id(
+        self,
+        id_manutencao,
+    ):
+        return (
+            self.manutencao_repository
+            .buscar_por_id(
+                id_manutencao
+            )
+        )
 
     def buscar_ativa_por_veiculo(
         self,
@@ -63,14 +69,16 @@ class ManutencaoService:
             .listar_ativas()
         )
 
-    # ================================================================
-    # ABRIR MANUTENÇÃO
-    # ================================================================
-
     def abrir(
         self,
         id_veiculo,
         motivo,
+        tipo="corretiva",
+        prioridade="media",
+        fornecedor=None,
+        custo_estimado=0,
+        data_prevista=None,
+        observacoes=None,
     ):
         veiculo = (
             self.veiculo_service
@@ -103,6 +111,12 @@ class ManutencaoService:
             quilometragem=(
                 veiculo.quilometragem
             ),
+            tipo=tipo,
+            prioridade=prioridade,
+            fornecedor=fornecedor,
+            custo_estimado=custo_estimado,
+            data_prevista=data_prevista,
+            observacoes=observacoes,
         )
 
         valido, mensagem = (
@@ -143,20 +157,59 @@ class ManutencaoService:
 
         except Exception:
             veiculo.__dict__.clear()
-
             veiculo.__dict__.update(
                 estado_veiculo
             )
-
             raise
 
         manutencao.id = novo_id
-
         return manutencao
 
-    # ================================================================
-    # FINALIZAR MANUTENÇÃO
-    # ================================================================
+    def atualizar(
+        self,
+        id_manutencao,
+        alteracoes,
+    ):
+        manutencao = (
+            self.buscar_por_id(
+                id_manutencao
+            )
+        )
+
+        if manutencao is None:
+            raise RecursoNaoEncontrado(
+                "Manutenção não encontrada."
+            )
+
+        estado_anterior = (
+            vars(
+                manutencao
+            ).copy()
+        )
+
+        sucesso, mensagem = (
+            manutencao.atualizar_detalhes(
+                **alteracoes
+            )
+        )
+
+        if not sucesso:
+            raise RegraDeNegocio(
+                mensagem
+            )
+
+        try:
+            self.manutencao_repository.atualizar(
+                manutencao
+            )
+        except Exception:
+            manutencao.__dict__.clear()
+            manutencao.__dict__.update(
+                estado_anterior
+            )
+            raise
+
+        return manutencao
 
     def finalizar(
         self,
@@ -219,7 +272,6 @@ class ManutencaoService:
 
         if not sucesso:
             manutencao.__dict__.clear()
-
             manutencao.__dict__.update(
                 estado_manutencao
             )
@@ -237,17 +289,14 @@ class ManutencaoService:
 
         except Exception:
             manutencao.__dict__.clear()
-
             manutencao.__dict__.update(
                 estado_manutencao
             )
 
             veiculo.__dict__.clear()
-
             veiculo.__dict__.update(
                 estado_veiculo
             )
-
             raise
 
         return manutencao
@@ -258,16 +307,23 @@ class ManutencaoService:
         por_pagina=12,
         busca="",
         status="todos",
+        tipo="todos",
+        prioridade="todos",
         ordenar="id",
         direcao="desc",
     ):
-        return self.manutencao_repository.consultar(
-            pagina=pagina,
-            por_pagina=por_pagina,
-            busca=busca,
-            status=status,
-            ordenar=ordenar,
-            direcao=direcao,
+        return (
+            self.manutencao_repository
+            .consultar(
+                pagina=pagina,
+                por_pagina=por_pagina,
+                busca=busca,
+                status=status,
+                tipo=tipo,
+                prioridade=prioridade,
+                ordenar=ordenar,
+                direcao=direcao,
+            )
         )
 
     def listar_manutencoes(self):

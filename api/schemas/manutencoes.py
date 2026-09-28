@@ -7,9 +7,16 @@ from pydantic import (
 )
 
 
-# ================================================================
-# ABERTURA DE MANUTENÇÃO
-# ================================================================
+TipoManutencao = Literal[
+    "preventiva",
+    "corretiva",
+]
+
+PrioridadeManutencao = Literal[
+    "baixa",
+    "media",
+    "alta",
+]
 
 
 class ManutencaoCreate(BaseModel):
@@ -23,6 +30,14 @@ class ManutencaoCreate(BaseModel):
                         "Troca de óleo e revisão "
                         "do sistema de freios"
                     ),
+                    "tipo": "preventiva",
+                    "prioridade": "media",
+                    "fornecedor": "Oficina Central",
+                    "custo_estimado": 450.0,
+                    "data_prevista": "2026-09-30",
+                    "observacoes": (
+                        "Confirmar desgaste das pastilhas."
+                    ),
                 }
             ]
         },
@@ -34,9 +49,7 @@ class ManutencaoCreate(BaseModel):
             "Identificador do veículo que entrará "
             "em manutenção."
         ),
-        examples=[
-            1
-        ],
+        examples=[1],
     )
 
     motivo: str = Field(
@@ -51,10 +64,87 @@ class ManutencaoCreate(BaseModel):
         ],
     )
 
+    tipo: TipoManutencao = Field(
+        default="corretiva",
+        description=(
+            "Classificação da manutenção."
+        ),
+    )
 
-# ================================================================
-# FINALIZAÇÃO
-# ================================================================
+    prioridade: PrioridadeManutencao = Field(
+        default="media",
+        description=(
+            "Prioridade operacional da manutenção."
+        ),
+    )
+
+    fornecedor: str | None = Field(
+        default=None,
+        max_length=150,
+        description=(
+            "Oficina ou fornecedor responsável."
+        ),
+    )
+
+    custo_estimado: float = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Estimativa de custo antes da conclusão."
+        ),
+    )
+
+    data_prevista: str | None = Field(
+        default=None,
+        max_length=30,
+        description=(
+            "Data prevista de conclusão em formato ISO."
+        ),
+        examples=["2026-09-30"],
+    )
+
+    observacoes: str | None = Field(
+        default=None,
+        max_length=500,
+        description=(
+            "Observações operacionais da manutenção."
+        ),
+    )
+
+
+class ManutencaoUpdate(BaseModel):
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+    )
+
+    motivo: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=300,
+    )
+
+    tipo: TipoManutencao | None = None
+    prioridade: PrioridadeManutencao | None = None
+
+    fornecedor: str | None = Field(
+        default=None,
+        max_length=150,
+    )
+
+    custo_estimado: float | None = Field(
+        default=None,
+        ge=0,
+    )
+
+    data_prevista: str | None = Field(
+        default=None,
+        max_length=30,
+    )
+
+    observacoes: str | None = Field(
+        default=None,
+        max_length=500,
+    )
 
 
 class ManutencaoFinalizar(BaseModel):
@@ -74,15 +164,8 @@ class ManutencaoFinalizar(BaseModel):
             "Custo total registrado ao finalizar "
             "a manutenção."
         ),
-        examples=[
-            450.0
-        ],
+        examples=[450.0],
     )
-
-
-# ================================================================
-# RESPOSTA
-# ================================================================
 
 
 class ManutencaoResponse(BaseModel):
@@ -98,9 +181,16 @@ class ManutencaoResponse(BaseModel):
                     ),
                     "quilometragem": 25400.0,
                     "custo": 450.0,
-                    "data_inicio": "2026-08-27",
-                    "data_fim": "2026-08-28",
+                    "data_inicio": "2026-09-27",
+                    "data_fim": "2026-09-28",
                     "status": "finalizada",
+                    "tipo": "preventiva",
+                    "prioridade": "media",
+                    "fornecedor": "Oficina Central",
+                    "custo_estimado": 400.0,
+                    "data_prevista": "2026-09-28",
+                    "observacoes": None,
+                    "atrasada": False,
                 }
             ]
         }
@@ -111,9 +201,6 @@ class ManutencaoResponse(BaseModel):
         description=(
             "Identificador único da manutenção."
         ),
-        examples=[
-            7
-        ],
     )
 
     veiculo_id: int = Field(
@@ -122,59 +209,40 @@ class ManutencaoResponse(BaseModel):
             "Identificador do veículo relacionado "
             "à manutenção."
         ),
-        examples=[
-            1
-        ],
     )
 
     motivo: str = Field(
         description=(
             "Motivo registrado para a manutenção."
         ),
-        examples=[
-            "Troca de óleo e revisão dos freios"
-        ],
     )
 
     quilometragem: float = Field(
         ge=0,
         description=(
             "Quilometragem do veículo registrada "
-            "no momento da abertura da manutenção."
+            "na abertura da manutenção."
         ),
-        examples=[
-            25400.0
-        ],
     )
 
     custo: float = Field(
         ge=0,
         description=(
-            "Custo da manutenção. Enquanto estiver "
-            "ativa, pode permanecer em zero."
+            "Custo real registrado ao finalizar."
         ),
-        examples=[
-            450.0
-        ],
     )
 
     data_inicio: str = Field(
         description=(
             "Data de início da manutenção."
         ),
-        examples=[
-            "2026-08-27"
-        ],
     )
 
     data_fim: str | None = Field(
         description=(
-            "Data de finalização da manutenção. "
-            "É nula enquanto a manutenção estiver ativa."
+            "Data de finalização. É nula enquanto "
+            "a manutenção estiver ativa."
         ),
-        examples=[
-            "2026-08-28"
-        ],
     )
 
     status: Literal[
@@ -184,7 +252,25 @@ class ManutencaoResponse(BaseModel):
         description=(
             "Situação atual da manutenção."
         ),
-        examples=[
-            "finalizada"
-        ],
     )
+
+    tipo: TipoManutencao = Field(
+        default="corretiva",
+    )
+
+    prioridade: PrioridadeManutencao = Field(
+        default="media",
+    )
+
+    fornecedor: str | None = None
+
+    custo_estimado: float = Field(
+        default=0,
+        ge=0,
+    )
+
+    data_prevista: str | None = None
+
+    observacoes: str | None = None
+
+    atrasada: bool = False

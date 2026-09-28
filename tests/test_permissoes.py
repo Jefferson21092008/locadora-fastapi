@@ -18,6 +18,7 @@ def test_admin_recebe_permissoes_administrativas():
     assert Permissao.VEICULOS_CRIAR in permissoes
     assert Permissao.ALUGUEIS_LER in permissoes
     assert Permissao.MANUTENCOES_LER in permissoes
+    assert Permissao.MANUTENCOES_EDITAR in permissoes
     assert Permissao.RELATORIOS_LER in permissoes
     assert Permissao.AUDITORIA_LER in permissoes
 

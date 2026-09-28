@@ -336,3 +336,42 @@ O CSV usa UTF-8 com BOM e separador `;`. O XLSX possui cabeçalho, filtro, conge
 O navegador não recebe uma URL pública sem autenticação. `frontend/js/api.js` faz o download com o access token em memória e preserva o fluxo de refresh existente em caso de `401`.
 
 As respostas de exportação usam `Cache-Control: no-store`. A etapa não altera o schema do banco e não exige migration.
+
+## Manutenção avançada
+
+A Etapa 14 mantém o fluxo Router → Service → Repository → SQLAlchemy e expande
+o agregado de manutenção com metadados operacionais.
+
+```text
+frontend/manutencoes.html
+   ↓
+api/routers/manutencoes.py
+   ↓
+ManutencaoService
+   ↓
+ManutencaoRepository
+   ↓
+ManutencaoModel
+   ↓
+PostgreSQL / SQLite
+```
+
+A entidade `Manutencao` continua sendo responsável pelas regras de domínio.
+Além de validar motivo, quilometragem, custo e status, agora valida tipo,
+prioridade, custo estimado e coerência da previsão de conclusão. O estado
+`atrasada` é derivado de `status`, `data_prevista` e da data corrente, não sendo
+persistido no banco.
+
+A edição usa `PATCH /api/v1/manutencoes/{id_manutencao}` e somente é aceita para
+manutenções ativas. A autorização é feita por `manutencoes:editar`. Alterações
+são registradas na auditoria sem gravar conteúdo sensível dos campos.
+
+A migration `20260928_0004_manutencao_avancada` adiciona `tipo`,
+`prioridade`, `fornecedor`, `custo_estimado`, `data_prevista` e `observacoes`.
+Registros anteriores recebem valores compatíveis para os campos obrigatórios.
+O índice `idx_manutencoes_status_previsao` apoia consultas operacionais por
+status e prazo.
+
+A consulta server-side de manutenções foi ampliada com filtros por tipo e
+prioridade. O resumo global passa a informar manutenções atrasadas e o custo
+estimado das manutenções em aberto.

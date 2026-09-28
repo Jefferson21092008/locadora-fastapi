@@ -199,7 +199,7 @@ def test_alembic_cria_schema_postgresql_completo(
             )
         )
 
-    assert revisao == "20260927_0003"
+    assert revisao == "20260928_0004"
 
     fks_clientes = (
         inspetor.get_foreign_keys(

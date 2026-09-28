@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import (
     String,
     case,
@@ -7,10 +9,12 @@ from sqlalchemy import (
     select,
 )
 
+from modulos.consultas import (
+    ResultadoPaginado,
+)
 from modulos.manutencoes import (
     Manutencao,
 )
-from modulos.consultas import ResultadoPaginado
 from modulos.models.manutencao_model import (
     ManutencaoModel,
 )
@@ -35,10 +39,6 @@ class ManutencaoRepository:
             banco_sqlalchemy
         )
 
-    # ================================================================
-    # MAPEAMENTO MODEL -> ENTIDADE
-    # ================================================================
-
     @staticmethod
     def _para_entidade(
         model,
@@ -56,6 +56,12 @@ class ManutencaoRepository:
                 "data_inicio": model.data_inicio,
                 "data_fim": model.data_fim,
                 "status": model.status,
+                "tipo": model.tipo,
+                "prioridade": model.prioridade,
+                "fornecedor": model.fornecedor,
+                "custo_estimado": model.custo_estimado,
+                "data_prevista": model.data_prevista,
+                "observacoes": model.observacoes,
             }
         )
 
@@ -71,9 +77,22 @@ class ManutencaoRepository:
             for model in models
         ]
 
-    # ================================================================
-    # CONSULTAS
-    # ================================================================
+    def buscar_por_id(
+        self,
+        id_manutencao,
+    ):
+        with (
+            self.banco_sqlalchemy
+            .criar_sessao()
+        ) as sessao:
+            model = sessao.get(
+                ManutencaoModel,
+                id_manutencao,
+            )
+
+            return self._para_entidade(
+                model
+            )
 
     def buscar_ativa_por_veiculo(
         self,
@@ -198,101 +217,275 @@ class ManutencaoRepository:
         por_pagina=12,
         busca="",
         status="todos",
+        tipo="todos",
+        prioridade="todos",
         ordenar="id",
         direcao="desc",
     ):
         filtros = []
-        termo = str(busca or "").strip().lower()
+        termo = str(
+            busca or ""
+        ).strip().lower()
 
         if termo:
             filtros.append(
                 or_(
-                    func.lower(ManutencaoModel.motivo).contains(termo),
-                    func.lower(VeiculoModel.modelo).contains(termo),
-                    func.lower(VeiculoModel.tipo).contains(termo),
-                    cast(ManutencaoModel.id, String).contains(termo),
-                    cast(ManutencaoModel.veiculo_id, String).contains(termo),
-                    cast(VeiculoModel.ano, String).contains(termo),
+                    func.lower(
+                        ManutencaoModel.motivo
+                    ).contains(
+                        termo
+                    ),
+                    func.lower(
+                        func.coalesce(
+                            ManutencaoModel.fornecedor,
+                            "",
+                        )
+                    ).contains(
+                        termo
+                    ),
+                    func.lower(
+                        func.coalesce(
+                            ManutencaoModel.observacoes,
+                            "",
+                        )
+                    ).contains(
+                        termo
+                    ),
+                    func.lower(
+                        VeiculoModel.modelo
+                    ).contains(
+                        termo
+                    ),
+                    func.lower(
+                        VeiculoModel.tipo
+                    ).contains(
+                        termo
+                    ),
+                    cast(
+                        ManutencaoModel.id,
+                        String,
+                    ).contains(
+                        termo
+                    ),
+                    cast(
+                        ManutencaoModel.veiculo_id,
+                        String,
+                    ).contains(
+                        termo
+                    ),
+                    cast(
+                        VeiculoModel.ano,
+                        String,
+                    ).contains(
+                        termo
+                    ),
                 )
             )
 
         if status != "todos":
-            filtros.append(ManutencaoModel.status == status)
+            filtros.append(
+                ManutencaoModel.status
+                == status
+            )
+
+        if tipo != "todos":
+            filtros.append(
+                ManutencaoModel.tipo
+                == tipo
+            )
+
+        if prioridade != "todos":
+            filtros.append(
+                ManutencaoModel.prioridade
+                == prioridade
+            )
 
         colunas_ordenacao = {
             "id": ManutencaoModel.id,
-            "data_inicio": ManutencaoModel.data_inicio,
+            "data_inicio": (
+                ManutencaoModel.data_inicio
+            ),
+            "data_prevista": (
+                ManutencaoModel.data_prevista
+            ),
             "custo": ManutencaoModel.custo,
-            "quilometragem": ManutencaoModel.quilometragem,
+            "custo_estimado": (
+                ManutencaoModel.custo_estimado
+            ),
+            "quilometragem": (
+                ManutencaoModel.quilometragem
+            ),
         }
-        coluna = colunas_ordenacao.get(ordenar, ManutencaoModel.id)
-        ordem = coluna.desc() if direcao == "desc" else coluna.asc()
-        deslocamento = (pagina - 1) * por_pagina
+        coluna = colunas_ordenacao.get(
+            ordenar,
+            ManutencaoModel.id,
+        )
+        ordem = (
+            coluna.desc()
+            if direcao == "desc"
+            else coluna.asc()
+        )
+        deslocamento = (
+            pagina - 1
+        ) * por_pagina
+        hoje = date.today().isoformat()
 
-        with self.banco_sqlalchemy.criar_sessao() as sessao:
+        with (
+            self.banco_sqlalchemy
+            .criar_sessao()
+        ) as sessao:
             base = (
-                select(ManutencaoModel)
+                select(
+                    ManutencaoModel
+                )
                 .join(
                     VeiculoModel,
-                    VeiculoModel.id == ManutencaoModel.veiculo_id,
+                    VeiculoModel.id
+                    == ManutencaoModel.veiculo_id,
                 )
-                .where(*filtros)
+                .where(
+                    *filtros
+                )
             )
+
             total = sessao.scalar(
-                select(func.count(ManutencaoModel.id))
+                select(
+                    func.count(
+                        ManutencaoModel.id
+                    )
+                )
                 .join(
                     VeiculoModel,
-                    VeiculoModel.id == ManutencaoModel.veiculo_id,
+                    VeiculoModel.id
+                    == ManutencaoModel.veiculo_id,
                 )
-                .where(*filtros)
+                .where(
+                    *filtros
+                )
             ) or 0
 
             comando = (
                 base
-                .order_by(ordem, ManutencaoModel.id.desc())
-                .offset(deslocamento)
-                .limit(por_pagina)
-            )
-            models = sessao.scalars(comando).all()
-
-            resumo = sessao.execute(
-                select(
-                    func.count(ManutencaoModel.id),
-                    func.sum(
-                        case((ManutencaoModel.status == "ativa", 1), else_=0)
-                    ),
-                    func.sum(
-                        case(
-                            (ManutencaoModel.status == "finalizada", 1),
-                            else_=0,
-                        )
-                    ),
-                    func.sum(
-                        case(
-                            (
-                                ManutencaoModel.status == "finalizada",
-                                ManutencaoModel.custo,
-                            ),
-                            else_=0.0,
-                        )
-                    ),
+                .order_by(
+                    ordem,
+                    ManutencaoModel.id.desc(),
                 )
-            ).one()
+                .offset(
+                    deslocamento
+                )
+                .limit(
+                    por_pagina
+                )
+            )
+
+            models = (
+                sessao.scalars(
+                    comando
+                )
+                .all()
+            )
+
+            resumo = (
+                sessao.execute(
+                    select(
+                        func.count(
+                            ManutencaoModel.id
+                        ),
+                        func.sum(
+                            case(
+                                (
+                                    ManutencaoModel.status
+                                    == "ativa",
+                                    1,
+                                ),
+                                else_=0,
+                            )
+                        ),
+                        func.sum(
+                            case(
+                                (
+                                    ManutencaoModel.status
+                                    == "finalizada",
+                                    1,
+                                ),
+                                else_=0,
+                            )
+                        ),
+                        func.sum(
+                            case(
+                                (
+                                    ManutencaoModel.status
+                                    == "finalizada",
+                                    ManutencaoModel.custo,
+                                ),
+                                else_=0.0,
+                            )
+                        ),
+                        func.sum(
+                            case(
+                                (
+                                    (
+                                        ManutencaoModel.status
+                                        == "ativa"
+                                    )
+                                    & (
+                                        ManutencaoModel.data_prevista
+                                        .is_not(
+                                            None
+                                        )
+                                    )
+                                    & (
+                                        ManutencaoModel.data_prevista
+                                        < hoje
+                                    ),
+                                    1,
+                                ),
+                                else_=0,
+                            )
+                        ),
+                        func.sum(
+                            case(
+                                (
+                                    ManutencaoModel.status
+                                    == "ativa",
+                                    ManutencaoModel.custo_estimado,
+                                ),
+                                else_=0.0,
+                            )
+                        ),
+                    )
+                )
+                .one()
+            )
 
         return ResultadoPaginado(
-            items=self._para_entidades(models),
-            total=int(total),
+            items=self._para_entidades(
+                models
+            ),
+            total=int(
+                total
+            ),
             resumo={
-                "total": int(resumo[0] or 0),
-                "ativas": int(resumo[1] or 0),
-                "finalizadas": int(resumo[2] or 0),
-                "custo_finalizado": float(resumo[3] or 0.0),
+                "total": int(
+                    resumo[0] or 0
+                ),
+                "ativas": int(
+                    resumo[1] or 0
+                ),
+                "finalizadas": int(
+                    resumo[2] or 0
+                ),
+                "custo_finalizado": float(
+                    resumo[3] or 0.0
+                ),
+                "atrasadas": int(
+                    resumo[4] or 0
+                ),
+                "custo_estimado_ativo": float(
+                    resumo[5] or 0.0
+                ),
             },
         )
-
-    # ================================================================
-    # ABERTURA
-    # ================================================================
 
     def registrar(
         self,
@@ -306,28 +499,54 @@ class ManutencaoRepository:
             veiculo.to_dict()
         )
 
-        model_manutencao = ManutencaoModel(
-            veiculo_id=dados_manutencao[
-                "veiculo_id"
-            ],
-            motivo=dados_manutencao[
-                "motivo"
-            ],
-            quilometragem=dados_manutencao[
-                "quilometragem"
-            ],
-            custo=dados_manutencao[
-                "custo"
-            ],
-            data_inicio=dados_manutencao[
-                "data_inicio"
-            ],
-            data_fim=dados_manutencao.get(
-                "data_fim"
-            ),
-            status=dados_manutencao[
-                "status"
-            ],
+        model_manutencao = (
+            ManutencaoModel(
+                veiculo_id=dados_manutencao[
+                    "veiculo_id"
+                ],
+                motivo=dados_manutencao[
+                    "motivo"
+                ],
+                quilometragem=dados_manutencao[
+                    "quilometragem"
+                ],
+                custo=dados_manutencao[
+                    "custo"
+                ],
+                data_inicio=dados_manutencao[
+                    "data_inicio"
+                ],
+                data_fim=dados_manutencao.get(
+                    "data_fim"
+                ),
+                status=dados_manutencao[
+                    "status"
+                ],
+                tipo=dados_manutencao[
+                    "tipo"
+                ],
+                prioridade=dados_manutencao[
+                    "prioridade"
+                ],
+                fornecedor=dados_manutencao.get(
+                    "fornecedor"
+                ),
+                custo_estimado=(
+                    dados_manutencao[
+                        "custo_estimado"
+                    ]
+                ),
+                data_prevista=(
+                    dados_manutencao.get(
+                        "data_prevista"
+                    )
+                ),
+                observacoes=(
+                    dados_manutencao.get(
+                        "observacoes"
+                    )
+                ),
+            )
         )
 
         with (
@@ -337,7 +556,9 @@ class ManutencaoRepository:
             try:
                 model_veiculo = sessao.get(
                     VeiculoModel,
-                    dados_veiculo["id"],
+                    dados_veiculo[
+                        "id"
+                    ],
                 )
 
                 if model_veiculo is None:
@@ -380,14 +601,10 @@ class ManutencaoRepository:
                     ]
                 )
 
-                # A manutenção e a alteração do veículo
-                # pertencem à mesma transação.
                 sessao.flush()
-
                 novo_id = (
                     model_manutencao.id
                 )
-
                 sessao.commit()
 
                 return novo_id
@@ -396,9 +613,64 @@ class ManutencaoRepository:
                 sessao.rollback()
                 raise
 
-    # ================================================================
-    # FINALIZAÇÃO
-    # ================================================================
+    def atualizar(
+        self,
+        manutencao,
+    ):
+        dados = (
+            manutencao.to_dict()
+        )
+
+        with (
+            self.banco_sqlalchemy
+            .criar_sessao()
+        ) as sessao:
+            try:
+                model = sessao.get(
+                    ManutencaoModel,
+                    dados["id"],
+                )
+
+                if model is None:
+                    raise RuntimeError(
+                        "Manutenção não encontrada."
+                    )
+
+                if model.status != "ativa":
+                    raise RuntimeError(
+                        "Apenas manutenções ativas "
+                        "podem ser editadas."
+                    )
+
+                model.motivo = dados[
+                    "motivo"
+                ]
+                model.tipo = dados[
+                    "tipo"
+                ]
+                model.prioridade = dados[
+                    "prioridade"
+                ]
+                model.fornecedor = dados.get(
+                    "fornecedor"
+                )
+                model.custo_estimado = dados[
+                    "custo_estimado"
+                ]
+                model.data_prevista = dados.get(
+                    "data_prevista"
+                )
+                model.observacoes = dados.get(
+                    "observacoes"
+                )
+
+                sessao.commit()
+
+            except Exception:
+                sessao.rollback()
+                raise
+
+        return None
 
     def registrar_finalizacao(
         self,
@@ -419,7 +691,9 @@ class ManutencaoRepository:
             try:
                 model_manutencao = sessao.get(
                     ManutencaoModel,
-                    dados_manutencao["id"],
+                    dados_manutencao[
+                        "id"
+                    ],
                 )
 
                 if (
@@ -434,7 +708,9 @@ class ManutencaoRepository:
 
                 model_veiculo = sessao.get(
                     VeiculoModel,
-                    dados_veiculo["id"],
+                    dados_veiculo[
+                        "id"
+                    ],
                 )
 
                 if (
@@ -484,8 +760,6 @@ class ManutencaoRepository:
                     ]
                 )
 
-                # Finalização e liberação do veículo
-                # acontecem em uma única transação.
                 sessao.commit()
 
             except Exception:

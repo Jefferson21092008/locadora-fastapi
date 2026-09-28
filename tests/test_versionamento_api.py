@@ -60,6 +60,7 @@ def test_openapi_expoe_somente_rotas_versionadas():
     assert "/api/v1/alugueis/consulta" in paths
     assert "/api/v1/alugueis/me/consulta" in paths
     assert "/api/v1/manutencoes/consulta" in paths
+    assert "/api/v1/manutencoes/{id_manutencao}" in paths
 
     assert "/auth/login" not in paths
     assert "/clientes" not in paths
