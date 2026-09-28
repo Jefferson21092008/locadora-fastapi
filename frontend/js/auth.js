@@ -2,9 +2,8 @@ import {
     ApiError,
     clearToken,
     getCurrentUser,
-    getToken,
     login,
-    saveToken,
+    restoreSession,
 } from "/app/js/api.js";
 
 const form = document.querySelector("#login-form");
@@ -48,7 +47,8 @@ function validateForm() {
 }
 
 async function redirectAuthenticatedUser() {
-    if (!getToken()) {
+    const restored = await restoreSession();
+    if (!restored) {
         return;
     }
 
@@ -87,8 +87,7 @@ form.addEventListener("submit", async (event) => {
     setLoading(true);
 
     try {
-        const response = await login(credentials.usuario, credentials.senha);
-        saveToken(response.access_token);
+        await login(credentials.usuario, credentials.senha);
         showMessage("Login realizado. Abrindo o painel...", "success");
         window.location.assign("/app/dashboard.html");
     } catch (error) {

@@ -490,9 +490,10 @@ Os módulos implementados possuem:
 
 - tela de login responsiva;
 - integração com `POST /api/v1/auth/login`;
-- armazenamento apenas do access token JWT em `sessionStorage`;
+- access token JWT mantido somente em memória durante a vida da página, sem `sessionStorage` ou `localStorage`;
 - refresh token rotativo mantido em cookie `HttpOnly` e nunca exposto ao JavaScript;
-- renovação automática do access token após `401`, com proteção contra refresh concorrente;
+- restauração da sessão após navegação/reload por meio do refresh cookie, além da renovação automática após `401`;
+- serialização de refresh entre abas compatíveis com Web Locks para reduzir corridas durante a rotação do cookie;
 - validação da sessão com `GET /api/v1/auth/me`;
 - redirecionamento de usuários sem autenticação;
 - logout com revogação da sessão no backend;
@@ -554,7 +555,7 @@ O login é realizado por:
 POST /api/v1/auth/login
 ```
 
-Em caso de sucesso, a API retorna um **access token JWT** de curta duração e grava o **refresh token** em um cookie `HttpOnly`, `SameSite=Lax`. Em produção HTTPS, o cookie também recebe `Secure`. O refresh token puro não é salvo no banco nem fica disponível ao JavaScript; somente seu hash SHA-256 é persistido na tabela `sessoes`.
+Em caso de sucesso, a API retorna um **access token JWT** de curta duração e grava o **refresh token** em um cookie `HttpOnly`, `SameSite=Lax`. Em produção HTTPS, o cookie também recebe `Secure`. O frontend mantém o access token somente em memória enquanto a página está carregada; ele não é persistido em `sessionStorage` nem `localStorage`. O refresh token puro não é salvo no banco nem fica disponível ao JavaScript; somente seu hash SHA-256 é persistido na tabela `sessoes`.
 
 ```json
 {
@@ -591,7 +592,7 @@ Quando o access token expira, o frontend pode renovar a autenticação por:
 POST /api/v1/auth/refresh
 ```
 
-A renovação usa o cookie `HttpOnly`, rotaciona o refresh token a cada uso e emite um novo access token. O refresh token anterior deixa de ser aceito depois da rotação.
+A renovação usa o cookie `HttpOnly`, rotaciona o refresh token a cada uso e emite um novo access token. O refresh token anterior deixa de ser aceito depois da rotação. Como o access token não é persistido no navegador, um reload ou uma nova navegação do frontend restaura a autenticação chamando esse endpoint e mantém o novo access token apenas em memória. Em navegadores com Web Locks, as renovações também são serializadas entre abas para reduzir corridas durante a rotação do refresh token.
 
 Rotas de sessão disponíveis:
 
@@ -724,7 +725,8 @@ Os testes E2E atuais validam:
 - abertura real do frontend em Chromium;
 - preenchimento e envio do formulário de login;
 - execução do JavaScript da aplicação;
-- armazenamento do JWT no `sessionStorage`;
+- ausência de JWT persistido em `sessionStorage` ou `localStorage`;
+- restauração do access token por refresh após a navegação;
 - redirecionamento para o dashboard;
 - carregamento dos dados do usuário e das métricas;
 - tratamento de credenciais inválidas;
@@ -752,6 +754,8 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - tokens de recuperação são aleatórios e apenas seu hash é persistido;
 - refresh tokens são aleatórios, rotativos e persistidos somente por hash SHA-256;
 - refresh tokens ficam em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção HTTPS;
+- o frontend não persiste access tokens em Web Storage; eles permanecem somente em memória;
+- reloads restauram o access token usando o refresh token HttpOnly;
 - access tokens novos ficam vinculados a uma sessão persistente por `sid`;
 - logout e revogação de sessão invalidam imediatamente access tokens vinculados;
 - redefinição de senha revoga todas as sessões ativas da conta;
@@ -794,7 +798,7 @@ Esses testes podem apagar e recriar o schema de teste. Nunca aponte `LOCADORA_TE
 - testes automatizados: **concluídos e em evolução**;
 - Alembic e migrations: **concluídos**;
 - frontend com HTML, CSS e JavaScript: **concluído**;
-- login, access token JWT, refresh token rotativo e gerenciamento de sessões: **concluídos**;
+- login, access token JWT em memória, refresh token rotativo e gerenciamento de sessões: **concluídos**;
 - RBAC granular por permissões: **concluído**;
 - gerenciamento da frota no frontend: **concluído**;
 - criação, devolução e acompanhamento de aluguéis: **concluídos**;

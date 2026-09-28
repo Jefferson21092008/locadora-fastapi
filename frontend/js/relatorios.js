@@ -7,7 +7,7 @@ import {
     getMaintenanceCostsReport,
     getReportSummary,
     getRevenueByType,
-    getToken,
+    restoreSession,
     hasPermission,
     logout,
     getTopCustomers,
@@ -285,7 +285,7 @@ async function loadReports() {
 }
 
 async function initialize() {
-    if (!getToken()) {
+    if (!(await restoreSession())) {
         goToLogin();
         return;
     }

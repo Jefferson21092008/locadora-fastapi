@@ -24,28 +24,76 @@ def test_login_abre_dashboard(
     page: Page,
     app_url,
 ):
-    page.route(
-        "**/auth/login",
-        lambda route: responder_json(
+    autenticado = {
+        "valor": False,
+    }
+    autorizacoes = []
+
+    def responder_login(route):
+        autenticado["valor"] = True
+        responder_json(
             route,
             {
                 "access_token": "token-e2e",
                 "token_type": "bearer",
             },
-        ),
+        )
+
+    def responder_refresh(route):
+        if not autenticado["valor"]:
+            responder_json(
+                route,
+                {
+                    "detail": "Sessão inválida ou expirada.",
+                },
+                status=401,
+            )
+            return
+
+        responder_json(
+            route,
+            {
+                "access_token": "token-e2e-restaurado",
+                "token_type": "bearer",
+            },
+        )
+
+    page.route(
+        "**/auth/login",
+        responder_login,
     )
 
     page.route(
-        "**/auth/me",
-        lambda route: responder_json(
+        "**/auth/refresh",
+        responder_refresh,
+    )
+
+    def responder_me(route):
+        autorizacoes.append(
+            route.request.headers.get(
+                "authorization"
+            )
+        )
+        responder_json(
             route,
             {
                 "id": 1,
                 "usuario": "usuario.e2e",
                 "role": "cliente",
+                "permissoes": [
+                    "alugueis:criar",
+                    "alugueis:devolver",
+                    "alugueis:proprios:ler",
+                    "conta:renomear",
+                    "sessoes:gerenciar",
+                ],
                 "ativo": True,
             },
-        ),
+        )
+
+    page.route(
+        "**/auth/me",
+        responder_me,
     )
 
     page.route(
@@ -101,17 +149,38 @@ def test_login_abre_dashboard(
         "2"
     )
 
-    token = page.evaluate(
+    token_session = page.evaluate(
         "() => sessionStorage"
         ".getItem('locadora_access_token')"
     )
+    token_local = page.evaluate(
+        "() => localStorage"
+        ".getItem('locadora_access_token')"
+    )
 
-    assert token == "token-e2e"
+    assert token_session is None
+    assert token_local is None
+    assert (
+        "Bearer token-e2e-restaurado"
+        in autorizacoes
+    )
+
 
 def test_login_invalido_exibe_mensagem(
     page: Page,
     app_url,
 ):
+    page.route(
+        "**/auth/refresh",
+        lambda route: responder_json(
+            route,
+            {
+                "detail": "Sessão inválida ou expirada.",
+            },
+            status=401,
+        ),
+    )
+
     page.route(
         "**/auth/login",
         lambda route: responder_json(
@@ -157,9 +226,14 @@ def test_login_invalido_exibe_mensagem(
         f"{app_url}/app/"
     )
 
-    token = page.evaluate(
+    token_session = page.evaluate(
         "() => sessionStorage"
         ".getItem('locadora_access_token')"
     )
+    token_local = page.evaluate(
+        "() => localStorage"
+        ".getItem('locadora_access_token')"
+    )
 
-    assert token is None
+    assert token_session is None
+    assert token_local is None

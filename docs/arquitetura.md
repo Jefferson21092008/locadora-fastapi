@@ -175,7 +175,7 @@ A tabela `sessoes` guarda `usuario_id`, hash do refresh token, criação, expira
 
 Novos access tokens incluem a claim `sid`. `get_usuario_atual` continua validando assinatura, expiração e usuário, mas também consulta a sessão quando `sid` está presente. Isso faz com que logout, revogação individual ou revogação de todas as sessões invalide imediatamente os novos access tokens relacionados. Durante a transição, JWTs emitidos antes da Etapa 9 e sem `sid` continuam aceitos somente até a expiração natural.
 
-O frontend mantém o access token no `sessionStorage`, como antes. Ao receber `401`, `frontend/js/api.js` tenta uma única renovação automática e repete a requisição original. Uma Promise compartilhada evita que várias requisições simultâneas tentem rotacionar o mesmo refresh token ao mesmo tempo.
+O frontend mantém o access token somente em memória dentro de `frontend/js/api.js`; o JWT não é gravado em `sessionStorage` nem `localStorage`. Depois de um reload ou de uma navegação para outra página do frontend, `restoreSession()` usa o refresh token HttpOnly para emitir um novo access token e o conserva apenas durante a vida daquela página. Ao receber `401`, a camada de API também tenta uma única renovação automática e repete a requisição original. Uma Promise compartilhada evita refresh concorrente dentro da mesma página. Quando `navigator.locks` está disponível, o frontend também serializa renovações entre abas do mesmo navegador para reduzir corridas durante a rotação do cookie.
 
 A redefinição de senha revoga as sessões persistentes da conta antes da troca da credencial. Dessa forma, uma sessão já autenticada não permanece válida após uma recuperação de senha.
 ## RBAC granular por permissões
@@ -213,3 +213,28 @@ Após a conclusão de sessões e RBAC, a aplicação passou por um checkpoint de
 Rotas de autenticação recebem `Cache-Control: no-store` e `Pragma: no-cache`. A página de redefinição de senha usa `Referrer-Policy: no-referrer`, não permite cache e remove o token de recuperação da query string assim que o JavaScript o transfere para o formulário. Em produção HTTPS, a aplicação também envia HSTS com validade de um ano.
 
 A validação de JWT passa a exigir explicitamente `sub`, `iat` e `exp`, além da verificação de assinatura e expiração já existente.
+
+## Hardening do armazenamento do access token
+
+O frontend não persiste mais o access token em Web Storage. `frontend/js/api.js` mantém o JWT somente em uma variável de módulo e continua enviando-o pelo cabeçalho `Authorization: Bearer` nas rotas protegidas.
+
+Fluxo após login e durante navegação:
+
+```text
+login válido
+   ↓
+access token → memória da página
+refresh token → cookie HttpOnly
+   ↓
+navegação / reload
+   ↓
+memória é descartada
+   ↓
+restoreSession()
+   ↓
+POST /api/v1/auth/refresh
+   ↓
+novo access token → memória da nova página
+```
+
+Esse desenho reduz a exposição do JWT a persistência no navegador sem transformar todas as rotas protegidas em autenticação baseada em cookie. A renovação utiliza uma Promise por página e, quando suportado pelo navegador, Web Locks entre abas para reduzir tentativas simultâneas de rotacionar o mesmo refresh token. Assim, as operações de negócio continuam exigindo o cabeçalho Bearer, enquanto o cookie HttpOnly é usado somente para renovação e encerramento da sessão. O backend continua sendo compatível com clientes de API que utilizam diretamente o access token retornado pelo login.
