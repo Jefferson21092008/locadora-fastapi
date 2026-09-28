@@ -5,7 +5,7 @@ import {
     clearToken,
     getCurrentUser,
     getSystemStatus,
-    getToken,
+    restoreSession,
     hasPermission,
     logout,
     renameCurrentUser,
@@ -94,7 +94,7 @@ function updateMetrics(status) {
 }
 
 async function loadDashboard() {
-    if (!getToken()) {
+    if (!(await restoreSession())) {
         goToLogin();
         return;
     }

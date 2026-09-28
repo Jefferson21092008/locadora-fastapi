@@ -6,7 +6,7 @@ import {
     finishMaintenance,
     getCurrentUser,
     getMaintenances,
-    getToken,
+    restoreSession,
     hasPermission,
     logout,
     getVehicles,
@@ -390,7 +390,7 @@ async function loadData({ preserveMessage = false } = {}) {
 }
 
 async function initialize() {
-    if (!getToken()) {
+    if (!(await restoreSession())) {
         goToLogin();
         return;
     }

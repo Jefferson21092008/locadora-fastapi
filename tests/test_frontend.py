@@ -235,7 +235,48 @@ def test_frontend_renova_access_token_e_faz_logout_no_backend():
     assert '`${API_BASE}/auth/refresh`' in resposta.text
     assert '`${API_BASE}/auth/logout`' in resposta.text
     assert "refreshPromise" in resposta.text
+    assert "navigator.locks" in resposta.text
+    assert "locadora-refresh-token" in resposta.text
+    assert "restoreSession" in resposta.text
+    assert 'credentials: "same-origin"' in resposta.text
     assert 'method: "POST"' in resposta.text
+
+
+def test_frontend_nao_persiste_access_token_no_web_storage():
+    resposta = client.get(
+        "/app/js/api.js"
+    )
+
+    assert resposta.status_code == 200
+    assert "let accessToken = null;" in resposta.text
+    assert "sessionStorage" not in resposta.text
+    assert "localStorage" not in resposta.text
+    assert "locadora_access_token" not in resposta.text
+
+
+
+@pytest.mark.parametrize(
+    "caminho",
+    [
+        "/app/js/dashboard.js",
+        "/app/js/veiculos.js",
+        "/app/js/alugueis.js",
+        "/app/js/clientes.js",
+        "/app/js/manutencoes.js",
+        "/app/js/relatorios.js",
+    ],
+)
+def test_paginas_protegidas_restauram_sessao_sem_web_storage(
+    caminho,
+):
+    resposta = client.get(
+        caminho
+    )
+
+    assert resposta.status_code == 200
+    assert "restoreSession" in resposta.text
+    assert "getToken" not in resposta.text
+
 
 def test_frontend_consume_permissoes_rbac():
     api_js = client.get(

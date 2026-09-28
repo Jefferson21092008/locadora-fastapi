@@ -6,7 +6,7 @@ import {
     createVehicle,
     deactivateVehicle,
     getCurrentUser,
-    getToken,
+    restoreSession,
     hasPermission,
     logout,
     getVehicles,
@@ -450,7 +450,7 @@ async function confirmStatusChange() {
 }
 
 async function initialize() {
-    if (!getToken()) {
+    if (!(await restoreSession())) {
         goToLogin();
         return;
     }

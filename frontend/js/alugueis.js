@@ -7,7 +7,7 @@ import {
     getCurrentUser,
     getMyRentals,
     getRentals,
-    getToken,
+    restoreSession,
     hasPermission,
     logout,
     getVehicles,
@@ -546,7 +546,7 @@ async function loadRentals({ preserveMessage = false } = {}) {
 }
 
 async function initialize() {
-    if (!getToken()) {
+    if (!(await restoreSession())) {
         goToLogin();
         return;
     }

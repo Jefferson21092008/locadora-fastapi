@@ -1,6 +1,6 @@
-const TOKEN_KEY = "locadora_access_token";
 const API_BASE = "/api/v1";
 
+let accessToken = null;
 let refreshPromise = null;
 
 export const Permissions = Object.freeze({
@@ -49,16 +49,16 @@ export class ApiError extends Error {
     }
 }
 
-export function getToken() {
-    return sessionStorage.getItem(TOKEN_KEY);
+function getToken() {
+    return accessToken;
 }
 
-export function saveToken(token) {
-    sessionStorage.setItem(TOKEN_KEY, token);
+function saveToken(token) {
+    accessToken = token;
 }
 
 export function clearToken() {
-    sessionStorage.removeItem(TOKEN_KEY);
+    accessToken = null;
 }
 
 function errorMessage(payload, fallback) {
@@ -86,12 +86,13 @@ async function readPayload(response) {
         : response.text();
 }
 
-async function performRefresh() {
+async function requestRefreshToken() {
     let response;
 
     try {
         response = await fetch(`${API_BASE}/auth/refresh`, {
             method: "POST",
+            credentials: "same-origin",
         });
     } catch (error) {
         clearToken();
@@ -117,6 +118,17 @@ async function performRefresh() {
     return payload.access_token;
 }
 
+async function performRefresh() {
+    if (navigator.locks?.request) {
+        return navigator.locks.request(
+            "locadora-refresh-token",
+            requestRefreshToken,
+        );
+    }
+
+    return requestRefreshToken();
+}
+
 export async function refreshSession() {
     if (!refreshPromise) {
         refreshPromise = performRefresh();
@@ -126,6 +138,19 @@ export async function refreshSession() {
         return await refreshPromise;
     } finally {
         refreshPromise = null;
+    }
+}
+
+export async function restoreSession() {
+    if (getToken()) {
+        return true;
+    }
+
+    try {
+        await refreshSession();
+        return true;
+    } catch {
+        return false;
     }
 }
 
@@ -146,6 +171,7 @@ export async function apiRequest(path, options = {}, allowRefresh = true) {
     try {
         response = await fetch(`${API_BASE}${path}`, {
             ...options,
+            credentials: "same-origin",
             headers,
         });
     } catch (error) {
@@ -161,7 +187,6 @@ export async function apiRequest(path, options = {}, allowRefresh = true) {
         && allowRefresh
         && path !== "/auth/login"
         && path !== "/auth/refresh"
-        && getToken()
     ) {
         try {
             await refreshSession();
@@ -188,6 +213,7 @@ export async function logout() {
     try {
         await fetch(`${API_BASE}/auth/logout`, {
             method: "POST",
+            credentials: "same-origin",
         });
     } finally {
         clearToken();
@@ -195,10 +221,13 @@ export async function logout() {
 }
 
 export async function login(usuario, senha) {
-    return apiRequest("/auth/login", {
+    const payload = await apiRequest("/auth/login", {
         method: "POST",
         body: JSON.stringify({ usuario, senha }),
     });
+
+    saveToken(payload.access_token);
+    return payload;
 }
 
 export function requestPasswordReset(usuario) {

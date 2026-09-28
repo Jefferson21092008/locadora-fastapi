@@ -5,7 +5,7 @@ import {
     deactivateClient,
     getClients,
     getCurrentUser,
-    getToken,
+    restoreSession,
     hasPermission,
     logout,
     reactivateClient,
@@ -292,7 +292,7 @@ async function loadClients({ preserveMessage = false } = {}) {
 }
 
 async function initialize() {
-    if (!getToken()) {
+    if (!(await restoreSession())) {
         goToLogin();
         return;
     }
