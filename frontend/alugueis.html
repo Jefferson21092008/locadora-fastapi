@@ -79,7 +79,7 @@
                     <div class="fleet-filters">
                         <label class="search-field" for="rental-search">
                             <span class="sr-only">Buscar aluguel</span>
-                            <input id="rental-search" type="search" placeholder="Buscar por veículo, cliente ou ID">
+                            <input id="rental-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="rentals-list" aria-describedby="rentals-results-count" placeholder="Buscar por veículo, cliente ou ID">
                         </label>
 
                         <label class="select-field" for="rental-status-filter">
@@ -119,12 +119,12 @@
         </main>
     </div>
 
-    <dialog id="rental-dialog" class="modal">
+    <dialog id="rental-dialog" class="modal" aria-labelledby="rental-dialog-title">
         <form id="rental-form" class="modal__surface">
             <div class="modal__header">
                 <div>
                     <p class="eyebrow">Nova reserva</p>
-                    <h2>Alugar um veículo</h2>
+                    <h2 id="rental-dialog-title">Alugar um veículo</h2>
                 </div>
                 <button class="icon-button" type="button" data-close-rental-dialog aria-label="Fechar formulário">×</button>
             </div>
@@ -139,12 +139,12 @@
 
                 <div class="field">
                     <label for="rental-days">Quantidade de dias</label>
-                    <input id="rental-days" type="number" min="1" step="1" value="1" required>
+                    <input id="rental-days" type="number" inputmode="numeric" min="1" step="1" value="1" required>
                 </div>
 
                 <div id="license-years-field" class="field">
                     <label for="license-years">Anos de habilitação</label>
-                    <input id="license-years" type="number" min="0" step="1" required>
+                    <input id="license-years" type="number" inputmode="numeric" min="0" step="1" required>
                 </div>
             </div>
 
@@ -172,7 +172,7 @@
         </form>
     </dialog>
 
-    <dialog id="return-dialog" class="modal">
+    <dialog id="return-dialog" class="modal" aria-labelledby="return-dialog-title" aria-describedby="return-dialog-description">
         <form id="return-form" class="modal__surface">
             <div class="modal__header">
                 <div>
@@ -189,7 +189,7 @@
             <div class="form-grid">
                 <div class="field">
                     <label for="return-distance">Quilômetros rodados</label>
-                    <input id="return-distance" type="number" min="0" step="0.1" required>
+                    <input id="return-distance" type="number" inputmode="decimal" min="0" step="0.1" required>
                 </div>
 
                 <div class="field">
@@ -236,6 +236,7 @@
         </form>
     </dialog>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/alugueis.js"></script>
 </body>
 </html>

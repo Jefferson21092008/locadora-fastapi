@@ -465,3 +465,94 @@ def test_auditoria_frontend_respeita_rbac_e_filtros():
     assert "filteredLogs" in resposta.text
     assert "request_id" in resposta.text
     assert "campos_alterados" in resposta.text
+
+
+def test_frontend_ui_compartilhada_adiciona_melhorias_de_ux():
+    resposta = client.get("/app/js/ui.js")
+
+    assert resposta.status_code == 200
+    assert "setupSearchShortcuts" in resposta.text
+    assert "setupDialogFocus" in resposta.text
+    assert "setupFormBusyStates" in resposta.text
+    assert "setupNetworkStatus" in resposta.text
+    assert 'aria-keyshortcuts' in resposta.text
+    assert "MutationObserver" in resposta.text
+    assert "Conexão restaurada" in resposta.text
+
+
+@pytest.mark.parametrize(
+    "caminho",
+    [
+        "/app/",
+        "/app/dashboard.html",
+        "/app/veiculos.html",
+        "/app/alugueis.html",
+        "/app/clientes.html",
+        "/app/manutencoes.html",
+        "/app/relatorios.html",
+        "/app/auditoria.html",
+        "/app/cadastro.html",
+        "/app/esqueci-senha.html",
+        "/app/redefinir-senha.html",
+    ],
+)
+def test_paginas_frontend_carregam_camada_compartilhada_de_ux(caminho):
+    resposta = client.get(caminho)
+
+    assert resposta.status_code == 200
+    assert '<script type="module" src="/app/js/ui.js"></script>' in resposta.text
+
+
+def test_telas_operacionais_relacionam_busca_com_resultados():
+    casos = [
+        ("/app/veiculos.html", "vehicle-search", "vehicles-grid", "vehicles-results-count"),
+        ("/app/clientes.html", "client-search", "clients-grid", "clients-results-count"),
+        ("/app/alugueis.html", "rental-search", "rentals-list", "rentals-results-count"),
+        ("/app/manutencoes.html", "maintenance-search", "maintenances-list", "maintenances-results-count"),
+        ("/app/auditoria.html", "audit-search", "audit-list", "audit-results-count"),
+    ]
+
+    for caminho, campo, lista, contador in casos:
+        resposta = client.get(caminho)
+        assert resposta.status_code == 200
+        assert f'id="{campo}"' in resposta.text
+        assert f'aria-controls="{lista}"' in resposta.text
+        assert f'aria-describedby="{contador}"' in resposta.text
+        assert 'enterkeyhint="search"' in resposta.text
+
+
+def test_dialogos_principais_possuem_nome_acessivel():
+    veiculos = client.get("/app/veiculos.html").text
+    alugueis = client.get("/app/alugueis.html").text
+    manutencoes = client.get("/app/manutencoes.html").text
+    clientes = client.get("/app/clientes.html").text
+
+    assert 'aria-labelledby="vehicle-dialog-title"' in veiculos
+    assert 'aria-labelledby="status-dialog-title"' in veiculos
+    assert 'aria-labelledby="rental-dialog-title"' in alugueis
+    assert 'aria-labelledby="return-dialog-title"' in alugueis
+    assert 'aria-labelledby="maintenance-dialog-title"' in manutencoes
+    assert 'aria-labelledby="finish-maintenance-title"' in manutencoes
+    assert 'aria-labelledby="client-status-title"' in clientes
+
+
+def test_css_final_cobre_mobile_contraste_e_estado_de_rede():
+    resposta = client.get("/app/css/styles.css")
+
+    assert resposta.status_code == 200
+    assert ".network-status" in resposta.text
+    assert "100dvh" in resposta.text
+    assert "prefers-contrast: more" in resposta.text
+    assert "forced-colors: active" in resposta.text
+    assert "pointer: coarse" in resposta.text
+    assert "body:has(dialog[open])" in resposta.text
+
+
+def test_relatorio_tabela_rolavel_e_focavel_por_teclado():
+    resposta = client.get("/app/relatorios.html")
+
+    assert resposta.status_code == 200
+    assert 'class="report-table-scroll"' in resposta.text
+    assert 'role="region"' in resposta.text
+    assert 'aria-label="Resultados por veículo"' in resposta.text
+    assert 'tabindex="0"' in resposta.text

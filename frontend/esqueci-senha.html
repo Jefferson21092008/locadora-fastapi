@@ -51,10 +51,11 @@
                             autocomplete="username"
                             minlength="1"
                             maxlength="100"
+                            aria-describedby="recovery-user-hint"
                             required
                             autofocus
                         >
-                        <span class="field__hint">Por segurança, a resposta não confirma se a conta existe.</span>
+                        <span id="recovery-user-hint" class="field__hint">Por segurança, a resposta não confirma se a conta existe.</span>
                     </div>
 
                     <div id="forgot-password-message" class="form-message" role="status" aria-live="polite"></div>
@@ -78,6 +79,7 @@
         </section>
     </main>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/esqueci-senha.js"></script>
 </body>
 </html>

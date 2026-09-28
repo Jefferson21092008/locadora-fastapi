@@ -3548,3 +3548,166 @@ code {
         white-space: normal;
     }
 }
+/* ==========================================================================
+   Etapa 14 — UX final, responsividade e acessibilidade
+   ========================================================================== */
+
+body:has(dialog[open]) {
+    overflow: hidden;
+}
+
+main,
+section[id],
+article[id] {
+    scroll-margin-top: 6rem;
+}
+
+.field input[aria-invalid="true"],
+.field textarea[aria-invalid="true"],
+.field select[aria-invalid="true"] {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.09);
+}
+
+.modal__surface {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
+.report-table-scroll[tabindex="0"]:focus-visible {
+    border-radius: var(--radius-sm);
+    outline: 3px solid rgba(14, 130, 123, 0.28);
+    outline-offset: 3px;
+}
+
+.network-status {
+    position: fixed;
+    z-index: 1200;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    max-width: min(26rem, calc(100vw - 2rem));
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-sm);
+    font-weight: 700;
+}
+
+.network-status--offline {
+    border-color: #f4c7c3;
+    color: var(--danger);
+    background: var(--danger-soft);
+}
+
+.network-status--online {
+    border-color: #a6ded9;
+    color: var(--success);
+    background: var(--success-soft);
+}
+
+form[aria-busy="true"] {
+    cursor: progress;
+}
+
+form[aria-busy="true"] :is(input, select, textarea, button) {
+    cursor: progress;
+}
+
+@media (pointer: coarse) {
+    .nav-item,
+    .text-button,
+    .card-button,
+    .icon-button,
+    .secondary-button,
+    .primary-button--compact {
+        min-height: 2.75rem;
+    }
+
+    .text-button {
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+@media (hover: none) {
+    .metric-card:hover,
+    .financial-card:hover,
+    .vehicle-card:hover,
+    .client-card:hover,
+    .primary-button:hover:not(:disabled),
+    .secondary-button:hover:not(:disabled) {
+        transform: none;
+    }
+}
+
+@media (max-width: 620px) {
+    .modal {
+        width: min(calc(100% - 1rem), 44rem);
+        max-height: calc(100dvh - 1rem);
+    }
+
+    .modal__surface {
+        max-height: calc(100dvh - 1rem);
+        padding: 1.15rem;
+        border-radius: 1rem;
+    }
+
+    .network-status {
+        right: 0.75rem;
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
+        left: 0.75rem;
+        max-width: none;
+    }
+}
+
+@media (prefers-contrast: more) {
+    :root {
+        --border: #9aaaba;
+        --border-strong: #718091;
+    }
+
+    .nav-item--active,
+    .primary-button,
+    .status-badge,
+    .role-badge {
+        border-width: 2px;
+    }
+
+    :focus-visible {
+        outline-color: #a86400;
+        outline-width: 4px;
+    }
+}
+
+@media (forced-colors: active) {
+    .status-dot,
+    .system-note__dot,
+    .connection-card__dot,
+    .loading-state__spinner {
+        forced-color-adjust: none;
+    }
+
+    .nav-item--active,
+    .primary-button,
+    .secondary-button,
+    .card-button,
+    .form-message,
+    .network-status {
+        border: 1px solid CanvasText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}

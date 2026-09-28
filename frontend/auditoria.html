@@ -76,7 +76,7 @@
                     <div class="fleet-filters audit-filters">
                         <label class="search-field" for="audit-search">
                             <span class="sr-only">Buscar registro de auditoria</span>
-                            <input id="audit-search" type="search" placeholder="Buscar por usuário, ação, recurso ou request ID">
+                            <input id="audit-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="audit-list" aria-describedby="audit-results-count" placeholder="Buscar por usuário, ação, recurso ou request ID">
                         </label>
 
                         <label class="select-field" for="audit-resource-filter">
@@ -119,6 +119,7 @@
         </main>
     </div>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/auditoria.js"></script>
 </body>
 </html>

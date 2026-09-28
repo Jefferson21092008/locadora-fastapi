@@ -168,11 +168,11 @@
 
                         <label class="search-field" for="report-vehicle-search">
                             <span class="sr-only">Buscar veículo no relatório</span>
-                            <input id="report-vehicle-search" type="search" placeholder="Buscar por modelo, tipo ou ID">
+                            <input id="report-vehicle-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="vehicle-results" placeholder="Buscar por modelo, tipo ou ID">
                         </label>
                     </div>
 
-                    <div class="report-table-scroll">
+                    <div class="report-table-scroll" role="region" aria-label="Resultados por veículo" tabindex="0">
                         <table class="report-table">
                             <thead>
                                 <tr>
@@ -196,6 +196,7 @@
         </main>
     </div>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/relatorios.js"></script>
 </body>
 </html>

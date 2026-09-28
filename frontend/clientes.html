@@ -71,7 +71,7 @@
                     <div class="fleet-filters">
                         <label class="search-field" for="client-search">
                             <span class="sr-only">Buscar cliente</span>
-                            <input id="client-search" type="search" placeholder="Buscar por nome, usuário, e-mail ou ID">
+                            <input id="client-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="clients-grid" aria-describedby="clients-results-count" placeholder="Buscar por nome, usuário, e-mail ou ID">
                         </label>
 
                         <label class="select-field" for="client-status-filter">
@@ -111,7 +111,7 @@
         </main>
     </div>
 
-    <dialog id="client-status-dialog" class="modal modal--small">
+    <dialog id="client-status-dialog" class="modal modal--small" aria-labelledby="client-status-title" aria-describedby="client-status-description">
         <div class="modal__surface">
             <div class="modal__header">
                 <div>
@@ -135,6 +135,7 @@
         </div>
     </dialog>
 
+    <script type="module" src="/app/js/ui.js"></script>
     <script type="module" src="/app/js/clientes.js"></script>
 </body>
 </html>

@@ -927,3 +927,9 @@ A versão online foi testada manualmente após o deploy com sucesso para:
 - persistência da alteração no banco.
 
 **Status atual: versão funcional concluída, publicada e validada em produção, com evolução contínua de segurança, testes, observabilidade e arquitetura.**
+
+## Frontend — Etapa 14
+
+A fase de refinamento visual e de experiência foi concluída com uma camada compartilhada de UX. Além do Design System, dashboard e telas operacionais, o frontend agora inclui melhorias de navegação por teclado, retorno de foco em diálogos, estados `aria-busy`, feedback de conectividade, alvos de toque e suporte ampliado a preferências de contraste e movimento.
+
+Essas melhorias permanecem independentes das regras de negócio e do RBAC: autorização e validação continuam sendo responsabilidade do backend.
