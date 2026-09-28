@@ -41,6 +41,8 @@ A documentação detalhada da arquitetura está disponível em [`docs/arquitetur
 
 A base visual e os tokens compartilhados do frontend estão documentados em [`docs/design-system.md`](docs/design-system.md).
 
+As telas operacionais reutilizam essa base para manter busca, filtros, contagem de resultados, estados vazios e navegação administrativa consistentes. A auditoria também possui uma tela dedicada protegida por RBAC.
+
 ## Funcionalidades
 
 - cadastro, consulta, ativação e desativação de clientes;
@@ -56,7 +58,7 @@ A base visual e os tokens compartilhados do frontend estão documentados em [`do
 - prevenção de nomes de usuário duplicados;
 - atualização transacional do nome de usuário nas tabelas relacionadas;
 - CLI e API REST usando a mesma camada de negócio;
-- frontend responsivo com design system próprio, login JWT, renovação automática de sessão e dashboard operacional conectado à API;
+- frontend responsivo com design system próprio, login JWT, renovação automática de sessão, dashboard operacional e telas de domínio com busca, filtros e feedback de resultados;
 - transações e rollback em operações compostas;
 - documentação OpenAPI/Swagger;
 - health check para produção;
@@ -132,6 +134,7 @@ Locadora/
 │   ├── js/
 │   │   ├── alugueis.js
 │   │   ├── api.js
+│   │   ├── auditoria.js
 │   │   ├── auth.js
 │   │   ├── cadastro.js
 │   │   ├── clientes.js
@@ -142,6 +145,7 @@ Locadora/
 │   │   ├── relatorios.js
 │   │   └── veiculos.js
 │   ├── alugueis.html
+│   ├── auditoria.html
 │   ├── cadastro.html
 │   ├── clientes.html
 │   ├── dashboard.html

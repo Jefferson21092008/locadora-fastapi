@@ -20,6 +20,8 @@ const newRentalButton = document.querySelector("#new-rental-button");
 const refreshButton = document.querySelector("#refresh-rentals-button");
 const searchInput = document.querySelector("#rental-search");
 const statusFilter = document.querySelector("#rental-status-filter");
+const resultsCount = document.querySelector("#rentals-results-count");
+const clearFiltersButton = document.querySelector("#clear-rental-filters");
 const pageMessage = document.querySelector("#rentals-message");
 const loadingState = document.querySelector("#rentals-loading");
 const emptyState = document.querySelector("#rentals-empty");
@@ -258,6 +260,12 @@ function rentalAction(rental) {
 
 function renderRentals() {
     const results = filteredRentals();
+    const hasActiveFilters = Boolean(normalizeText(searchInput.value))
+        || statusFilter.value !== "todos";
+
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${rentals.length.toLocaleString("pt-BR")} aluguéis`;
+    clearFiltersButton.hidden = !hasActiveFilters;
+
     emptyState.hidden = results.length > 0;
 
     if (results.length === 0) {
@@ -584,6 +592,12 @@ newRentalButton.addEventListener("click", openRentalDialog);
 refreshButton.addEventListener("click", () => loadRentals());
 searchInput.addEventListener("input", renderRentals);
 statusFilter.addEventListener("change", renderRentals);
+clearFiltersButton.addEventListener("click", () => {
+    searchInput.value = "";
+    statusFilter.value = "todos";
+    renderRentals();
+    searchInput.focus();
+});
 rentalVehicleInput.addEventListener("change", updateRentalEstimate);
 rentalDaysInput.addEventListener("input", updateRentalEstimate);
 rentalForm.addEventListener("submit", saveRental);

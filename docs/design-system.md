@@ -116,3 +116,29 @@ O painel de sistema informa quando os dados estão sendo sincronizados, quando a
 Em telas largas, atalhos e estado da operação ocupam colunas distintas. Em larguras intermediárias eles passam a uma coluna e, em telas pequenas, os indicadores e atalhos também são empilhados.
 
 As animações de carregamento respeitam `prefers-reduced-motion`.
+
+## Telas operacionais — Etapa 13
+
+As telas de Clientes, Veículos, Aluguéis e Manutenções passam a compartilhar feedback explícito sobre a quantidade de resultados exibidos. Quando busca ou filtros estão ativos, a interface mostra a relação entre itens visíveis e total carregado e oferece uma ação única para limpar os filtros.
+
+Esse padrão complementa os estados já existentes de carregamento e lista vazia e evita que o usuário precise deduzir se uma lista curta representa o conjunto completo ou um recorte filtrado.
+
+### Auditoria
+
+A auditoria ganha uma tela operacional dedicada em `/app/auditoria.html`, protegida pela permissão `auditoria:ler`.
+
+A tela reutiliza o mesmo shell das áreas administrativas e oferece:
+
+- resumo de registros, usuários, recursos e ações das últimas 24 horas;
+- busca por usuário, ação, recurso, identificadores e request ID;
+- filtros por recurso e ação;
+- apresentação dos campos alterados sem exibir valores sensíveis;
+- request ID para correlação com logs estruturados.
+
+A autorização efetiva continua no backend. O frontend apenas esconde ou exibe a navegação conforme as permissões retornadas por `/api/v1/auth/me`.
+
+### Consistência operacional
+
+A navegação administrativa passa a incluir Auditoria ao lado de Clientes, Manutenções e Relatórios. O dashboard também expõe um atalho condicionado ao RBAC.
+
+Todas essas telas continuam usando os mesmos tokens, estados de foco e regras responsivas definidos neste documento.

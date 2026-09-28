@@ -1,6 +1,7 @@
 import {
     ApiError,
     Permissions,
+    applyNavigationPermissions,
     clearToken,
     getCurrentUser,
     getFinancialSummary,
@@ -300,6 +301,7 @@ async function initialize() {
         roleBadge.textContent = currentUser.role === "admin"
             ? "Administrador"
             : "Cliente";
+        applyNavigationPermissions(currentUser);
         await loadReports();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {

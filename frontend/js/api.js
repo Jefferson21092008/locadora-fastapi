@@ -31,6 +31,7 @@ const NAVIGATION_PERMISSIONS = Object.freeze({
     "/app/clientes.html": Permissions.CLIENTES_LER,
     "/app/manutencoes.html": Permissions.MANUTENCOES_LER,
     "/app/relatorios.html": Permissions.RELATORIOS_LER,
+    "/app/auditoria.html": Permissions.AUDITORIA_LER,
 });
 
 export function applyNavigationPermissions(user, root = document) {
@@ -402,6 +403,10 @@ export function getTopCustomers(limit = 10) {
 
 export function getFinancialSummary() {
     return apiRequest("/relatorios/resumo-financeiro");
+}
+
+export function getAuditLogs() {
+    return apiRequest("/auditoria");
 }
 
 export function getVehicleResults() {

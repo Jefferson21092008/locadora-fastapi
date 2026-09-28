@@ -24,6 +24,7 @@
                 <a class="nav-item nav-item--active" href="/app/clientes.html" aria-current="page">Clientes</a>
                 <a class="nav-item" href="/app/manutencoes.html">Manutenções</a>
                 <a class="nav-item" href="/app/relatorios.html">Relatórios</a>
+                <a class="nav-item admin-nav" href="/app/auditoria.html" hidden>Auditoria</a>
             </nav>
 
             <p class="sidebar__note">Consulte os cadastros e controle o acesso dos clientes ao sistema.</p>
@@ -84,6 +85,15 @@
 
                         <button id="refresh-clients-button" class="secondary-button" type="button">Atualizar</button>
                     </div>
+                </div>
+
+                <div class="results-meta">
+                    <p id="clients-results-count" class="results-meta__count" aria-live="polite">
+                        Preparando resultados...
+                    </p>
+                    <button id="clear-client-filters" class="text-button" type="button" hidden>
+                        Limpar filtros
+                    </button>
                 </div>
 
                 <div id="clients-loading" class="loading-state" role="status">
