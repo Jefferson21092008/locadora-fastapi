@@ -1,7 +1,10 @@
+from typing import Literal
+
 from fastapi import (
     APIRouter,
     Depends,
     Query,
+    Response,
 )
 
 from api.dependencias import (
@@ -429,4 +432,76 @@ def resultado_por_veiculo(
     return (
         container.relatorio_service
         .resultado_por_veiculo()
+    )
+
+# ================================================================
+# EXPORTAÇÕES
+# ================================================================
+
+
+@router.get(
+    "/resultado-por-veiculo/exportar/{formato}",
+    summary="Exportar resultado por veículo",
+    description=(
+        "Gera o relatório completo de resultado por veículo "
+        "nos formatos CSV, Excel ou PDF. A operação é restrita "
+        "a usuários com permissão de relatórios."
+    ),
+    responses={
+        200: {
+            "description": "Arquivo gerado para download.",
+            "content": {
+                "text/csv": {},
+                (
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ): {},
+                "application/pdf": {},
+            },
+        },
+        401: {
+            "description": "Autenticação necessária.",
+        },
+        403: {
+            "description": "Usuário sem permissão para relatórios.",
+        },
+        422: {
+            "description": "Formato de exportação inválido.",
+        },
+    },
+)
+def exportar_resultado_por_veiculo(
+    formato: Literal[
+        "csv",
+        "xlsx",
+        "pdf",
+    ],
+    container: Container = Depends(
+        get_container
+    ),
+    usuario_admin=Depends(
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
+    ),
+):
+    arquivo = (
+        container
+        .exportacao_relatorios_service
+        .exportar_resultado_por_veiculo(
+            formato
+        )
+    )
+
+    return Response(
+        content=arquivo.conteudo,
+        media_type=arquivo.media_type,
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="'
+                f"{arquivo.nome_arquivo}"
+                '"'
+            ),
+            "Cache-Control": "no-store",
+        },
     )

@@ -14,6 +14,10 @@ from api.seguranca import (
     criar_token_acesso,
 )
 
+from modulos.servicos.exportacao_relatorios_service import (
+    ExportacaoRelatoriosService,
+)
+
 
 JWT_SECRET_TESTE = (
     "locadora-jwt-chave-de-testes-1234567890"
@@ -248,6 +252,14 @@ class ContainerFake:
 
         self.relatorio_service = (
             RelatorioServiceFake()
+        )
+
+        self.exportacao_relatorios_service = (
+            ExportacaoRelatoriosService(
+                relatorio_service=(
+                    self.relatorio_service
+                ),
+            )
         )
 
 
@@ -718,3 +730,93 @@ def test_relatorios_sem_token(
             "Autenticação necessária."
         )
     }
+
+# ================================================================
+# EXPORTAÇÕES
+# ================================================================
+
+
+@pytest.mark.parametrize(
+    "formato,content_type,extensao",
+    [
+        (
+            "csv",
+            "text/csv; charset=utf-8",
+            ".csv",
+        ),
+        (
+            "xlsx",
+            (
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet"
+            ),
+            ".xlsx",
+        ),
+        (
+            "pdf",
+            "application/pdf",
+            ".pdf",
+        ),
+    ],
+)
+def test_admin_pode_exportar_resultado_por_veiculo(
+    admin_client,
+    formato,
+    content_type,
+    extensao,
+):
+    response = admin_client.get(
+        (
+            "/relatorios/resultado-por-veiculo/"
+            f"exportar/{formato}"
+        )
+    )
+
+    assert response.status_code == 200
+    assert response.headers[
+        "content-type"
+    ] == content_type
+    assert (
+        "attachment; filename="
+        in response.headers[
+            "content-disposition"
+        ]
+    )
+    assert (
+        extensao
+        in response.headers[
+            "content-disposition"
+        ]
+    )
+    assert response.headers[
+        "cache-control"
+    ] == "no-store"
+    assert len(
+        response.content
+    ) > 10
+
+
+def test_cliente_nao_pode_exportar_relatorio(
+    cliente_client,
+):
+    response = cliente_client.get(
+        (
+            "/relatorios/resultado-por-veiculo/"
+            "exportar/csv"
+        )
+    )
+
+    assert response.status_code == 403
+
+
+def test_exportacao_rejeita_formato_invalido(
+    admin_client,
+):
+    response = admin_client.get(
+        (
+            "/relatorios/resultado-por-veiculo/"
+            "exportar/xml"
+        )
+    )
+
+    assert response.status_code == 422

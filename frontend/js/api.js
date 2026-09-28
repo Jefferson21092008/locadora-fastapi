@@ -210,6 +210,75 @@ export async function apiRequest(path, options = {}, allowRefresh = true) {
     return payload;
 }
 
+function filenameFromContentDisposition(value) {
+    if (!value) {
+        return null;
+    }
+
+    const match = value.match(/filename="?([^";]+)"?/i);
+    return match?.[1] ?? null;
+}
+
+export async function apiDownload(path, allowRefresh = true) {
+    const headers = new Headers();
+    const token = getToken();
+
+    if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    let response;
+
+    try {
+        response = await fetch(`${API_BASE}${path}`, {
+            method: "GET",
+            credentials: "same-origin",
+            headers,
+        });
+    } catch (error) {
+        throw new ApiError(
+            "Não foi possível conectar à API para gerar o arquivo.",
+            0,
+            error,
+        );
+    }
+
+    if (
+        response.status === 401
+        && allowRefresh
+    ) {
+        try {
+            await refreshSession();
+            return apiDownload(path, false);
+        } catch {
+            clearToken();
+        }
+    }
+
+    if (!response.ok) {
+        const payload = await readPayload(response);
+
+        throw new ApiError(
+            errorMessage(
+                payload,
+                `A API respondeu com o status ${response.status}.`,
+            ),
+            response.status,
+            payload,
+        );
+    }
+
+    return {
+        blob: await response.blob(),
+        filename: (
+            filenameFromContentDisposition(
+                response.headers.get("content-disposition"),
+            )
+            ?? "relatorio"
+        ),
+    };
+}
+
 
 function buildQuery(params = {}) {
     const query = new URLSearchParams();
@@ -448,4 +517,11 @@ export function getAuditLogs() {
 
 export function getVehicleResults() {
     return apiRequest("/relatorios/resultado-por-veiculo");
+}
+
+
+export function downloadVehicleResultReport(format) {
+    return apiDownload(
+        `/relatorios/resultado-por-veiculo/exportar/${format}`,
+    );
 }

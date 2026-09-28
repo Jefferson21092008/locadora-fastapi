@@ -50,6 +50,9 @@ from modulos.servicos.clientes_service import (
 from modulos.servicos.email_service import (
     EmailService,
 )
+from modulos.servicos.exportacao_relatorios_service import (
+    ExportacaoRelatoriosService,
+)
 from modulos.servicos.manutencao_service import (
     ManutencaoService,
 )
@@ -320,6 +323,14 @@ class Container:
                 ),
                 relatorio_repository=(
                     self.relatorio_repository
+                ),
+            )
+        )
+
+        self.exportacao_relatorios_service = (
+            ExportacaoRelatoriosService(
+                relatorio_service=(
+                    self.relatorio_service
                 ),
             )
         )

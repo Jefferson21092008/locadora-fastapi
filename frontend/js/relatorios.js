@@ -5,6 +5,7 @@ import {
     clearToken,
     getCurrentUser,
     getFinancialSummary,
+    downloadVehicleResultReport,
     getMaintenanceCostsReport,
     getReportSummary,
     getRevenueByType,
@@ -31,6 +32,7 @@ const vehicleSearchInput = document.querySelector("#report-vehicle-search");
 const vehicleResultsBody = document.querySelector("#vehicle-results");
 const vehicleResultsEmpty = document.querySelector("#vehicle-results-empty");
 const resultCard = document.querySelector("#report-result-card");
+const exportButtons = [...document.querySelectorAll("[data-export-format]")];
 
 const fields = {
     revenue: document.querySelector("#report-revenue"),
@@ -84,9 +86,12 @@ function formatNumber(value) {
     return Number(value ?? 0).toLocaleString("pt-BR");
 }
 
-function showMessage(text) {
+function showMessage(text, type = "error") {
     pageMessage.textContent = text;
-    pageMessage.className = "form-message form-message--page form-message--visible form-message--error";
+    pageMessage.className = (
+        "form-message form-message--page form-message--visible "
+        + `form-message--${type}`
+    );
 }
 
 function clearMessage() {
@@ -230,6 +235,69 @@ function renderVehicleResults() {
     }).join("");
 }
 
+async function exportVehicleResult(format) {
+    const button = exportButtons.find(
+        (item) => item.dataset.exportFormat === format,
+    );
+
+    clearMessage();
+    exportButtons.forEach((item) => {
+        item.disabled = true;
+    });
+
+    if (button) {
+        button.textContent = "Gerando...";
+    }
+
+    try {
+        const { blob, filename } = await downloadVehicleResultReport(format);
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = objectUrl;
+        link.download = filename;
+        link.hidden = true;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(
+            () => URL.revokeObjectURL(objectUrl),
+            0,
+        );
+
+        showMessage(
+            `Arquivo ${format.toUpperCase()} gerado com sucesso.`,
+            "success",
+        );
+    } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+            clearToken();
+            goToLogin();
+            return;
+        }
+
+        if (error instanceof ApiError && error.status === 403) {
+            goToDashboard();
+            return;
+        }
+
+        showMessage(error.message);
+    } finally {
+        exportButtons.forEach((item) => {
+            item.disabled = false;
+        });
+
+        if (button) {
+            const labels = {
+                csv: "CSV",
+                xlsx: "Excel",
+                pdf: "PDF",
+            };
+            button.textContent = labels[format] ?? format.toUpperCase();
+        }
+    }
+}
+
 async function loadReports() {
     clearMessage();
     loadingState.hidden = false;
@@ -323,5 +391,11 @@ logoutButton.addEventListener("click", async () => {
 refreshButton.addEventListener("click", loadReports);
 limitInput.addEventListener("change", loadReports);
 vehicleSearchInput.addEventListener("input", renderVehicleResults);
+
+exportButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        exportVehicleResult(button.dataset.exportFormat);
+    });
+});
 
 initialize();

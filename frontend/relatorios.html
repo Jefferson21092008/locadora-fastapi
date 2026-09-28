@@ -166,10 +166,19 @@
                             <h2 id="vehicle-results-title">Resultado por veículo</h2>
                         </div>
 
-                        <label class="search-field" for="report-vehicle-search">
-                            <span class="sr-only">Buscar veículo no relatório</span>
-                            <input id="report-vehicle-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="vehicle-results" placeholder="Buscar por modelo, tipo ou ID">
-                        </label>
+                        <div class="report-table-actions">
+                            <label class="search-field" for="report-vehicle-search">
+                                <span class="sr-only">Buscar veículo no relatório</span>
+                                <input id="report-vehicle-search" type="search" autocomplete="off" enterkeyhint="search" aria-controls="vehicle-results" placeholder="Buscar por modelo, tipo ou ID">
+                            </label>
+
+                            <div class="report-export-group" role="group" aria-label="Exportar relatório completo de resultado por veículo">
+                                <span class="report-export-group__label">Exportar completo</span>
+                                <button class="secondary-button report-export-button" type="button" data-export-format="csv">CSV</button>
+                                <button class="secondary-button report-export-button" type="button" data-export-format="xlsx">Excel</button>
+                                <button class="secondary-button report-export-button" type="button" data-export-format="pdf">PDF</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="report-table-scroll" role="region" aria-label="Resultados por veículo" tabindex="0">
