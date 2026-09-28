@@ -528,7 +528,52 @@ A migration `20260928_0006_vistorias_ocorrencias` cria:
 Todas as tabelas apontam para `alugueis`. Constraints protegem tipos, status,
 valores não negativos e combustível entre 0% e 100%.
 
-A Etapa 16 preserva uma separação importante: os valores registrados aqui ainda
-não são incorporados ao pagamento da devolução. A próxima etapa financeira pode
-consumir esse agregado operacional como fonte de encargos e liberações de
-caução sem mover regras de inspeção para o módulo de pagamentos.
+A Etapa 16 preserva uma separação importante: os valores registrados aqui não
+são incorporados diretamente ao pagamento da devolução. A camada financeira da
+Etapa 17 consome esse agregado como fonte de encargos sem mover regras de
+inspeção para o módulo de pagamentos.
+
+
+## Pagamentos e liquidação financeira
+
+A Etapa 17 adiciona `PagamentoService` e `PagamentoRepository` para separar a
+liquidação financeira das regras operacionais de aluguel e vistoria.
+
+```text
+frontend/pagamentos.html
+        ↓
+api/routers/pagamentos.py
+        ↓
+PagamentoService
+        ├── AluguelRepository
+        ├── VistoriaService
+        └── PagamentoRepository
+                ↓
+        PagamentoFinanceiroModel
+                ↓
+        PostgreSQL / SQLite
+```
+
+`PagamentoService` não recalcula danos nem multas. Ele pede a
+`VistoriaService` o agregado operacional e usa apenas os valores ativos. O valor
+do contrato já registrado pela devolução continua em `Aluguel`, preservando
+compatibilidade com os dados anteriores à Etapa 17.
+
+Para evitar cobrança duplicada, um aluguel finalizado que já possua
+`pagamento` considera `Aluguel.valor` como liquidação legada. Os novos registros
+em `pagamentos_financeiros` representam apenas liquidações posteriores, como
+danos e multas de trânsito identificados pela vistoria.
+
+A caução retida é apresentada no resumo financeiro, mas não é abatida
+automaticamente. Aplicar uma caução como pagamento exigiria distinguir
+explicitamente valor liberado ao cliente de valor efetivamente apropriado para
+uma cobrança; essa distinção não é inferida silenciosamente.
+
+Pagamentos financeiros são imutáveis quanto ao histórico: um erro operacional
+é corrigido por `estorno`, não por exclusão. O saldo e o status financeiro são
+derivados a cada consulta a partir das fontes atuais.
+
+A migration `20260928_0007_pagamentos_financeiro` adiciona a tabela
+`pagamentos_financeiros` e o índice
+`idx_pagamentos_financeiros_aluguel_status`. O RBAC acrescenta
+`financeiro:ler`, `financeiro:receber` e `financeiro:estornar`.

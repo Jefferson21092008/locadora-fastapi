@@ -61,6 +61,7 @@ def test_base_registra_primeiros_models():
     assert "danos" in Base.metadata.tables
     assert "multas_transito" in Base.metadata.tables
     assert "caucoes" in Base.metadata.tables
+    assert "pagamentos_financeiros" in Base.metadata.tables
 
     assert (
         "tokens_recuperacao_senha"
@@ -87,6 +88,7 @@ def test_models_criam_tabelas_esperadas(
     assert "danos" in tabelas
     assert "multas_transito" in tabelas
     assert "caucoes" in tabelas
+    assert "pagamentos_financeiros" in tabelas
 
     assert (
         "tokens_recuperacao_senha"

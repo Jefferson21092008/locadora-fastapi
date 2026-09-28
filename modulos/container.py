@@ -16,6 +16,9 @@ from modulos.repositories.cliente_repository import (
 from modulos.repositories.manutencao_repository import (
     ManutencaoRepository,
 )
+from modulos.repositories.pagamento_repository import (
+    PagamentoRepository,
+)
 from modulos.repositories.relatorio_repository import (
     RelatorioRepository,
 )
@@ -61,6 +64,9 @@ from modulos.servicos.exportacao_relatorios_service import (
 )
 from modulos.servicos.manutencao_service import (
     ManutencaoService,
+)
+from modulos.servicos.pagamento_service import (
+    PagamentoService,
 )
 from modulos.servicos.relatorios_service import (
     RelatorioService,
@@ -221,6 +227,14 @@ class Container:
             )
         )
 
+        self.pagamento_repository = (
+            PagamentoRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
         self.relatorio_repository = (
             RelatorioRepository(
                 banco_sqlalchemy=(
@@ -374,6 +388,20 @@ class Container:
                 ),
                 vistoria_repository=(
                     self.vistoria_repository
+                ),
+            )
+        )
+
+        self.pagamento_service = (
+            PagamentoService(
+                aluguel_repository=(
+                    self.aluguel_repository
+                ),
+                pagamento_repository=(
+                    self.pagamento_repository
+                ),
+                vistoria_service=(
+                    self.vistoria_service
                 ),
             )
         )
