@@ -951,3 +951,19 @@ GET /api/v1/manutencoes/consulta
 As consultas aceitam `pagina`, `por_pagina`, `busca`, `status`, `ordenar` e `direcao`, respeitando os campos válidos de cada recurso. O PostgreSQL/SQLite executa `WHERE`, `ORDER BY`, `LIMIT` e `OFFSET`; o frontend recebe somente a página atual, os totais e o resumo operacional.
 
 As rotas antigas como `GET /api/v1/veiculos` continuam disponíveis nesta etapa porque ainda são usadas por fluxos que precisam da coleção completa, como seleção de veículo em aluguel ou manutenção. A migração é, portanto, incremental e sem quebra imediata de compatibilidade.
+
+## Trilha principal — Dashboard com métricas melhores
+
+A Etapa 12 evolui o dashboard sem repetir o redesign visual concluído na subtrilha de frontend. O foco passa a ser a qualidade dos dados exibidos: as métricas administrativas são agregadas diretamente no banco com SQLAlchemy e expostas por um endpoint dedicado protegido por `relatorios:ler`.
+
+Endpoint adicionado:
+
+```text
+GET /api/v1/relatorios/dashboard
+```
+
+O resumo administrativo inclui clientes ativos/inativos, distribuição da frota por status, aluguéis e manutenções ativos/finalizados, taxa da frota atualmente alugada, receita de aluguéis finalizados, custos de manutenção finalizada, resultado bruto e ticket médio dos aluguéis concluídos.
+
+Usuários sem a permissão de relatórios continuam usando o resumo básico já existente. O frontend decide qual fonte consultar a partir das permissões retornadas por `/api/v1/auth/me`; a autorização do endpoint administrativo continua sendo aplicada no backend.
+
+Não há migration nesta etapa.

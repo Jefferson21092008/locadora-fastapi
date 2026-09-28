@@ -4,6 +4,7 @@ import {
     applyNavigationPermissions,
     clearToken,
     getCurrentUser,
+    getDashboardMetrics,
     getSystemStatus,
     restoreSession,
     hasPermission,
@@ -20,6 +21,50 @@ const syncLabel = document.querySelector("#dashboard-sync-label");
 const syncDot = document.querySelector("#dashboard-sync-dot");
 const lastUpdated = document.querySelector("#dashboard-last-updated");
 const metricCards = document.querySelectorAll("[data-metric-card]");
+const metricCaptions = {
+    clientes: document.querySelector("#metric-clientes-caption"),
+    veiculos: document.querySelector("#metric-veiculos-caption"),
+    alugueis: document.querySelector("#metric-alugueis-caption"),
+    manutencoes: document.querySelector("#metric-manutencoes-caption"),
+};
+
+const adminInsights = document.querySelector(
+    "#admin-dashboard-insights",
+);
+const dashboardEndpoint = document.querySelector(
+    "#dashboard-endpoint",
+);
+const vehiclesAvailable = document.querySelector(
+    "#dashboard-vehicles-available",
+);
+const vehiclesRented = document.querySelector(
+    "#dashboard-vehicles-rented",
+);
+const vehiclesMaintenance = document.querySelector(
+    "#dashboard-vehicles-maintenance",
+);
+const fleetRate = document.querySelector(
+    "#dashboard-fleet-rate",
+);
+const revenue = document.querySelector("#dashboard-revenue");
+const maintenanceCost = document.querySelector(
+    "#dashboard-maintenance-cost",
+);
+const grossResult = document.querySelector(
+    "#dashboard-gross-result",
+);
+const resultCard = document.querySelector(
+    "#dashboard-result-card",
+);
+const finishedRentals = document.querySelector(
+    "#dashboard-finished-rentals",
+);
+const finishedMaintenance = document.querySelector(
+    "#dashboard-finished-maintenance",
+);
+const averageTicket = document.querySelector(
+    "#dashboard-average-ticket",
+);
 
 const renameUserButton = document.querySelector(
     "#rename-user-button",
@@ -91,10 +136,69 @@ function closeRenameDialog() {
     clearRenameMessage();
 }
 
-function updateMetrics(status) {
+function formatNumber(value) {
+    return Number(value ?? 0).toLocaleString("pt-BR");
+}
+
+function formatCurrency(value) {
+    return new Intl.NumberFormat(
+        "pt-BR",
+        {
+            style: "currency",
+            currency: "BRL",
+        },
+    ).format(Number(value ?? 0));
+}
+
+function updateBasicMetrics(status) {
     for (const [name, element] of Object.entries(metrics)) {
-        element.textContent = Number(status[name] ?? 0).toLocaleString("pt-BR");
+        element.textContent = formatNumber(status[name]);
     }
+
+    metricCaptions.clientes.textContent = "cadastrados";
+    metricCaptions.veiculos.textContent = "na frota";
+    metricCaptions.alugueis.textContent = "registrados";
+    metricCaptions.manutencoes.textContent = "registradas";
+    dashboardEndpoint.textContent = "/api/v1/status";
+    adminInsights.hidden = true;
+}
+
+function updateAdminMetrics(data) {
+    metrics.clientes.textContent = formatNumber(data.clientes_ativos);
+    metrics.veiculos.textContent = formatNumber(data.veiculos_disponiveis);
+    metrics.alugueis.textContent = formatNumber(data.alugueis_ativos);
+    metrics.manutencoes.textContent = formatNumber(data.manutencoes_ativas);
+
+    metricCaptions.clientes.textContent =
+        `ativos • ${formatNumber(data.clientes_inativos)} inativos`;
+    metricCaptions.veiculos.textContent =
+        `disponíveis • ${formatNumber(data.veiculos_desativados)} desativados`;
+    metricCaptions.alugueis.textContent =
+        `ativos • ${formatNumber(data.alugueis_finalizados)} finalizados`;
+    metricCaptions.manutencoes.textContent =
+        `ativas • ${formatNumber(data.manutencoes_finalizadas)} finalizadas`;
+
+    vehiclesAvailable.textContent = formatNumber(data.veiculos_disponiveis);
+    vehiclesRented.textContent = formatNumber(data.veiculos_alugados);
+    vehiclesMaintenance.textContent = formatNumber(data.veiculos_manutencao);
+    fleetRate.textContent = `${formatNumber(data.taxa_frota_alugada)}%`;
+
+    revenue.textContent = formatCurrency(data.receita_alugueis);
+    maintenanceCost.textContent = formatCurrency(data.custos_manutencao);
+    grossResult.textContent = formatCurrency(data.resultado_bruto);
+    finishedRentals.textContent =
+        `aluguéis finalizados: ${formatNumber(data.alugueis_finalizados)}`;
+    finishedMaintenance.textContent =
+        `manutenções finalizadas: ${formatNumber(data.manutencoes_finalizadas)}`;
+    averageTicket.textContent =
+        `ticket médio: ${formatCurrency(data.ticket_medio)}`;
+
+    resultCard.classList.toggle(
+        "financial-card--negative",
+        Number(data.resultado_bruto) < 0,
+    );
+    dashboardEndpoint.textContent = "/api/v1/relatorios/dashboard";
+    adminInsights.hidden = false;
 }
 
 function setDashboardLoading(isLoading) {
@@ -148,10 +252,14 @@ async function loadDashboard() {
     setDashboardLoading(true);
 
     try {
-        const [currentUser, status] = await Promise.all([
-            getCurrentUser(),
-            getSystemStatus(),
-        ]);
+        const currentUser = await getCurrentUser();
+        const canViewReports = hasPermission(
+            currentUser,
+            Permissions.RELATORIOS_LER,
+        );
+        const dashboardData = canViewReports
+            ? await getDashboardMetrics()
+            : await getSystemStatus();
 
         username.textContent = currentUser.usuario;
         role.textContent = currentUser.role === "admin" ? "Administrador" : "Cliente";
@@ -160,7 +268,13 @@ async function loadDashboard() {
             Permissions.CONTA_RENOMEAR,
         );
         applyNavigationPermissions(currentUser);
-        updateMetrics(status);
+
+        if (canViewReports) {
+            updateAdminMetrics(dashboardData);
+        } else {
+            updateBasicMetrics(dashboardData);
+        }
+
         markDashboardSynced();
     } catch (error) {
         markDashboardError();

@@ -103,6 +103,40 @@ class RelatorioService:
         }
 
     # ================================================================
+    # DASHBOARD
+    # ================================================================
+
+    def metricas_dashboard(self):
+        dados = dict(
+            self.relatorio_repository
+            .metricas_dashboard()
+        )
+
+        frota_ativa = (
+            dados["veiculos_disponiveis"]
+            + dados["veiculos_alugados"]
+            + dados["veiculos_manutencao"]
+        )
+
+        dados["veiculos_ativos"] = frota_ativa
+        dados["taxa_frota_alugada"] = (
+            round(
+                dados["veiculos_alugados"]
+                / frota_ativa
+                * 100,
+                2,
+            )
+            if frota_ativa
+            else 0.0
+        )
+        dados["resultado_bruto"] = (
+            dados["receita_alugueis"]
+            - dados["custos_manutencao"]
+        )
+
+        return dados
+
+    # ================================================================
     # RELATÓRIOS SQL
     # ================================================================
 

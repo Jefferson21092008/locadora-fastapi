@@ -11,6 +11,9 @@ from modulos.models.aluguel_model import (
 from modulos.models.manutencao_model import (
     ManutencaoModel,
 )
+from modulos.models.cliente_model import (
+    ClienteModel,
+)
 from modulos.models.veiculo_model import (
     VeiculoModel,
 )
@@ -40,6 +43,136 @@ class RelatorioRepository:
             dict(linha)
             for linha in resultado
         ]
+
+    # ================================================================
+    # DASHBOARD
+    # ================================================================
+
+    def metricas_dashboard(self):
+        """Agrega os principais indicadores do dashboard no banco."""
+
+        def contar(modelo, criterio=None):
+            comando = select(
+                func.count(modelo.id)
+            )
+
+            if criterio is not None:
+                comando = comando.where(
+                    criterio
+                )
+
+            return comando.scalar_subquery()
+
+        clientes_ativos = contar(
+            ClienteModel,
+            ClienteModel.ativo.is_(True),
+        )
+        clientes_inativos = contar(
+            ClienteModel,
+            ClienteModel.ativo.is_(False),
+        )
+
+        veiculos_disponiveis = contar(
+            VeiculoModel,
+            VeiculoModel.status == "disponivel",
+        )
+        veiculos_alugados = contar(
+            VeiculoModel,
+            VeiculoModel.status == "alugado",
+        )
+        veiculos_manutencao = contar(
+            VeiculoModel,
+            VeiculoModel.status == "manutencao",
+        )
+        veiculos_desativados = contar(
+            VeiculoModel,
+            VeiculoModel.status == "desativado",
+        )
+
+        alugueis_ativos = contar(
+            AluguelModel,
+            AluguelModel.status == "ativo",
+        )
+        alugueis_finalizados = contar(
+            AluguelModel,
+            AluguelModel.status == "finalizado",
+        )
+
+        manutencoes_ativas = contar(
+            ManutencaoModel,
+            ManutencaoModel.status == "ativa",
+        )
+        manutencoes_finalizadas = contar(
+            ManutencaoModel,
+            ManutencaoModel.status == "finalizada",
+        )
+
+        receita_alugueis = (
+            select(
+                func.coalesce(
+                    func.sum(AluguelModel.valor),
+                    0.0,
+                )
+            )
+            .where(
+                AluguelModel.status == "finalizado"
+            )
+            .scalar_subquery()
+        )
+
+        custos_manutencao = (
+            select(
+                func.coalesce(
+                    func.sum(ManutencaoModel.custo),
+                    0.0,
+                )
+            )
+            .where(
+                ManutencaoModel.status == "finalizada"
+            )
+            .scalar_subquery()
+        )
+
+        ticket_medio = (
+            select(
+                func.coalesce(
+                    func.avg(AluguelModel.valor),
+                    0.0,
+                )
+            )
+            .where(
+                AluguelModel.status == "finalizado"
+            )
+            .scalar_subquery()
+        )
+
+        comando = select(
+            clientes_ativos.label("clientes_ativos"),
+            clientes_inativos.label("clientes_inativos"),
+            veiculos_disponiveis.label("veiculos_disponiveis"),
+            veiculos_alugados.label("veiculos_alugados"),
+            veiculos_manutencao.label("veiculos_manutencao"),
+            veiculos_desativados.label("veiculos_desativados"),
+            alugueis_ativos.label("alugueis_ativos"),
+            alugueis_finalizados.label("alugueis_finalizados"),
+            manutencoes_ativas.label("manutencoes_ativas"),
+            manutencoes_finalizadas.label("manutencoes_finalizadas"),
+            receita_alugueis.label("receita_alugueis"),
+            custos_manutencao.label("custos_manutencao"),
+            ticket_medio.label("ticket_medio"),
+        )
+
+        with (
+            self.banco_sqlalchemy
+            .criar_sessao()
+        ) as sessao:
+            linha = (
+                sessao.execute(comando)
+                .mappings()
+                .one()
+            )
+
+        return dict(linha)
 
     # ================================================================
     # VEÍCULOS MAIS ALUGADOS

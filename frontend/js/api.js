@@ -414,6 +414,10 @@ export function finishMaintenance(vehicleId, data) {
     });
 }
 
+export function getDashboardMetrics() {
+    return apiRequest("/relatorios/dashboard");
+}
+
 export function getReportSummary() {
     return apiRequest("/relatorios/resumo");
 }

@@ -95,6 +95,28 @@ class AuthServiceFake:
 
 
 class RelatorioServiceFake:
+    def metricas_dashboard(
+        self,
+    ):
+        return {
+            "clientes_ativos": 5,
+            "clientes_inativos": 1,
+            "veiculos_ativos": 8,
+            "veiculos_disponiveis": 4,
+            "veiculos_alugados": 3,
+            "veiculos_manutencao": 1,
+            "veiculos_desativados": 2,
+            "alugueis_ativos": 3,
+            "alugueis_finalizados": 15,
+            "manutencoes_ativas": 1,
+            "manutencoes_finalizadas": 6,
+            "receita_alugueis": 15000.0,
+            "custos_manutencao": 3000.0,
+            "resultado_bruto": 12000.0,
+            "ticket_medio": 1000.0,
+            "taxa_frota_alugada": 37.5,
+        }
+
     def gerar_resumo(
         self,
     ):
@@ -315,6 +337,40 @@ def cliente_client(
     )
 
     return client
+
+
+# ================================================================
+# DASHBOARD
+# ================================================================
+
+
+def test_admin_pode_ver_metricas_dashboard(
+    admin_client,
+):
+    response = admin_client.get(
+        "/relatorios/dashboard"
+    )
+
+    assert response.status_code == 200
+
+    dados = response.json()
+
+    assert dados["clientes_ativos"] == 5
+    assert dados["veiculos_disponiveis"] == 4
+    assert dados["veiculos_alugados"] == 3
+    assert dados["taxa_frota_alugada"] == 37.5
+    assert dados["resultado_bruto"] == 12000.0
+    assert dados["ticket_medio"] == 1000.0
+
+
+def test_cliente_nao_pode_ver_metricas_dashboard(
+    cliente_client,
+):
+    response = cliente_client.get(
+        "/relatorios/dashboard"
+    )
+
+    assert response.status_code == 403
 
 
 # ================================================================

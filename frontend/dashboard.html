@@ -84,7 +84,7 @@
                         </div>
                         <p>Clientes</p>
                         <strong id="metric-clientes">—</strong>
-                        <span class="metric-card__caption">cadastrados</span>
+                        <span id="metric-clientes-caption" class="metric-card__caption">cadastrados</span>
                     </article>
 
                     <article class="metric-card dashboard-metric-card" data-metric-card aria-busy="true">
@@ -94,7 +94,7 @@
                         </div>
                         <p>Veículos</p>
                         <strong id="metric-veiculos">—</strong>
-                        <span class="metric-card__caption">na frota</span>
+                        <span id="metric-veiculos-caption" class="metric-card__caption">na frota</span>
                     </article>
 
                     <article class="metric-card dashboard-metric-card" data-metric-card aria-busy="true">
@@ -104,7 +104,7 @@
                         </div>
                         <p>Aluguéis</p>
                         <strong id="metric-alugueis">—</strong>
-                        <span class="metric-card__caption">registrados</span>
+                        <span id="metric-alugueis-caption" class="metric-card__caption">registrados</span>
                     </article>
 
                     <article class="metric-card metric-card--accent dashboard-metric-card" data-metric-card aria-busy="true">
@@ -114,9 +114,78 @@
                         </div>
                         <p>Manutenções</p>
                         <strong id="metric-manutencoes">—</strong>
-                        <span class="metric-card__caption">registradas</span>
+                        <span id="metric-manutencoes-caption" class="metric-card__caption">registradas</span>
                     </article>
                 </div>
+            </section>
+
+            <section
+                id="admin-dashboard-insights"
+                aria-labelledby="dashboard-insights-title"
+                hidden
+            >
+                <div class="section-heading dashboard-section-heading">
+                    <div>
+                        <p class="eyebrow">Indicadores administrativos</p>
+                        <h2 id="dashboard-insights-title">Saúde da operação</h2>
+                        <p class="section-heading__description">Agregações calculadas no banco para resumir frota, contratos e resultado financeiro.</p>
+                    </div>
+                </div>
+
+                <section class="report-operational" aria-labelledby="dashboard-fleet-title">
+                    <div class="section-heading report-section-heading">
+                        <div>
+                            <p class="eyebrow">Frota</p>
+                            <h2 id="dashboard-fleet-title">Distribuição atual</h2>
+                        </div>
+                    </div>
+
+                    <div class="fleet-overview fleet-overview--four">
+                        <article>
+                            <span>Disponíveis</span>
+                            <strong id="dashboard-vehicles-available">—</strong>
+                        </article>
+                        <article>
+                            <span>Alugados</span>
+                            <strong id="dashboard-vehicles-rented">—</strong>
+                        </article>
+                        <article>
+                            <span>Em manutenção</span>
+                            <strong id="dashboard-vehicles-maintenance">—</strong>
+                        </article>
+                        <article>
+                            <span>Frota alugada</span>
+                            <strong id="dashboard-fleet-rate">—</strong>
+                        </article>
+                    </div>
+                </section>
+
+                <section class="financial-summary" aria-labelledby="dashboard-financial-title">
+                    <div class="section-heading report-section-heading">
+                        <div>
+                            <p class="eyebrow">Financeiro</p>
+                            <h2 id="dashboard-financial-title">Resultado acumulado</h2>
+                        </div>
+                    </div>
+
+                    <div class="financial-summary__grid">
+                        <article class="financial-card">
+                            <span>Receita de aluguéis</span>
+                            <strong id="dashboard-revenue">—</strong>
+                            <small id="dashboard-finished-rentals">aluguéis finalizados: —</small>
+                        </article>
+                        <article class="financial-card financial-card--cost">
+                            <span>Custos de manutenção</span>
+                            <strong id="dashboard-maintenance-cost">—</strong>
+                            <small id="dashboard-finished-maintenance">manutenções finalizadas: —</small>
+                        </article>
+                        <article id="dashboard-result-card" class="financial-card financial-card--result">
+                            <span>Resultado bruto</span>
+                            <strong id="dashboard-gross-result">—</strong>
+                            <small id="dashboard-average-ticket">ticket médio: —</small>
+                        </article>
+                    </div>
+                </section>
             </section>
 
             <div class="dashboard-content-grid">
@@ -205,7 +274,7 @@
                     <dl class="status-panel__details">
                         <div>
                             <dt>Endpoint</dt>
-                            <dd><code>/api/v1/status</code></dd>
+                            <dd><code id="dashboard-endpoint">/api/v1/status</code></dd>
                         </div>
                         <div>
                             <dt>Última atualização</dt>

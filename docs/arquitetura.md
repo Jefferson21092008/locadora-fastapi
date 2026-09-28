@@ -274,3 +274,31 @@ Foram adicionadas consultas dedicadas para clientes, veículos, aluguéis e manu
 As respostas paginadas mantêm um contrato uniforme com `items`, `pagina`, `por_pagina`, `total`, `total_paginas` e `resumo`. O `resumo` representa o conjunto completo permitido ao usuário, enquanto `total` representa a quantidade correspondente à busca e aos filtros atuais.
 
 As rotas de listagem anteriores não foram removidas. Elas continuam disponíveis temporariamente para compatibilidade e para fluxos internos que realmente necessitam da coleção completa. Não há migration nesta etapa: a mudança atua sobre consultas e contratos HTTP, não sobre o schema do banco.
+
+## Dashboard administrativo — métricas agregadas
+
+A Etapa 12 adiciona uma consulta específica para o dashboard administrativo:
+
+```text
+GET /api/v1/relatorios/dashboard
+```
+
+O fluxo segue a arquitetura existente:
+
+```text
+Dashboard
+   ↓
+GET /api/v1/relatorios/dashboard
+   ↓
+exigir_permissao(relatorios:ler)
+   ↓
+RelatorioService.metricas_dashboard()
+   ↓
+RelatorioRepository.metricas_dashboard()
+   ↓
+SQLAlchemy / PostgreSQL
+```
+
+O repository executa agregações no banco em vez de carregar coleções completas em memória. Ele calcula contagens por status e valores financeiros consolidados. O service mantém os cálculos derivados de negócio, como taxa da frota alugada e resultado bruto.
+
+O dashboard visual continua único para administradores e clientes. Quando o usuário possui `relatorios:ler`, o frontend carrega o resumo administrativo; caso contrário, mantém o resumo básico de `/api/v1/status`. Isso evita expor métricas financeiras a usuários sem autorização e preserva compatibilidade com o fluxo existente.

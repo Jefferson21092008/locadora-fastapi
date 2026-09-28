@@ -373,6 +373,10 @@ def test_dashboard_expoe_visao_operacional_e_atalhos():
     assert 'id="quick-relatorios"' in resposta.text
     assert 'id="quick-auditoria"' in resposta.text
     assert 'data-metric-card' in resposta.text
+    assert 'id="admin-dashboard-insights"' in resposta.text
+    assert 'id="dashboard-fleet-rate"' in resposta.text
+    assert 'id="dashboard-gross-result"' in resposta.text
+    assert 'id="dashboard-average-ticket"' in resposta.text
 
 
 def test_dashboard_js_controla_sincronizacao_e_loading():
@@ -387,6 +391,10 @@ def test_dashboard_js_controla_sincronizacao_e_loading():
     assert "Intl.DateTimeFormat" in resposta.text
     assert "dashboard-metric-card--loading" in resposta.text
     assert "applyNavigationPermissions(currentUser)" in resposta.text
+    assert "getDashboardMetrics" in resposta.text
+    assert "Permissions.RELATORIOS_LER" in resposta.text
+    assert "updateAdminMetrics" in resposta.text
+    assert "formatCurrency" in resposta.text
 
 
 def test_frontend_auditoria_esta_disponivel():
@@ -627,3 +635,12 @@ def test_frontend_operacional_deixa_de_filtrar_listas_inteiras_localmente():
     assert "total_paginas" in veiculos
     assert "total_paginas" in alugueis
     assert "total_paginas" in manutencoes
+
+def test_frontend_api_expoe_metricas_do_dashboard():
+    resposta = client.get(
+        "/app/js/api.js"
+    )
+
+    assert resposta.status_code == 200
+    assert "getDashboardMetrics" in resposta.text
+    assert 'apiRequest("/relatorios/dashboard")' in resposta.text

@@ -10,6 +10,7 @@ from api.dependencias import (
 )
 
 from api.schemas.relatorios import (
+    DashboardMetricasResponse,
     ClienteMaisAlugaResponse,
     CustoManutencaoResponse,
     FaturamentoPorTipoResponse,
@@ -30,6 +31,45 @@ router = APIRouter(
     prefix="/relatorios",
     tags=["Relatórios"],
 )
+
+
+# ================================================================
+# DASHBOARD
+# ================================================================
+
+
+@router.get(
+    "/dashboard",
+    response_model=DashboardMetricasResponse,
+    summary="Consultar métricas do dashboard",
+    description=(
+        "Retorna indicadores operacionais e financeiros "
+        "agregados diretamente no banco para alimentar o "
+        "dashboard administrativo."
+    ),
+    responses={
+        401: {
+            "description": "Autenticação necessária.",
+        },
+        403: {
+            "description": "Usuário sem permissão para relatórios.",
+        },
+    },
+)
+def metricas_dashboard(
+    container: Container = Depends(
+        get_container
+    ),
+    usuario_admin=Depends(
+        exigir_permissao(
+            Permissao.RELATORIOS_LER
+        )
+    ),
+):
+    return (
+        container.relatorio_service
+        .metricas_dashboard()
+    )
 
 
 # ================================================================
