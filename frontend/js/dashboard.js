@@ -16,6 +16,10 @@ const role = document.querySelector("#current-role");
 const logoutButton = document.querySelector("#logout-button");
 const refreshButton = document.querySelector("#refresh-button");
 const message = document.querySelector("#dashboard-message");
+const syncLabel = document.querySelector("#dashboard-sync-label");
+const syncDot = document.querySelector("#dashboard-sync-dot");
+const lastUpdated = document.querySelector("#dashboard-last-updated");
+const metricCards = document.querySelectorAll("[data-metric-card]");
 
 const renameUserButton = document.querySelector(
     "#rename-user-button",
@@ -93,6 +97,47 @@ function updateMetrics(status) {
     }
 }
 
+function setDashboardLoading(isLoading) {
+    refreshButton.disabled = isLoading;
+    refreshButton.textContent = isLoading
+        ? "Atualizando..."
+        : "Atualizar dados";
+
+    for (const card of metricCards) {
+        card.classList.toggle("dashboard-metric-card--loading", isLoading);
+        card.setAttribute("aria-busy", String(isLoading));
+    }
+
+    if (isLoading) {
+        syncLabel.textContent = "Sincronizando";
+        syncDot.className = "status-dot status-dot--loading";
+    }
+}
+
+function markDashboardSynced() {
+    const now = new Date();
+    const time = new Intl.DateTimeFormat(
+        "pt-BR",
+        {
+            hour: "2-digit",
+            minute: "2-digit",
+        },
+    ).format(now);
+
+    syncLabel.textContent = "Sincronizado";
+    syncDot.className = "status-dot status-dot--online";
+    lastUpdated.textContent = `Atualizado às ${time}`;
+}
+
+function markDashboardError() {
+    syncLabel.textContent = "Falha na atualização";
+    syncDot.className = "status-dot status-dot--error";
+
+    if (!lastUpdated.textContent.startsWith("Atualizado")) {
+        lastUpdated.textContent = "Dados ainda não sincronizados";
+    }
+}
+
 async function loadDashboard() {
     if (!(await restoreSession())) {
         goToLogin();
@@ -100,8 +145,7 @@ async function loadDashboard() {
     }
 
     clearMessage();
-    refreshButton.disabled = true;
-    refreshButton.textContent = "Atualizando...";
+    setDashboardLoading(true);
 
     try {
         const [currentUser, status] = await Promise.all([
@@ -117,7 +161,10 @@ async function loadDashboard() {
         );
         applyNavigationPermissions(currentUser);
         updateMetrics(status);
+        markDashboardSynced();
     } catch (error) {
+        markDashboardError();
+
         if (error instanceof ApiError && error.status === 401) {
             clearToken();
             goToLogin();
@@ -126,8 +173,7 @@ async function loadDashboard() {
 
         showMessage(error.message);
     } finally {
-        refreshButton.disabled = false;
-        refreshButton.textContent = "Atualizar dados";
+        setDashboardLoading(false);
     }
 }
 

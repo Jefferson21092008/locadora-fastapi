@@ -56,7 +56,7 @@ A base visual e os tokens compartilhados do frontend estão documentados em [`do
 - prevenção de nomes de usuário duplicados;
 - atualização transacional do nome de usuário nas tabelas relacionadas;
 - CLI e API REST usando a mesma camada de negócio;
-- frontend responsivo com design system próprio, login JWT, renovação automática de sessão e painel conectado à API;
+- frontend responsivo com design system próprio, login JWT, renovação automática de sessão e dashboard operacional conectado à API;
 - transações e rollback em operações compostas;
 - documentação OpenAPI/Swagger;
 - health check para produção;

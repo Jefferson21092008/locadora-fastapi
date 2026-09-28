@@ -86,3 +86,33 @@ O frontend mantém:
 ## Evolução
 
 Esta etapa é a fundação visual. Dashboard e telas de domínio podem evoluir nas próximas etapas reaproveitando os mesmos tokens e componentes, evitando redesenhar a base em cada página.
+
+## Dashboard operacional — Etapa 12
+
+O dashboard passa a ser a primeira superfície operacional da aplicação, e não apenas uma coleção de contadores.
+
+A composição reutiliza os tokens da Etapa 11 e organiza a tela em três níveis:
+
+1. identificação da conta e contexto da sessão;
+2. indicadores principais da locadora;
+3. atalhos de navegação e estado de sincronização com a API.
+
+### Indicadores
+
+Os quatro indicadores mantêm os mesmos dados fornecidos por `/api/v1/status`, sem criar métricas derivadas ou regras novas no frontend. Durante a atualização, os cards usam estado visual de carregamento e `aria-busy`.
+
+### Acesso rápido
+
+Os atalhos para Veículos e Aluguéis ficam disponíveis conforme a navegação já existente. Clientes, Manutenções e Relatórios continuam respeitando o RBAC do backend e a mesma matriz de permissões usada para esconder links administrativos na navegação.
+
+O frontend apenas adapta a interface. A autorização efetiva permanece nas rotas da API.
+
+### Estado da operação
+
+O painel de sistema informa quando os dados estão sendo sincronizados, quando a última atualização foi concluída e quando houve falha de comunicação. O horário exibido corresponde à atualização concluída no navegador do usuário.
+
+### Responsividade
+
+Em telas largas, atalhos e estado da operação ocupam colunas distintas. Em larguras intermediárias eles passam a uma coluna e, em telas pequenas, os indicadores e atalhos também são empilhados.
+
+As animações de carregamento respeitam `prefers-reduced-motion`.

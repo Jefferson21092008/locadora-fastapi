@@ -350,3 +350,33 @@ def test_paginas_frontend_possuem_link_de_salto_acessivel(
     assert 'href="#main-content"' in resposta.text
     assert 'id="main-content"' in resposta.text
     assert 'name="theme-color"' in resposta.text
+
+
+def test_dashboard_expoe_visao_operacional_e_atalhos():
+    resposta = client.get(
+        "/app/dashboard.html"
+    )
+
+    assert resposta.status_code == 200
+    assert 'id="dashboard-sync-label"' in resposta.text
+    assert 'id="dashboard-last-updated"' in resposta.text
+    assert 'id="quick-actions-title"' in resposta.text
+    assert 'class="quick-action"' in resposta.text
+    assert 'id="quick-clientes"' in resposta.text
+    assert 'id="quick-manutencoes"' in resposta.text
+    assert 'id="quick-relatorios"' in resposta.text
+    assert 'data-metric-card' in resposta.text
+
+
+def test_dashboard_js_controla_sincronizacao_e_loading():
+    resposta = client.get(
+        "/app/js/dashboard.js"
+    )
+
+    assert resposta.status_code == 200
+    assert "setDashboardLoading" in resposta.text
+    assert "markDashboardSynced" in resposta.text
+    assert "markDashboardError" in resposta.text
+    assert "Intl.DateTimeFormat" in resposta.text
+    assert "dashboard-metric-card--loading" in resposta.text
+    assert "applyNavigationPermissions(currentUser)" in resposta.text

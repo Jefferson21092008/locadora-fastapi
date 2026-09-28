@@ -31,13 +31,14 @@
             <p class="sidebar__note">Acompanhe os principais números e acesse as áreas da operação.</p>
         </aside>
 
-        <main id="main-content" class="dashboard-main">
-            <header class="dashboard-header">
-                <div>
-                    <p class="eyebrow">Visão geral</p>
+        <main id="main-content" class="dashboard-main dashboard-main--overview">
+            <header class="dashboard-header dashboard-header--overview">
+                <div class="dashboard-heading">
+                    <p class="eyebrow">Central de operação</p>
                     <h1>Olá, <span id="current-username">usuário</span>.</h1>
-                    <p>Acompanhe os principais números da operação.</p>
+                    <p>Uma visão rápida da locadora para você decidir o próximo passo sem perder contexto.</p>
                 </div>
+
                 <div class="account-actions">
                     <span id="current-role" class="role-badge">
                         carregando
@@ -64,56 +65,150 @@
 
             <div id="dashboard-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
 
-            <section class="metrics" aria-labelledby="metrics-title">
-                <div class="section-heading">
+            <section class="metrics dashboard-metrics" aria-labelledby="metrics-title">
+                <div class="section-heading dashboard-section-heading">
                     <div>
                         <p class="eyebrow">Agora</p>
                         <h2 id="metrics-title">Resumo da locadora</h2>
+                        <p class="section-heading__description">Indicadores gerais carregados diretamente da API.</p>
                     </div>
                     <button id="refresh-button" class="secondary-button" type="button">Atualizar dados</button>
                 </div>
 
-                <div class="metrics-grid">
-                    <article class="metric-card">
-                        <span class="metric-card__index" aria-hidden="true">01</span>
+                <div class="metrics-grid dashboard-metrics-grid">
+                    <article class="metric-card dashboard-metric-card" data-metric-card aria-busy="true">
+                        <div class="metric-card__topline">
+                            <span class="metric-card__index" aria-hidden="true">01</span>
+                            <span class="metric-card__signal metric-card__signal--teal" aria-hidden="true"></span>
+                        </div>
                         <p>Clientes</p>
                         <strong id="metric-clientes">—</strong>
-                        <span>cadastrados</span>
+                        <span class="metric-card__caption">cadastrados</span>
                     </article>
 
-                    <article class="metric-card">
-                        <span class="metric-card__index" aria-hidden="true">02</span>
+                    <article class="metric-card dashboard-metric-card" data-metric-card aria-busy="true">
+                        <div class="metric-card__topline">
+                            <span class="metric-card__index" aria-hidden="true">02</span>
+                            <span class="metric-card__signal metric-card__signal--blue" aria-hidden="true"></span>
+                        </div>
                         <p>Veículos</p>
                         <strong id="metric-veiculos">—</strong>
-                        <span>na frota</span>
+                        <span class="metric-card__caption">na frota</span>
                     </article>
 
-                    <article class="metric-card">
-                        <span class="metric-card__index" aria-hidden="true">03</span>
+                    <article class="metric-card dashboard-metric-card" data-metric-card aria-busy="true">
+                        <div class="metric-card__topline">
+                            <span class="metric-card__index" aria-hidden="true">03</span>
+                            <span class="metric-card__signal metric-card__signal--amber" aria-hidden="true"></span>
+                        </div>
                         <p>Aluguéis</p>
                         <strong id="metric-alugueis">—</strong>
-                        <span>registrados</span>
+                        <span class="metric-card__caption">registrados</span>
                     </article>
 
-                    <article class="metric-card metric-card--accent">
-                        <span class="metric-card__index" aria-hidden="true">04</span>
+                    <article class="metric-card metric-card--accent dashboard-metric-card" data-metric-card aria-busy="true">
+                        <div class="metric-card__topline">
+                            <span class="metric-card__index" aria-hidden="true">04</span>
+                            <span class="metric-card__signal metric-card__signal--light" aria-hidden="true"></span>
+                        </div>
                         <p>Manutenções</p>
                         <strong id="metric-manutencoes">—</strong>
-                        <span>registradas</span>
+                        <span class="metric-card__caption">registradas</span>
                     </article>
                 </div>
             </section>
 
-            <section class="connection-card" aria-labelledby="connection-title">
-                <div>
-                    <span class="connection-card__dot" aria-hidden="true"></span>
-                    <div>
-                        <h2 id="connection-title">API conectada</h2>
-                        <p>Os números acima vêm diretamente do endpoint <code>/status</code>.</p>
+            <div class="dashboard-content-grid">
+                <section class="dashboard-panel quick-actions-panel" aria-labelledby="quick-actions-title">
+                    <div class="dashboard-panel__header">
+                        <div>
+                            <p class="eyebrow">Atalhos</p>
+                            <h2 id="quick-actions-title">Acesso rápido</h2>
+                        </div>
+                        <span class="dashboard-panel__hint">Áreas mais usadas</span>
                     </div>
-                </div>
-                <a href="/docs" target="_blank" rel="noreferrer">Abrir documentação da API</a>
-            </section>
+
+                    <div class="quick-actions-grid">
+                        <a class="quick-action" href="/app/veiculos.html">
+                            <span class="quick-action__index" aria-hidden="true">01</span>
+                            <span class="quick-action__body">
+                                <strong>Veículos</strong>
+                                <span>Consulte a frota e a disponibilidade.</span>
+                            </span>
+                            <span class="quick-action__arrow" aria-hidden="true">→</span>
+                        </a>
+
+                        <a class="quick-action" href="/app/alugueis.html">
+                            <span class="quick-action__index" aria-hidden="true">02</span>
+                            <span class="quick-action__body">
+                                <strong>Aluguéis</strong>
+                                <span>Acompanhe contratos e devoluções.</span>
+                            </span>
+                            <span class="quick-action__arrow" aria-hidden="true">→</span>
+                        </a>
+
+                        <a id="quick-clientes" class="quick-action admin-nav" href="/app/clientes.html" hidden>
+                            <span class="quick-action__index" aria-hidden="true">03</span>
+                            <span class="quick-action__body">
+                                <strong>Clientes</strong>
+                                <span>Gerencie cadastros e situação.</span>
+                            </span>
+                            <span class="quick-action__arrow" aria-hidden="true">→</span>
+                        </a>
+
+                        <a id="quick-manutencoes" class="quick-action admin-nav" href="/app/manutencoes.html" hidden>
+                            <span class="quick-action__index" aria-hidden="true">04</span>
+                            <span class="quick-action__body">
+                                <strong>Manutenções</strong>
+                                <span>Acompanhe serviços e finalizações.</span>
+                            </span>
+                            <span class="quick-action__arrow" aria-hidden="true">→</span>
+                        </a>
+
+                        <a id="quick-relatorios" class="quick-action admin-nav" href="/app/relatorios.html" hidden>
+                            <span class="quick-action__index" aria-hidden="true">05</span>
+                            <span class="quick-action__body">
+                                <strong>Relatórios</strong>
+                                <span>Veja resultados e indicadores financeiros.</span>
+                            </span>
+                            <span class="quick-action__arrow" aria-hidden="true">→</span>
+                        </a>
+                    </div>
+                </section>
+
+                <section class="dashboard-panel status-panel" aria-labelledby="connection-title">
+                    <div class="dashboard-panel__header">
+                        <div>
+                            <p class="eyebrow">Sistema</p>
+                            <h2 id="connection-title">Estado da operação</h2>
+                        </div>
+                    </div>
+
+                    <div class="status-panel__state">
+                        <span id="dashboard-sync-dot" class="status-dot status-dot--loading" aria-hidden="true"></span>
+                        <div>
+                            <strong id="dashboard-sync-label">Sincronizando</strong>
+                            <p>Conexão com a API principal</p>
+                        </div>
+                    </div>
+
+                    <dl class="status-panel__details">
+                        <div>
+                            <dt>Endpoint</dt>
+                            <dd><code>/api/v1/status</code></dd>
+                        </div>
+                        <div>
+                            <dt>Última atualização</dt>
+                            <dd id="dashboard-last-updated">Aguardando dados</dd>
+                        </div>
+                    </dl>
+
+                    <a class="status-panel__link" href="/docs" target="_blank" rel="noreferrer">
+                        Abrir documentação da API
+                        <span aria-hidden="true">↗</span>
+                    </a>
+                </section>
+            </div>
         </main>
     </div>
 
