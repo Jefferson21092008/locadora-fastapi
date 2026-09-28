@@ -204,3 +204,12 @@ Exemplos de capacidades administrativas são `clientes:ler`, `clientes:gerenciar
 `GET /api/v1/auth/me` devolve a lista de permissões efetivas. O frontend usa essa lista para decidir quais controles e páginas administrativas devem ser apresentados. Essa lógica de interface é apenas uma camada de experiência do usuário; a API repete a validação em cada operação protegida e continua sendo a fonte de verdade.
 
 Como os papéis existentes não mudam e as permissões são derivadas em código, a Etapa 10 não altera o schema do banco e não exige migration.
+
+
+## Checkpoint de segurança HTTP
+
+Após a conclusão de sessões e RBAC, a aplicação passou por um checkpoint de hardening HTTP. Um middleware dedicado adiciona `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` e `Cross-Origin-Opener-Policy` às respostas. O frontend próprio em `/app` também recebe uma Content Security Policy que restringe scripts e conexões à mesma origem e impede enquadramento da interface por outros sites.
+
+Rotas de autenticação recebem `Cache-Control: no-store` e `Pragma: no-cache`. A página de redefinição de senha usa `Referrer-Policy: no-referrer`, não permite cache e remove o token de recuperação da query string assim que o JavaScript o transfere para o formulário. Em produção HTTPS, a aplicação também envia HSTS com validade de um ano.
+
+A validação de JWT passa a exigir explicitamente `sub`, `iat` e `exp`, além da verificação de assinatura e expiração já existente.

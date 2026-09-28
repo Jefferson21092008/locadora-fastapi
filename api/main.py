@@ -30,6 +30,10 @@ from api.monitoramento import (
     configurar_monitoramento_erros,
 )
 
+from api.headers_seguranca import (
+    middleware_headers_seguranca,
+)
+
 from api.routers.veiculos import (
     router as veiculos_router,
 )
@@ -165,6 +169,10 @@ app = FastAPI(
 
 app.middleware("http")(
     middleware_observabilidade
+)
+
+app.middleware("http")(
+    middleware_headers_seguranca
 )
 
 

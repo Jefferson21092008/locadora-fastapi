@@ -257,3 +257,13 @@ def test_frontend_consume_permissoes_rbac():
         "Permissions.CONTA_RENOMEAR"
         in dashboard_js.text
     )
+
+
+def test_frontend_remove_token_de_recuperacao_da_url():
+    resposta = client.get(
+        "/app/js/redefinir-senha.js"
+    )
+
+    assert resposta.status_code == 200
+    assert "window.history.replaceState" in resposta.text
+    assert "window.location.pathname" in resposta.text

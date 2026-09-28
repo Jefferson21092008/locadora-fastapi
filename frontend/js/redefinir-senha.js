@@ -110,5 +110,10 @@ form.addEventListener("submit", async (event) => {
 const tokenFromUrl = new URLSearchParams(window.location.search).get("token");
 if (tokenFromUrl) {
     tokenInput.value = tokenFromUrl.trim();
+    window.history.replaceState(
+        null,
+        document.title,
+        window.location.pathname,
+    );
     passwordInput.focus();
 }

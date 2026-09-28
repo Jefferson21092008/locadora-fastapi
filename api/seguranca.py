@@ -62,6 +62,13 @@ def decodificar_token(
             token,
             secret,
             algorithms=[ALGORITMO],
+            options={
+                "require": [
+                    "sub",
+                    "iat",
+                    "exp",
+                ]
+            },
         )
 
     except jwt.PyJWTError:
