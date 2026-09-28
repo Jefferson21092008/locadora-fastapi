@@ -56,6 +56,9 @@ from api.routers.auditoria import (
 from api.routers.manutencoes import (
     router as manutencoes_router,
 )
+from api.routers.pagamentos import (
+    router as pagamentos_router,
+)
 
 from api.routers.relatorios import (
     router as relatorios_router,
@@ -90,6 +93,7 @@ API REST para gerenciamento de uma locadora de veículos.
 - Controle de manutenções.
 - Reservas futuras de veículos.
 - Vistorias, danos, multas de trânsito, cauções e combustível.
+- Pagamentos adicionais e liquidação financeira dos aluguéis.
 - Relatórios administrativos e financeiros.
 
 ## Respostas de erro
@@ -152,6 +156,13 @@ tags_metadata = [
         "description": (
             "Inspeções de retirada e devolução, danos, "
             "multas de trânsito, caução e combustível."
+        ),
+    },
+    {
+        "name": "Financeiro",
+        "description": (
+            "Liquidação de cobranças adicionais, pagamentos "
+            "e acompanhamento de saldos por aluguel."
         ),
     },
     {
@@ -236,6 +247,7 @@ ROUTERS_API = (
     manutencoes_router,
     reservas_router,
     vistorias_router,
+    pagamentos_router,
     relatorios_router,
     auditoria_router,
 )

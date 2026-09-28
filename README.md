@@ -51,7 +51,8 @@ As telas operacionais reutilizam essa base para manter busca, filtros, contagem 
 - criação, consulta e cancelamento de reservas futuras de veículos;
 - vistorias de retirada/devolução com quilometragem e combustível;
 - registro de danos, multas de trânsito e cauções por aluguel;
-- cálculo de devolução, quilometragem, multa e pagamento;
+- cálculo de devolução, quilometragem e multa por atraso;
+- liquidação financeira de danos e multas de trânsito com pagamentos adicionais e estornos;
 - abertura e finalização de manutenções;
 - relatórios administrativos e financeiros;
 - autenticação com access token JWT, refresh token rotativo e RBAC com permissões granulares;
@@ -1090,8 +1091,8 @@ etapa específica de concorrência e consistência transacional.
 
 A Etapa 16 separa o registro operacional da vistoria do processamento financeiro.
 Isso permite registrar o estado real do veículo e as ocorrências relacionadas ao
-aluguel antes da futura Etapa 17, que será responsável por pagamentos e
-liquidação financeira.
+aluguel antes da Etapa 17, que passa a ser responsável pelos pagamentos
+adicionais e pela liquidação financeira.
 
 O módulo usa a seguinte composição:
 
@@ -1147,6 +1148,84 @@ constraints de domínio e índices para as consultas operacionais. A migration
 também tolera o cenário em que `Base.metadata.create_all()` já criou as tabelas.
 
 A Etapa 16 deliberadamente não soma danos, multas de trânsito, combustível ou
-caução ao pagamento existente da devolução. Esses registros passam a ser a
-fonte operacional que a Etapa 17 poderá usar para montar a liquidação financeira
-sem duplicar regras de vistoria.
+caução ao pagamento existente da devolução. Esses registros são a fonte
+operacional consumida pela Etapa 17 para montar a liquidação financeira sem
+duplicar regras de vistoria.
+
+
+## Trilha principal — Pagamentos e financeiro
+
+A Etapa 17 introduz uma camada financeira própria sem apagar o histórico do
+fluxo de devolução existente. Aluguéis finalizados antes dessa etapa já possuem
+o valor e a forma de pagamento registrados no próprio aluguel; esse valor entra
+como **liquidação legada** para que a aplicação não cobre o contrato duas vezes.
+
+O módulo segue a composição:
+
+```text
+frontend/pagamentos.html
+        ↓
+api/routers/pagamentos.py
+        ↓
+PagamentoService
+        ↓
+PagamentoRepository + VistoriaService
+        ↓
+PagamentoFinanceiroModel
+DanoAluguelModel / MultaTransitoModel / CaucaoAluguelModel
+        ↓
+PostgreSQL / SQLite
+```
+
+O resumo financeiro de cada aluguel finalizado considera:
+
+```text
+total_devido =
+    valor registrado na devolução
+    + danos ativos
+    + multas de trânsito ativas
+
+total_pago =
+    liquidação legada da devolução
+    + pagamentos financeiros confirmados
+
+saldo_pendente =
+    max(total_devido - total_pago, 0)
+```
+
+A multa por atraso continua sendo exibida de forma informativa porque já integra
+o valor registrado pela devolução. A caução retida também aparece no resumo como
+valor disponível, mas não reduz o saldo automaticamente: a Etapa 17 não altera a
+semântica operacional da caução nem presume que todo valor retido foi convertido
+em cobrança.
+
+Pagamentos adicionais aceitam dinheiro, Pix, débito, crédito, boleto e
+transferência. Parcelamento é permitido apenas no crédito, de uma a doze
+parcelas. O sistema impede pagamentos acima do saldo pendente. Um pagamento
+confirmado pode ser estornado sem ser apagado, preservando o histórico.
+
+Os estados financeiros são derivados:
+
+```text
+pendente   -> existe saldo e nenhum pagamento adicional confirmado
+parcial    -> existe saldo e já houve pagamento adicional confirmado
+liquidado  -> saldo zerado
+credito    -> alterações operacionais posteriores deixaram total pago acima do devido
+```
+
+Principais rotas:
+
+```text
+GET   /api/v1/pagamentos/consulta
+GET   /api/v1/pagamentos/alugueis/{id_aluguel}
+POST  /api/v1/pagamentos/alugueis/{id_aluguel}
+PATCH /api/v1/pagamentos/{id_pagamento}/estornar
+```
+
+A autorização administrativa usa `financeiro:ler`, `financeiro:receber` e
+`financeiro:estornar`. Registro e estorno de pagamentos entram na auditoria.
+
+A migration `20260928_0007_pagamentos_financeiro` cria a tabela
+`pagamentos_financeiros`, ligada a `alugueis`, com constraints para valor,
+forma, parcelas e status. O histórico legado permanece no aluguel e não é
+duplicado na nova tabela.

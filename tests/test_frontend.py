@@ -118,6 +118,18 @@ def test_frontend_vistorias_esta_disponivel():
     assert "/app/js/vistorias.js" in resposta.text
 
 
+
+def test_frontend_financeiro_esta_disponivel():
+    resposta = client.get(
+        "/app/pagamentos.html"
+    )
+
+    assert resposta.status_code == 200
+    assert 'id="finance-payment-form"' in resposta.text
+    assert 'id="finance-list"' in resposta.text
+    assert "/app/js/pagamentos.js" in resposta.text
+
+
 def test_frontend_relatorios_esta_disponivel():
     resposta = client.get(
         "/app/relatorios.html"
@@ -360,6 +372,7 @@ def test_frontend_design_system_define_tokens_compartilhados():
         "/app/alugueis.html",
         "/app/clientes.html",
         "/app/manutencoes.html",
+        "/app/pagamentos.html",
         "/app/relatorios.html",
         "/app/auditoria.html",
         "/app/reservas.html",
@@ -521,6 +534,7 @@ def test_frontend_ui_compartilhada_adiciona_melhorias_de_ux():
         "/app/alugueis.html",
         "/app/clientes.html",
         "/app/manutencoes.html",
+        "/app/pagamentos.html",
         "/app/relatorios.html",
         "/app/auditoria.html",
         "/app/reservas.html",
@@ -758,3 +772,18 @@ def test_frontend_vistorias_consume_permissoes_e_endpoints():
     assert '"/app/vistorias.html"' in api_js.text
     assert "/vistorias/alugueis/" in api_js.text
     assert "/app/vistorias.html" in pagina.text
+
+
+def test_frontend_financeiro_consume_permissoes_e_endpoints():
+    api_js = client.get(
+        "/app/js/api.js"
+    )
+    pagina = client.get(
+        "/app/pagamentos.html"
+    )
+
+    assert api_js.status_code == 200
+    assert "FINANCEIRO_LER" in api_js.text
+    assert '"/app/pagamentos.html"' in api_js.text
+    assert "/pagamentos/alugueis/" in api_js.text
+    assert pagina.status_code == 200

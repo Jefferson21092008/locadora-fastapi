@@ -26,6 +26,9 @@ export const Permissions = Object.freeze({
     DANOS_GERENCIAR: "danos:gerenciar",
     MULTAS_GERENCIAR: "multas:gerenciar",
     CAUCOES_GERENCIAR: "caucoes:gerenciar",
+    FINANCEIRO_LER: "financeiro:ler",
+    FINANCEIRO_RECEBER: "financeiro:receber",
+    FINANCEIRO_ESTORNAR: "financeiro:estornar",
     RELATORIOS_LER: "relatorios:ler",
     AUDITORIA_LER: "auditoria:ler",
     CONTA_RENOMEAR: "conta:renomear",
@@ -41,6 +44,7 @@ const NAVIGATION_PERMISSIONS = Object.freeze({
     "/app/clientes.html": Permissions.CLIENTES_LER,
     "/app/manutencoes.html": Permissions.MANUTENCOES_LER,
     "/app/vistorias.html": Permissions.VISTORIAS_LER,
+    "/app/pagamentos.html": Permissions.FINANCEIRO_LER,
     "/app/relatorios.html": Permissions.RELATORIOS_LER,
     "/app/auditoria.html": Permissions.AUDITORIA_LER,
 });
@@ -611,5 +615,47 @@ export function getVehicleResults() {
 export function downloadVehicleResultReport(format) {
     return apiDownload(
         `/relatorios/resultado-por-veiculo/exportar/${format}`,
+    );
+}
+
+
+export function getFinancialAccounts(
+    page = 1,
+    perPage = 12,
+    search = "",
+) {
+    const params = new URLSearchParams({
+        pagina: String(page),
+        por_pagina: String(perPage),
+        busca: search,
+    });
+
+    return apiRequest(
+        `/pagamentos/consulta?${params.toString()}`
+    );
+}
+
+export function getRentalFinancialSummary(rentalId) {
+    return apiRequest(
+        `/pagamentos/alugueis/${rentalId}`
+    );
+}
+
+export function createFinancialPayment(rentalId, data) {
+    return apiRequest(
+        `/pagamentos/alugueis/${rentalId}`,
+        {
+            method: "POST",
+            body: JSON.stringify(data),
+        },
+    );
+}
+
+export function reverseFinancialPayment(paymentId) {
+    return apiRequest(
+        `/pagamentos/${paymentId}/estornar`,
+        {
+            method: "PATCH",
+        },
     );
 }

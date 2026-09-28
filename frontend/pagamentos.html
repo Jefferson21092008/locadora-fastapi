@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#08111f">
+    <meta name="description" content="Liquidação financeira dos aluguéis da Locadora.">
+    <title>Financeiro | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <a class="skip-link" href="#main-content">Ir para o conteúdo principal</a>
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item" href="/app/reservas.html">Reservas</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
+                <a class="nav-item admin-nav" href="/app/vistorias.html" hidden>Vistorias</a>
+                <a class="nav-item admin-nav nav-item--active" href="/app/pagamentos.html" aria-current="page" hidden>Financeiro</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+                <a class="nav-item admin-nav" href="/app/auditoria.html" hidden>Auditoria</a>
+            </nav>
+
+            <p class="sidebar__note">Consolide encargos do aluguel e registre pagamentos adicionais sem duplicar a liquidação já feita na devolução.</p>
+        </aside>
+
+        <main id="main-content" class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Liquidação</p>
+                    <h1>Financeiro</h1>
+                    <p>Acompanhe saldo, danos, multas de trânsito, caução retida e pagamentos por aluguel.</p>
+                </div>
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="finance-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-content" aria-labelledby="finance-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Aluguéis finalizados</p>
+                        <h2 id="finance-list-title">Contas financeiras</h2>
+                    </div>
+                    <div class="fleet-filters">
+                        <label class="search-field" for="finance-search">
+                            <span class="sr-only">Buscar conta</span>
+                            <input id="finance-search" type="search" maxlength="100" placeholder="Cliente, veículo ou ID">
+                        </label>
+                        <button id="finance-refresh" class="secondary-button" type="button">Atualizar</button>
+                    </div>
+                </div>
+
+                <div id="finance-list" class="inspection-records"></div>
+
+                <div class="pagination" aria-label="Paginação financeira">
+                    <button id="finance-prev" class="secondary-button" type="button">Anterior</button>
+                    <span id="finance-page" class="pagination__label">Página 1</span>
+                    <button id="finance-next" class="secondary-button" type="button">Próxima</button>
+                </div>
+            </section>
+
+            <section id="finance-detail" class="fleet-content" aria-labelledby="finance-detail-title" hidden>
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Conta selecionada</p>
+                        <h2 id="finance-detail-title">Resumo financeiro</h2>
+                    </div>
+                </div>
+
+                <section class="fleet-overview fleet-overview--four" aria-label="Resumo financeiro">
+                    <article>
+                        <span>Total devido</span>
+                        <strong id="finance-total-due">—</strong>
+                    </article>
+                    <article>
+                        <span>Total pago</span>
+                        <strong id="finance-total-paid">—</strong>
+                    </article>
+                    <article>
+                        <span>Saldo pendente</span>
+                        <strong id="finance-balance">—</strong>
+                    </article>
+                    <article>
+                        <span>Caução retida disponível</span>
+                        <strong id="finance-deposit">—</strong>
+                    </article>
+                </section>
+
+                <div id="finance-components" class="inspection-rental-summary"></div>
+
+                <section class="inspection-grid" aria-label="Liquidação financeira">
+                    <article class="inspection-panel">
+                        <p class="eyebrow">Recebimento</p>
+                        <h2>Novo pagamento</h2>
+                        <form id="finance-payment-form" class="stack-form">
+                            <div class="field">
+                                <label for="finance-payment-value">Valor</label>
+                                <input id="finance-payment-value" type="number" min="0.01" step="0.01" inputmode="decimal" required>
+                            </div>
+                            <div class="field">
+                                <label for="finance-payment-method">Forma</label>
+                                <select id="finance-payment-method" required>
+                                    <option value="pix">Pix</option>
+                                    <option value="dinheiro">Dinheiro</option>
+                                    <option value="debito">Débito</option>
+                                    <option value="credito">Crédito</option>
+                                    <option value="boleto">Boleto</option>
+                                    <option value="transferencia">Transferência</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="finance-payment-installments">Parcelas</label>
+                                <input id="finance-payment-installments" type="number" min="1" max="12" step="1" value="1" inputmode="numeric" required>
+                            </div>
+                            <div class="field">
+                                <label for="finance-payment-notes">Observações</label>
+                                <textarea id="finance-payment-notes" maxlength="500" rows="3"></textarea>
+                            </div>
+                            <button class="primary-button primary-button--compact" type="submit">Registrar pagamento</button>
+                        </form>
+                    </article>
+
+                    <article class="inspection-panel">
+                        <p class="eyebrow">Histórico</p>
+                        <h2>Pagamentos adicionais</h2>
+                        <div id="finance-payments" class="inspection-records"></div>
+                    </article>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="/app/js/ui.js"></script>
+    <script type="module" src="/app/js/pagamentos.js"></script>
+</body>
+</html>
