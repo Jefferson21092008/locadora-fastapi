@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#08111f">
+    <meta name="description" content="Histórico de auditoria da Locadora.">
+    <title>Auditoria | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <a class="skip-link" href="#main-content">Ir para o conteúdo principal</a>
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html">Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html">Manutenções</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html">Relatórios</a>
+                <a class="nav-item nav-item--active admin-nav" href="/app/auditoria.html" aria-current="page">Auditoria</a>
+            </nav>
+
+            <p class="sidebar__note">Consulte ações sensíveis registradas pelo sistema sem expor valores confidenciais.</p>
+        </aside>
+
+        <main id="main-content" class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Governança</p>
+                    <h1>Auditoria</h1>
+                    <p>Acompanhe quem executou ações sensíveis, em qual recurso e quando.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="refresh-audit-button" class="secondary-button" type="button">Atualizar</button>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="audit-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-overview fleet-overview--four" aria-label="Resumo da auditoria">
+                <article>
+                    <span>Registros</span>
+                    <strong id="audit-summary-total">—</strong>
+                </article>
+                <article>
+                    <span>Usuários</span>
+                    <strong id="audit-summary-users">—</strong>
+                </article>
+                <article>
+                    <span>Recursos</span>
+                    <strong id="audit-summary-resources">—</strong>
+                </article>
+                <article>
+                    <span>Últimas 24 h</span>
+                    <strong id="audit-summary-recent">—</strong>
+                </article>
+            </section>
+
+            <section class="fleet-content" aria-labelledby="audit-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Rastreabilidade</p>
+                        <h2 id="audit-list-title">Histórico de ações</h2>
+                    </div>
+
+                    <div class="fleet-filters audit-filters">
+                        <label class="search-field" for="audit-search">
+                            <span class="sr-only">Buscar registro de auditoria</span>
+                            <input id="audit-search" type="search" placeholder="Buscar por usuário, ação, recurso ou request ID">
+                        </label>
+
+                        <label class="select-field" for="audit-resource-filter">
+                            <span class="sr-only">Filtrar por recurso</span>
+                            <select id="audit-resource-filter">
+                                <option value="todos">Todos os recursos</option>
+                            </select>
+                        </label>
+
+                        <label class="select-field" for="audit-action-filter">
+                            <span class="sr-only">Filtrar por ação</span>
+                            <select id="audit-action-filter">
+                                <option value="todos">Todas as ações</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="results-meta">
+                    <p id="audit-results-count" class="results-meta__count" aria-live="polite">
+                        Preparando resultados...
+                    </p>
+                    <button id="clear-audit-filters" class="text-button" type="button" hidden>
+                        Limpar filtros
+                    </button>
+                </div>
+
+                <div id="audit-loading" class="loading-state" role="status">
+                    <span class="loading-state__spinner" aria-hidden="true"></span>
+                    <span>Carregando auditoria...</span>
+                </div>
+
+                <div id="audit-empty" class="empty-state" hidden>
+                    <strong>Nenhum registro encontrado</strong>
+                    <p id="audit-empty-text">Altere a busca ou os filtros para visualizar outros resultados.</p>
+                </div>
+
+                <div id="audit-list" class="audit-list" aria-live="polite"></div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="/app/js/auditoria.js"></script>
+</body>
+</html>

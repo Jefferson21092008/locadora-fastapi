@@ -179,6 +179,10 @@ def test_frontend_redefinir_senha_esta_disponivel():
             "getFinancialSummary",
         ),
         (
+            "/app/js/auditoria.js",
+            "getAuditLogs",
+        ),
+        (
             "/app/js/esqueci-senha.js",
             "requestPasswordReset",
         ),
@@ -264,6 +268,7 @@ def test_frontend_nao_persiste_access_token_no_web_storage():
         "/app/js/clientes.js",
         "/app/js/manutencoes.js",
         "/app/js/relatorios.js",
+        "/app/js/auditoria.js",
     ],
 )
 def test_paginas_protegidas_restauram_sessao_sem_web_storage(
@@ -333,6 +338,7 @@ def test_frontend_design_system_define_tokens_compartilhados():
         "/app/clientes.html",
         "/app/manutencoes.html",
         "/app/relatorios.html",
+        "/app/auditoria.html",
         "/app/cadastro.html",
         "/app/esqueci-senha.html",
         "/app/redefinir-senha.html",
@@ -365,6 +371,7 @@ def test_dashboard_expoe_visao_operacional_e_atalhos():
     assert 'id="quick-clientes"' in resposta.text
     assert 'id="quick-manutencoes"' in resposta.text
     assert 'id="quick-relatorios"' in resposta.text
+    assert 'id="quick-auditoria"' in resposta.text
     assert 'data-metric-card' in resposta.text
 
 
@@ -380,3 +387,81 @@ def test_dashboard_js_controla_sincronizacao_e_loading():
     assert "Intl.DateTimeFormat" in resposta.text
     assert "dashboard-metric-card--loading" in resposta.text
     assert "applyNavigationPermissions(currentUser)" in resposta.text
+
+
+def test_frontend_auditoria_esta_disponivel():
+    resposta = client.get(
+        "/app/auditoria.html"
+    )
+
+    assert resposta.status_code == 200
+    assert 'id="audit-list"' in resposta.text
+    assert 'id="audit-search"' in resposta.text
+    assert 'id="audit-resource-filter"' in resposta.text
+    assert 'id="audit-action-filter"' in resposta.text
+    assert "/app/js/auditoria.js" in resposta.text
+
+
+def test_frontend_api_expoe_consulta_de_auditoria():
+    resposta = client.get(
+        "/app/js/api.js"
+    )
+
+    assert resposta.status_code == 200
+    assert 'return apiRequest("/auditoria")' in resposta.text
+    assert (
+        '"/app/auditoria.html": Permissions.AUDITORIA_LER'
+        in resposta.text
+    )
+
+
+@pytest.mark.parametrize(
+    "caminho,contador,limpar",
+    [
+        (
+            "/app/veiculos.html",
+            "vehicles-results-count",
+            "clear-vehicle-filters",
+        ),
+        (
+            "/app/clientes.html",
+            "clients-results-count",
+            "clear-client-filters",
+        ),
+        (
+            "/app/alugueis.html",
+            "rentals-results-count",
+            "clear-rental-filters",
+        ),
+        (
+            "/app/manutencoes.html",
+            "maintenances-results-count",
+            "clear-maintenance-filters",
+        ),
+    ],
+)
+def test_telas_operacionais_expoem_feedback_de_filtros(
+    caminho,
+    contador,
+    limpar,
+):
+    resposta = client.get(
+        caminho
+    )
+
+    assert resposta.status_code == 200
+    assert f'id="{contador}"' in resposta.text
+    assert f'id="{limpar}"' in resposta.text
+
+
+def test_auditoria_frontend_respeita_rbac_e_filtros():
+    resposta = client.get(
+        "/app/js/auditoria.js"
+    )
+
+    assert resposta.status_code == 200
+    assert "Permissions.AUDITORIA_LER" in resposta.text
+    assert "applyNavigationPermissions" in resposta.text
+    assert "filteredLogs" in resposta.text
+    assert "request_id" in resposta.text
+    assert "campos_alterados" in resposta.text

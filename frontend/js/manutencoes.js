@@ -1,6 +1,7 @@
 import {
     ApiError,
     Permissions,
+    applyNavigationPermissions,
     clearToken,
     createMaintenance,
     finishMaintenance,
@@ -18,6 +19,8 @@ const newMaintenanceButton = document.querySelector("#new-maintenance-button");
 const refreshButton = document.querySelector("#refresh-maintenances-button");
 const searchInput = document.querySelector("#maintenance-search");
 const statusFilter = document.querySelector("#maintenance-status-filter");
+const resultsCount = document.querySelector("#maintenances-results-count");
+const clearFiltersButton = document.querySelector("#clear-maintenance-filters");
 const pageMessage = document.querySelector("#maintenances-message");
 const loadingState = document.querySelector("#maintenances-loading");
 const emptyState = document.querySelector("#maintenances-empty");
@@ -162,6 +165,12 @@ function filteredMaintenances() {
 
 function renderMaintenances() {
     const results = filteredMaintenances();
+    const hasActiveFilters = Boolean(normalizeText(searchInput.value))
+        || statusFilter.value !== "todos";
+
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${maintenances.length.toLocaleString("pt-BR")} manutenções`;
+    clearFiltersButton.hidden = !hasActiveFilters;
+
     emptyState.hidden = results.length > 0;
 
     if (results.length === 0) {
@@ -409,6 +418,7 @@ async function initialize() {
             currentUser,
             Permissions.MANUTENCOES_CRIAR,
         );
+        applyNavigationPermissions(currentUser);
         await loadData();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
@@ -431,6 +441,12 @@ newMaintenanceButton.addEventListener("click", openMaintenanceDialog);
 refreshButton.addEventListener("click", () => loadData());
 searchInput.addEventListener("input", renderMaintenances);
 statusFilter.addEventListener("change", renderMaintenances);
+clearFiltersButton.addEventListener("click", () => {
+    searchInput.value = "";
+    statusFilter.value = "todos";
+    renderMaintenances();
+    searchInput.focus();
+});
 maintenanceForm.addEventListener("submit", submitMaintenance);
 finishForm.addEventListener("submit", submitFinishMaintenance);
 

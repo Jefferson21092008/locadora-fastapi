@@ -24,6 +24,7 @@
                 <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
                 <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
                 <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+                <a class="nav-item admin-nav" href="/app/auditoria.html" hidden>Auditoria</a>
             </nav>
 
             <p class="sidebar__note">Acompanhe prazos, devoluções e o histórico dos veículos alugados.</p>
@@ -92,6 +93,15 @@
 
                         <button id="refresh-rentals-button" class="secondary-button" type="button">Atualizar</button>
                     </div>
+                </div>
+
+                <div class="results-meta">
+                    <p id="rentals-results-count" class="results-meta__count" aria-live="polite">
+                        Preparando resultados...
+                    </p>
+                    <button id="clear-rental-filters" class="text-button" type="button" hidden>
+                        Limpar filtros
+                    </button>
                 </div>
 
                 <div id="rentals-loading" class="loading-state" role="status">

@@ -20,6 +20,8 @@ const newVehicleButton = document.querySelector("#new-vehicle-button");
 const refreshButton = document.querySelector("#refresh-vehicles-button");
 const searchInput = document.querySelector("#vehicle-search");
 const statusFilter = document.querySelector("#status-filter");
+const resultsCount = document.querySelector("#vehicles-results-count");
+const clearFiltersButton = document.querySelector("#clear-vehicle-filters");
 const pageMessage = document.querySelector("#vehicles-message");
 const loadingState = document.querySelector("#vehicles-loading");
 const emptyState = document.querySelector("#vehicles-empty");
@@ -194,6 +196,12 @@ function vehicleActions(vehicle) {
 
 function renderVehicles() {
     const results = filteredVehicles();
+    const hasActiveFilters = Boolean(normalizeText(searchInput.value))
+        || statusFilter.value !== "todos";
+
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${vehicles.length.toLocaleString("pt-BR")} veículos`;
+    clearFiltersButton.hidden = !hasActiveFilters;
+
     emptyState.hidden = results.length > 0;
 
     vehiclesGrid.innerHTML = results.map((vehicle) => `
@@ -479,6 +487,12 @@ newVehicleButton.addEventListener("click", openCreateDialog);
 refreshButton.addEventListener("click", () => loadVehicles());
 searchInput.addEventListener("input", renderVehicles);
 statusFilter.addEventListener("change", renderVehicles);
+clearFiltersButton.addEventListener("click", () => {
+    searchInput.value = "";
+    statusFilter.value = "todos";
+    renderVehicles();
+    searchInput.focus();
+});
 vehicleForm.addEventListener("submit", saveVehicle);
 confirmStatusButton.addEventListener("click", confirmStatusChange);
 

@@ -24,6 +24,7 @@
                 <a class="nav-item" href="/app/clientes.html">Clientes</a>
                 <a class="nav-item nav-item--active" href="/app/manutencoes.html" aria-current="page">Manutenções</a>
                 <a class="nav-item" href="/app/relatorios.html">Relatórios</a>
+                <a class="nav-item admin-nav" href="/app/auditoria.html" hidden>Auditoria</a>
             </nav>
 
             <p class="sidebar__note">Registre serviços, acompanhe veículos parados e consulte o histórico da frota.</p>
@@ -92,6 +93,15 @@
 
                         <button id="refresh-maintenances-button" class="secondary-button" type="button">Atualizar</button>
                     </div>
+                </div>
+
+                <div class="results-meta">
+                    <p id="maintenances-results-count" class="results-meta__count" aria-live="polite">
+                        Preparando resultados...
+                    </p>
+                    <button id="clear-maintenance-filters" class="text-button" type="button" hidden>
+                        Limpar filtros
+                    </button>
                 </div>
 
                 <div id="maintenances-loading" class="loading-state" role="status">

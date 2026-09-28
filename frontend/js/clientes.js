@@ -1,6 +1,7 @@
 import {
     ApiError,
     Permissions,
+    applyNavigationPermissions,
     clearToken,
     deactivateClient,
     getClients,
@@ -16,6 +17,8 @@ const logoutButton = document.querySelector("#logout-button");
 const refreshButton = document.querySelector("#refresh-clients-button");
 const searchInput = document.querySelector("#client-search");
 const statusFilter = document.querySelector("#client-status-filter");
+const resultsCount = document.querySelector("#clients-results-count");
+const clearFiltersButton = document.querySelector("#clear-client-filters");
 const pageMessage = document.querySelector("#clients-message");
 const loadingState = document.querySelector("#clients-loading");
 const emptyState = document.querySelector("#clients-empty");
@@ -127,6 +130,12 @@ function filteredClients() {
 
 function renderClients() {
     const results = filteredClients();
+    const hasActiveFilters = Boolean(normalizeText(searchInput.value))
+        || statusFilter.value !== "todos";
+
+    resultsCount.textContent = `${results.length.toLocaleString("pt-BR")} de ${clients.length.toLocaleString("pt-BR")} clientes`;
+    clearFiltersButton.hidden = !hasActiveFilters;
+
     emptyState.hidden = results.length > 0;
 
     if (results.length === 0) {
@@ -307,6 +316,7 @@ async function initialize() {
         roleBadge.textContent = currentUser.role === "admin"
             ? "Administrador"
             : "Cliente";
+        applyNavigationPermissions(currentUser);
         await loadClients();
     } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
@@ -328,6 +338,12 @@ logoutButton.addEventListener("click", async () => {
 refreshButton.addEventListener("click", () => loadClients());
 searchInput.addEventListener("input", renderClients);
 statusFilter.addEventListener("change", renderClients);
+clearFiltersButton.addEventListener("click", () => {
+    searchInput.value = "";
+    statusFilter.value = "todos";
+    renderClients();
+    searchInput.focus();
+});
 confirmStatusButton.addEventListener("click", confirmStatusChange);
 
 for (const button of document.querySelectorAll("[data-close-client-status]")) {
