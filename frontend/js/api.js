@@ -29,6 +29,7 @@ export const Permissions = Object.freeze({
     FINANCEIRO_LER: "financeiro:ler",
     FINANCEIRO_RECEBER: "financeiro:receber",
     FINANCEIRO_ESTORNAR: "financeiro:estornar",
+    NOTIFICACOES_LER: "notificacoes:ler",
     RELATORIOS_LER: "relatorios:ler",
     AUDITORIA_LER: "auditoria:ler",
     CONTA_RENOMEAR: "conta:renomear",
@@ -654,6 +655,49 @@ export function createFinancialPayment(rentalId, data) {
 export function reverseFinancialPayment(paymentId) {
     return apiRequest(
         `/pagamentos/${paymentId}/estornar`,
+        {
+            method: "PATCH",
+        },
+    );
+}
+
+export function syncNotifications() {
+    return apiRequest(
+        "/notificacoes/sincronizar",
+        {
+            method: "POST",
+        },
+    );
+}
+
+export function queryNotifications(
+    page = 1,
+    perPage = 20,
+    status = "todas",
+) {
+    const params = new URLSearchParams({
+        pagina: String(page),
+        por_pagina: String(perPage),
+        status,
+    });
+
+    return apiRequest(
+        `/notificacoes/consulta?${params.toString()}`,
+    );
+}
+
+export function markNotificationRead(notificationId) {
+    return apiRequest(
+        `/notificacoes/${notificationId}/ler`,
+        {
+            method: "PATCH",
+        },
+    );
+}
+
+export function markAllNotificationsRead() {
+    return apiRequest(
+        "/notificacoes/ler-todas",
         {
             method: "PATCH",
         },

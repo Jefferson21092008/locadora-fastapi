@@ -36,6 +36,7 @@ TABELAS_ESPERADAS = {
     "multas_transito",
     "caucoes",
     "pagamentos_financeiros",
+    "notificacoes",
     "sessoes",
     "tokens_recuperacao_senha",
 }
@@ -357,7 +358,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20260928_0007"
+        assert revisao == "20260928_0008"
 
     finally:
         engine.dispose()
@@ -441,6 +442,7 @@ def test_upgrade_preserva_dados_do_schema_legado(
                         "multas_transito",
                         "caucoes",
                         "pagamentos_financeiros",
+                        "notificacoes",
                         "sessoes",
                     }
                     else 1

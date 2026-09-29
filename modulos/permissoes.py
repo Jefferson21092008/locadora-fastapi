@@ -37,6 +37,7 @@ class Permissao(str, Enum):
     FINANCEIRO_LER = "financeiro:ler"
     FINANCEIRO_RECEBER = "financeiro:receber"
     FINANCEIRO_ESTORNAR = "financeiro:estornar"
+    NOTIFICACOES_LER = "notificacoes:ler"
     RELATORIOS_LER = "relatorios:ler"
     AUDITORIA_LER = "auditoria:ler"
     CONTA_RENOMEAR = "conta:renomear"
@@ -68,6 +69,7 @@ _PERMISSOES_POR_ROLE = {
             Permissao.FINANCEIRO_LER,
             Permissao.FINANCEIRO_RECEBER,
             Permissao.FINANCEIRO_ESTORNAR,
+            Permissao.NOTIFICACOES_LER,
             Permissao.RELATORIOS_LER,
             Permissao.AUDITORIA_LER,
             Permissao.SESSOES_GERENCIAR,
@@ -81,6 +83,7 @@ _PERMISSOES_POR_ROLE = {
             Permissao.RESERVAS_CRIAR,
             Permissao.RESERVAS_PROPRIAS_LER,
             Permissao.RESERVAS_CANCELAR,
+            Permissao.NOTIFICACOES_LER,
             Permissao.CONTA_RENOMEAR,
             Permissao.SESSOES_GERENCIAR,
         }

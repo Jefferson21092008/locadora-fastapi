@@ -143,3 +143,33 @@ def test_email_service_exige_configuracao():
             "cliente@teste.com",
             "token",
         )
+
+def test_email_service_envia_notificacao_transacional(
+    monkeypatch,
+):
+    chamada = {}
+
+    def post_fake(url, headers, json, timeout):
+        chamada["url"] = url
+        chamada["json"] = json
+        chamada["headers"] = headers
+        chamada["timeout"] = timeout
+        return RespostaFake()
+
+    monkeypatch.setattr(
+        "modulos.servicos.email_service.httpx.post",
+        post_fake,
+    )
+
+    service = EmailService(ConfigFake())
+    service.enviar_notificacao(
+        destinatario="cliente@example.com",
+        assunto="Reserva próxima",
+        mensagem="Seu veículo está reservado para amanhã.",
+        caminho="/app/reservas.html",
+    )
+
+    assert chamada["url"] == EmailService.BREVO_URL
+    assert chamada["json"]["subject"] == "Reserva próxima"
+    assert "cliente@example.com" == chamada["json"]["to"][0]["email"]
+    assert "/app/reservas.html" in chamada["json"]["htmlContent"]

@@ -14,6 +14,7 @@ from modulos.database import (
 
 from modulos.models import (
     Base,
+    NotificacaoModel,
     SessaoModel,
     TokenRecuperacaoModel,
     UsuarioModel,
@@ -62,6 +63,7 @@ def test_base_registra_primeiros_models():
     assert "multas_transito" in Base.metadata.tables
     assert "caucoes" in Base.metadata.tables
     assert "pagamentos_financeiros" in Base.metadata.tables
+    assert "notificacoes" in Base.metadata.tables
 
     assert (
         "tokens_recuperacao_senha"
@@ -89,6 +91,7 @@ def test_models_criam_tabelas_esperadas(
     assert "multas_transito" in tabelas
     assert "caucoes" in tabelas
     assert "pagamentos_financeiros" in tabelas
+    assert "notificacoes" in tabelas
 
     assert (
         "tokens_recuperacao_senha"
@@ -279,3 +282,25 @@ def test_sessao_exige_usuario_existente(
             IntegrityError
         ):
             banco_sessao.commit()
+
+def test_notificacao_exige_usuario_existente(
+    banco_orm,
+):
+    notificacao = NotificacaoModel(
+        usuario_id=999,
+        tipo="reserva_proxima",
+        titulo="Reserva amanhã",
+        mensagem="Seu veículo está reservado.",
+        chave_deduplicacao="usuario:999:reserva:1:d1",
+        referencia_tipo="reserva",
+        referencia_id=1,
+        lida=False,
+        criada_em="2026-09-28T20:00:00+00:00",
+        email_status="nao_aplicavel",
+    )
+
+    with banco_orm.criar_sessao() as sessao:
+        sessao.add(notificacao)
+
+        with pytest.raises(IntegrityError):
+            sessao.commit()

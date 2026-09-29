@@ -1229,3 +1229,54 @@ A migration `20260928_0007_pagamentos_financeiro` cria a tabela
 `pagamentos_financeiros`, ligada a `alugueis`, com constraints para valor,
 forma, parcelas e status. O histórico legado permanece no aluguel e não é
 duplicado na nova tabela.
+
+## Trilha principal — Notificações automáticas
+
+A Etapa 18 adiciona uma central persistente de notificações sem antecipar a
+infraestrutura de filas/background jobs prevista para a Etapa 19. Os lembretes
+são sincronizados de forma idempotente quando o usuário acessa o painel ou a
+central de notificações; a etapa seguinte poderá reutilizar o mesmo service em
+execuções agendadas.
+
+O módulo segue a composição:
+
+```text
+frontend/notificacoes.html
+        ↓
+api/routers/notificacoes.py
+        ↓
+NotificacaoService
+        ↓
+NotificacaoRepository
+        ↓
+NotificacaoModel
+        ↓
+PostgreSQL / SQLite
+```
+
+Clientes recebem lembretes de reserva próxima, devolução próxima/atrasada e
+pendência financeira. Administradores recebem lembretes de manutenção prevista
+ou atrasada. A chave de deduplicação persistida impede que atualizar a página
+crie o mesmo aviso ou envie o mesmo e-mail repetidamente.
+
+Quando Brevo está configurado, lembretes destinados a clientes também são
+enviados por e-mail. Falhas no provedor não impedem a criação da notificação
+interna: o resultado do canal de e-mail fica registrado como `enviado`,
+`falhou`, `nao_configurado` ou `nao_aplicavel`.
+
+Principais rotas:
+
+```text
+POST  /api/v1/notificacoes/sincronizar
+GET   /api/v1/notificacoes/consulta
+PATCH /api/v1/notificacoes/ler-todas
+PATCH /api/v1/notificacoes/{id_notificacao}/ler
+```
+
+A permissão `notificacoes:ler` é atribuída a administradores e clientes. A
+migration `20260928_0008_notificacoes` cria a tabela `notificacoes` e o índice
+por usuário, estado de leitura e data de criação.
+
+A Etapa 19 poderá chamar `NotificacaoService.processar_usuario()` fora do ciclo
+de requisição para transformar esses lembretes em processamento realmente
+agendado, sem duplicar regras de domínio.

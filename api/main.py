@@ -56,6 +56,9 @@ from api.routers.auditoria import (
 from api.routers.manutencoes import (
     router as manutencoes_router,
 )
+from api.routers.notificacoes import (
+    router as notificacoes_router,
+)
 from api.routers.pagamentos import (
     router as pagamentos_router,
 )
@@ -94,6 +97,7 @@ API REST para gerenciamento de uma locadora de veículos.
 - Reservas futuras de veículos.
 - Vistorias, danos, multas de trânsito, cauções e combustível.
 - Pagamentos adicionais e liquidação financeira dos aluguéis.
+- Notificações persistentes e lembretes por e-mail.
 - Relatórios administrativos e financeiros.
 
 ## Respostas de erro
@@ -163,6 +167,13 @@ tags_metadata = [
         "description": (
             "Liquidação de cobranças adicionais, pagamentos "
             "e acompanhamento de saldos por aluguel."
+        ),
+    },
+    {
+        "name": "Notificações",
+        "description": (
+            "Lembretes persistentes da operação, com envio de e-mail "
+            "para clientes quando o canal estiver configurado."
         ),
     },
     {
@@ -248,6 +259,7 @@ ROUTERS_API = (
     reservas_router,
     vistorias_router,
     pagamentos_router,
+    notificacoes_router,
     relatorios_router,
     auditoria_router,
 )
