@@ -4148,3 +4148,26 @@ form[aria-busy="true"] :is(input, select, textarea, button) {
         min-width: 100%;
     }
 }
+
+/* Hotfix — mantém a navegação lateral legível em telas desktop de pouca altura. */
+@media (min-width: 861px) {
+    .sidebar {
+        overflow: hidden;
+    }
+
+    .sidebar__nav {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding-right: 0.25rem;
+        scrollbar-gutter: stable;
+        overscroll-behavior: contain;
+    }
+
+    .sidebar__note {
+        flex: 0 0 auto;
+        margin: 1.25rem 0 0;
+    }
+}
+
