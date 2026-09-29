@@ -787,3 +787,36 @@ def test_frontend_financeiro_consume_permissoes_e_endpoints():
     assert '"/app/pagamentos.html"' in api_js.text
     assert "/pagamentos/alugueis/" in api_js.text
     assert pagina.status_code == 200
+
+def test_frontend_notificacoes_expoe_central_e_endpoints():
+    pagina = client.get("/app/notificacoes.html")
+    api_js = client.get("/app/js/api.js")
+    notificacoes_js = client.get("/app/js/notificacoes.js")
+
+    assert pagina.status_code == 200
+    assert "Notificações" in pagina.text
+    assert 'id="notification-status-filter"' in pagina.text
+    assert 'id="mark-all-notifications-read"' in pagina.text
+
+    assert api_js.status_code == 200
+    assert 'NOTIFICACOES_LER: "notificacoes:ler"' in api_js.text
+    assert "/notificacoes/sincronizar" in api_js.text
+    assert "/notificacoes/consulta" in api_js.text
+    assert "/notificacoes/ler-todas" in api_js.text
+
+    assert notificacoes_js.status_code == 200
+    assert "syncNotifications" in notificacoes_js.text
+    assert "queryNotifications" in notificacoes_js.text
+    assert "markNotificationRead" in notificacoes_js.text
+
+
+def test_navegacao_autenticada_expoe_notificacoes():
+    for caminho in (
+        "/app/dashboard.html",
+        "/app/alugueis.html",
+        "/app/reservas.html",
+        "/app/pagamentos.html",
+    ):
+        resposta = client.get(caminho)
+        assert resposta.status_code == 200
+        assert "/app/notificacoes.html" in resposta.text

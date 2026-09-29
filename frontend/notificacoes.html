@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#08111f">
+    <meta name="description" content="Central de notificações da Locadora.">
+    <title>Notificações | Locadora</title>
+    <link rel="stylesheet" href="/app/css/styles.css">
+</head>
+<body class="dashboard-page">
+    <a class="skip-link" href="#main-content">Ir para o conteúdo principal</a>
+    <div class="dashboard-shell">
+        <aside class="sidebar">
+            <a class="brand brand--light" href="/app/dashboard.html" aria-label="Painel da Locadora">
+                <span class="brand__mark" aria-hidden="true">L</span>
+                <span>Locadora</span>
+            </a>
+
+            <nav class="sidebar__nav" aria-label="Navegação principal">
+                <a class="nav-item" href="/app/dashboard.html">Visão geral</a>
+                <a class="nav-item" href="/app/veiculos.html">Veículos</a>
+                <a class="nav-item" href="/app/alugueis.html">Aluguéis</a>
+                <a class="nav-item" href="/app/reservas.html">Reservas</a>
+                <a class="nav-item nav-item--active" href="/app/notificacoes.html" aria-current="page">Notificações</a>
+                <a class="nav-item admin-nav" href="/app/clientes.html" hidden>Clientes</a>
+                <a class="nav-item admin-nav" href="/app/manutencoes.html" hidden>Manutenções</a>
+                <a class="nav-item admin-nav" href="/app/vistorias.html" hidden>Vistorias</a>
+                <a class="nav-item admin-nav" href="/app/pagamentos.html" hidden>Financeiro</a>
+                <a class="nav-item admin-nav" href="/app/relatorios.html" hidden>Relatórios</a>
+                <a class="nav-item admin-nav" href="/app/auditoria.html" hidden>Auditoria</a>
+            </nav>
+
+            <p class="sidebar__note">Lembretes operacionais ficam reunidos aqui e podem chegar por e-mail quando o canal estiver configurado.</p>
+        </aside>
+
+        <main id="main-content" class="dashboard-main fleet-main">
+            <header class="dashboard-header fleet-header">
+                <div>
+                    <p class="eyebrow">Central de alertas</p>
+                    <h1>Notificações</h1>
+                    <p>Acompanhe reservas próximas, devoluções, manutenções e pendências financeiras.</p>
+                </div>
+
+                <div class="account-actions">
+                    <span id="current-role" class="role-badge">carregando</span>
+                    <button id="refresh-notifications-button" class="secondary-button" type="button">Atualizar</button>
+                    <button id="logout-button" class="secondary-button" type="button">Sair</button>
+                </div>
+            </header>
+
+            <div id="notifications-message" class="form-message form-message--page" role="status" aria-live="polite"></div>
+
+            <section class="fleet-overview fleet-overview--three" aria-label="Resumo das notificações">
+                <article>
+                    <span>Total</span>
+                    <strong id="notifications-summary-total">—</strong>
+                </article>
+                <article>
+                    <span>Não lidas</span>
+                    <strong id="notifications-summary-unread">—</strong>
+                </article>
+                <article>
+                    <span>Lidas</span>
+                    <strong id="notifications-summary-read">—</strong>
+                </article>
+            </section>
+
+            <section class="fleet-content" aria-labelledby="notifications-list-title">
+                <div class="fleet-toolbar">
+                    <div>
+                        <p class="eyebrow">Caixa de entrada</p>
+                        <h2 id="notifications-list-title">Seus lembretes</h2>
+                    </div>
+
+                    <div class="fleet-filters notification-filters">
+                        <label class="select-field" for="notification-status-filter">
+                            <span class="sr-only">Filtrar notificações</span>
+                            <select id="notification-status-filter">
+                                <option value="todas">Todas</option>
+                                <option value="nao_lidas">Não lidas</option>
+                                <option value="lidas">Lidas</option>
+                            </select>
+                        </label>
+                        <button id="mark-all-notifications-read" class="secondary-button" type="button">
+                            Marcar todas como lidas
+                        </button>
+                    </div>
+                </div>
+
+                <div class="results-meta">
+                    <p id="notifications-results-count" class="results-meta__count" aria-live="polite">Preparando resultados...</p>
+                </div>
+
+                <div id="notifications-loading" class="loading-state" role="status">
+                    <span class="loading-state__spinner" aria-hidden="true"></span>
+                    <span>Carregando notificações...</span>
+                </div>
+
+                <div id="notifications-empty" class="empty-state" hidden>
+                    <strong>Nenhuma notificação encontrada</strong>
+                    <p>Quando houver um lembrete importante, ele aparecerá aqui.</p>
+                </div>
+
+                <div id="notifications-list" class="notification-list" aria-live="polite"></div>
+
+                <div class="pagination-bar" aria-label="Paginação das notificações">
+                    <button id="notifications-page-previous" class="secondary-button" type="button">Anterior</button>
+                    <span id="notifications-page-label">Página 1 de 1</span>
+                    <button id="notifications-page-next" class="secondary-button" type="button">Próxima</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="/app/js/ui.js"></script>
+    <script type="module" src="/app/js/notificacoes.js"></script>
+</body>
+</html>

@@ -18,6 +18,9 @@ from modulos.servicos.clientes_service import (
 from modulos.servicos.manutencao_service import (
     ManutencaoService,
 )
+from modulos.servicos.notificacao_service import (
+    NotificacaoService,
+)
 from modulos.servicos.pagamento_service import (
     PagamentoService,
 )
@@ -133,6 +136,11 @@ def test_container_cria_services(
         PagamentoService,
     )
 
+    assert isinstance(
+        container.notificacao_service,
+        NotificacaoService,
+    )
+
 
 def test_container_cria_admin_padrao(
     container,
@@ -234,6 +242,18 @@ def test_services_compartilham_repositories(
         container.pagamento_service
         .vistoria_service
         is container.vistoria_service
+    )
+
+    assert (
+        container.notificacao_service
+        .notificacao_repository
+        is container.notificacao_repository
+    )
+
+    assert (
+        container.notificacao_service
+        .pagamento_service
+        is container.pagamento_service
     )
 
 

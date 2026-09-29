@@ -16,6 +16,9 @@ from modulos.repositories.cliente_repository import (
 from modulos.repositories.manutencao_repository import (
     ManutencaoRepository,
 )
+from modulos.repositories.notificacao_repository import (
+    NotificacaoRepository,
+)
 from modulos.repositories.pagamento_repository import (
     PagamentoRepository,
 )
@@ -64,6 +67,9 @@ from modulos.servicos.exportacao_relatorios_service import (
 )
 from modulos.servicos.manutencao_service import (
     ManutencaoService,
+)
+from modulos.servicos.notificacao_service import (
+    NotificacaoService,
 )
 from modulos.servicos.pagamento_service import (
     PagamentoService,
@@ -229,6 +235,14 @@ class Container:
 
         self.pagamento_repository = (
             PagamentoRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
+        self.notificacao_repository = (
+            NotificacaoRepository(
                 banco_sqlalchemy=(
                     self.banco_sqlalchemy
                 ),
@@ -402,6 +416,35 @@ class Container:
                 ),
                 vistoria_service=(
                     self.vistoria_service
+                ),
+            )
+        )
+
+        self.notificacao_service = (
+            NotificacaoService(
+                notificacao_repository=(
+                    self.notificacao_repository
+                ),
+                usuario_repository=(
+                    self.usuario_repository
+                ),
+                cliente_repository=(
+                    self.cliente_repository
+                ),
+                reserva_repository=(
+                    self.reserva_repository
+                ),
+                aluguel_repository=(
+                    self.aluguel_repository
+                ),
+                manutencao_repository=(
+                    self.manutencao_repository
+                ),
+                pagamento_service=(
+                    self.pagamento_service
+                ),
+                email_service=(
+                    self.email_service
                 ),
             )
         )

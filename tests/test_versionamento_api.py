@@ -76,6 +76,10 @@ def test_openapi_expoe_somente_rotas_versionadas():
     assert "/api/v1/pagamentos/consulta" in paths
     assert "/api/v1/pagamentos/alugueis/{id_aluguel}" in paths
     assert "/api/v1/pagamentos/{id_pagamento}/estornar" in paths
+    assert "/api/v1/notificacoes/consulta" in paths
+    assert "/api/v1/notificacoes/sincronizar" in paths
+    assert "/api/v1/notificacoes/ler-todas" in paths
+    assert "/api/v1/notificacoes/{id_notificacao}/ler" in paths
 
     assert "/auth/login" not in paths
     assert "/clientes" not in paths

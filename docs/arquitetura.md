@@ -577,3 +577,46 @@ A migration `20260928_0007_pagamentos_financeiro` adiciona a tabela
 `pagamentos_financeiros` e o índice
 `idx_pagamentos_financeiros_aluguel_status`. O RBAC acrescenta
 `financeiro:ler`, `financeiro:receber` e `financeiro:estornar`.
+
+## Notificações persistentes e lembretes
+
+A Etapa 18 introduz `NotificacaoService` como camada responsável por detectar
+lembretes relevantes e persistir uma caixa de entrada por usuário.
+
+```text
+Dashboard / Central de notificações
+        ↓
+POST /api/v1/notificacoes/sincronizar
+        ↓
+NotificacaoService
+        ├── ReservaRepository
+        ├── AluguelRepository
+        ├── ManutencaoRepository
+        ├── PagamentoService
+        ├── ClienteRepository
+        └── EmailService (Brevo)
+                ↓
+        NotificacaoRepository
+                ↓
+        NotificacaoModel
+```
+
+A sincronização é idempotente. Cada aviso recebe uma `chave_deduplicacao`
+estável, de forma que novas consultas não geram notificações nem e-mails
+duplicados. Para clientes, as regras atuais cobrem reservas iniciando hoje ou no
+dia seguinte, devoluções vencendo hoje/amanhã, aluguéis atrasados e contas
+finalizadas com saldo pendente. Para administradores, cobrem manutenções com
+previsão para hoje/amanhã ou já atrasadas.
+
+A notificação interna é a fonte primária. O e-mail é um canal adicional: uma
+falha da Brevo é capturada e registrada sem desfazer a notificação persistida.
+Mensagens HTML são escapadas antes do envio.
+
+A central permite filtrar `todas`, `nao_lidas` e `lidas`, marcar uma notificação
+ou todas como lidas e expõe contadores no resumo. O acesso usa a permissão
+`notificacoes:ler`, disponível para os dois papéis atuais.
+
+A migration `20260928_0008_notificacoes` adiciona a tabela e o índice
+`idx_notificacoes_usuario_lida_criada`. O processamento temporal ainda acontece
+quando a aplicação é acessada; a Etapa 19 de background jobs/filas deve apenas
+agendar chamadas ao mesmo service, preservando as regras e a deduplicação.

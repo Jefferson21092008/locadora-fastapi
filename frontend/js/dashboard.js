@@ -7,6 +7,7 @@ import {
     getDashboardMetrics,
     getSystemStatus,
     restoreSession,
+    syncNotifications,
     hasPermission,
     logout,
     renameCurrentUser,
@@ -275,6 +276,7 @@ async function loadDashboard() {
             updateBasicMetrics(dashboardData);
         }
 
+        syncNotifications().catch(() => {});
         markDashboardSynced();
     } catch (error) {
         markDashboardError();

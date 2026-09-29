@@ -4171,3 +4171,71 @@ form[aria-busy="true"] :is(input, select, textarea, button) {
     }
 }
 
+
+/* Etapa 18 — central de notificações. */
+.notification-filters {
+    align-items: center;
+}
+
+.notification-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.notification-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: 1rem 1.1rem;
+    min-width: 0;
+}
+
+.notification-card--unread {
+    border-left: 4px solid var(--accent);
+}
+
+.notification-card--read {
+    opacity: 0.78;
+}
+
+.notification-card__topline,
+.notification-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.notification-card__topline time,
+.notification-card__footer span {
+    color: var(--slate-500);
+    font-size: 0.82rem;
+}
+
+.notification-card h3 {
+    margin: 0.55rem 0 0.35rem;
+}
+
+.notification-card p {
+    margin: 0;
+    color: var(--slate-500);
+    line-height: 1.6;
+}
+
+.notification-card__footer {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.notification-type {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}

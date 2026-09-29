@@ -46,6 +46,7 @@ TABELAS_ESPERADAS = {
     "multas_transito",
     "caucoes",
     "pagamentos_financeiros",
+    "notificacoes",
     "sessoes",
     "tokens_recuperacao_senha",
     "usuarios",
@@ -205,7 +206,7 @@ def test_alembic_cria_schema_postgresql_completo(
             )
         )
 
-    assert revisao == "20260928_0007"
+    assert revisao == "20260928_0008"
 
     fks_clientes = (
         inspetor.get_foreign_keys(
