@@ -159,3 +159,60 @@ def test_configuracao_background_jobs(monkeypatch):
     assert configuracao.background_jobs_intervalo_segundos == 15
     assert configuracao.background_jobs_lote == 8
     assert configuracao.background_jobs_timeout_bloqueio_segundos == 120
+
+
+def test_configuracao_redis_cache(monkeypatch):
+    monkeypatch.setenv(
+        "LOCADORA_ADMIN_SENHA",
+        "senha-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_JWT_SECRET",
+        "segredo-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_REDIS_URL",
+        "redis://cache:6379/0",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_REDIS_PREFIXO",
+        "locadora-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_REDIS_TIMEOUT_MS",
+        "250",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS",
+        "45",
+    )
+
+    configuracao = Configuracao()
+
+    assert configuracao.redis_configurado is True
+    assert configuracao.redis_url == "redis://cache:6379/0"
+    assert configuracao.redis_prefixo == "locadora-teste"
+    assert configuracao.redis_timeout_ms == 250
+    assert configuracao.cache_dashboard_ttl_segundos == 45
+
+
+def test_configuracao_redis_e_opcional(monkeypatch):
+    monkeypatch.setenv(
+        "LOCADORA_ADMIN_SENHA",
+        "senha-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_JWT_SECRET",
+        "segredo-de-teste",
+    )
+    monkeypatch.delenv(
+        "LOCADORA_REDIS_URL",
+        raising=False,
+    )
+
+    configuracao = Configuracao()
+
+    assert configuracao.redis_configurado is False
+    assert configuracao.redis_url is None
+    assert configuracao.redis_prefixo == "locadora"
+    assert configuracao.cache_dashboard_ttl_segundos == 30

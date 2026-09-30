@@ -7,6 +7,10 @@ x-locadora-environment: &locadora-environment
   LOCADORA_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-locadora_app}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env.docker}@db:5432/${POSTGRES_DB:-locadora}
   LOCADORA_AMBIENTE: ${LOCADORA_AMBIENTE:-development}
   LOCADORA_SENTRY_DSN: ${LOCADORA_SENTRY_DSN:-}
+  LOCADORA_REDIS_URL: ${LOCADORA_REDIS_URL:-redis://cache:6379/0}
+  LOCADORA_REDIS_PREFIXO: ${LOCADORA_REDIS_PREFIXO:-locadora}
+  LOCADORA_REDIS_TIMEOUT_MS: ${LOCADORA_REDIS_TIMEOUT_MS:-500}
+  LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS: ${LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS:-30}
   LOCADORA_BACKGROUND_JOBS_ENABLED: ${LOCADORA_BACKGROUND_JOBS_ENABLED:-true}
   LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS: ${LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS:-60}
   LOCADORA_BACKGROUND_JOBS_LOTE: ${LOCADORA_BACKGROUND_JOBS_LOTE:-50}
@@ -31,6 +35,17 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  cache:
+    image: redis:8-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
   migrate:
     image: locadora-api:local
     build:
@@ -49,6 +64,8 @@ services:
     environment: *locadora-environment
     depends_on:
       db:
+        condition: service_healthy
+      cache:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully

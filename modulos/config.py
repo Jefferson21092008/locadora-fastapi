@@ -130,6 +130,42 @@ class Configuracao:
         )
 
         # ============================================================
+        # REDIS / CACHE
+        # ============================================================
+
+        redis_url = os.getenv(
+            "LOCADORA_REDIS_URL"
+        )
+
+        self.redis_url = (
+            redis_url.strip()
+            if redis_url
+            else None
+        )
+
+        self.redis_prefixo = (
+            os.getenv(
+                "LOCADORA_REDIS_PREFIXO",
+                "locadora",
+            )
+            .strip()
+            .strip(":")
+            or "locadora"
+        )
+
+        self.redis_timeout_ms = _env_int(
+            "LOCADORA_REDIS_TIMEOUT_MS",
+            500,
+            minimo=50,
+        )
+
+        self.cache_dashboard_ttl_segundos = _env_int(
+            "LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS",
+            30,
+            minimo=1,
+        )
+
+        # ============================================================
         # E-MAIL / BREVO
         # ============================================================
 
@@ -192,6 +228,18 @@ class Configuracao:
                 "LOCADORA_JWT_SECRET "
                 "não foi configurada."
             )
+
+    # ================================================================
+    # REDIS / CACHE
+    # ================================================================
+
+    @property
+    def redis_configurado(
+        self,
+    ):
+        return bool(
+            self.redis_url
+        )
 
     # ================================================================
     # E-MAIL

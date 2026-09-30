@@ -60,6 +60,13 @@ router = APIRouter(
     },
 )
 def metricas_dashboard(
+    atualizar: bool = Query(
+        False,
+        description=(
+            "Ignora o cache e recalcula as métricas "
+            "diretamente no banco."
+        ),
+    ),
     container: Container = Depends(
         get_container
     ),
@@ -71,7 +78,9 @@ def metricas_dashboard(
 ):
     return (
         container.relatorio_service
-        .metricas_dashboard()
+        .metricas_dashboard(
+            forcar_atualizacao=atualizar
+        )
     )
 
 

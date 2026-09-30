@@ -665,3 +665,50 @@ sem alterar as regras de negócio.
 
 A Etapa 20 pode substituir ou complementar essa infraestrutura com Redis/cache,
 mas a fila persistente atual não depende dele.
+
+## Redis / Valkey e cache compartilhado
+
+A Etapa 20 introduz uma camada Redis/Valkey opcional sem substituir o banco
+relacional. A conexão é configurada por `LOCADORA_REDIS_URL` e usa timeout curto
+para que uma falha do cache não paralise a API.
+
+```text
+                    ┌──────────────────────┐
+                    │     Redis / Valkey    │
+                    └──────────┬───────────┘
+                               │
+                 ┌─────────────┴─────────────┐
+                 │                           │
+          RateLimiter                 CacheService
+                 │                           │
+      autenticação sensível          RelatorioService
+                                             │
+                                      PostgreSQL / Neon
+```
+
+### Rate limiting distribuído
+
+`api/rate_limit.py` mantém a mesma interface usada pelos routers. Quando Redis
+está configurado, as tentativas ficam em chaves com prefixo
+`<prefixo>:rate_limit:*`, permitindo que múltiplas instâncias compartilhem o
+contador. Cada janela recebe TTL no primeiro registro. Falha de Redis provoca
+fallback para o limiter local em memória, preservando disponibilidade com uma
+proteção degradada por instância.
+
+### Cache-aside do dashboard
+
+`RelatorioService.metricas_dashboard()` delega a `CacheService` a chave
+`relatorios:dashboard:v1`. O cache guarda apenas dados derivados; PostgreSQL
+continua sendo a fonte de verdade. O TTL padrão é 30 segundos. A query
+`atualizar=true` força nova consulta ao banco e renova a entrada, usada pelo
+botão de atualização manual do frontend.
+
+Falha de leitura/escrita no Redis é tratada como cache miss. Nenhuma regra de
+negócio depende do cache para concluir uma operação.
+
+### Fila de background
+
+`tarefas_background` permanece no PostgreSQL. Redis não armazena a fonte de
+verdade dos jobs nesta etapa. A fila já possui deduplicação persistente, retries,
+locks e `FOR UPDATE SKIP LOCKED`, portanto não há ganho suficiente para trocar a
+durabilidade existente apenas por presença do Redis.

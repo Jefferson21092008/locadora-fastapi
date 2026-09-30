@@ -576,8 +576,14 @@ export function saveDeposit(rentalId, data) {
     });
 }
 
-export function getDashboardMetrics() {
-    return apiRequest("/relatorios/dashboard");
+export function getDashboardMetrics(atualizar = false) {
+    if (!atualizar) {
+        return apiRequest("/relatorios/dashboard");
+    }
+
+    return apiRequest(
+        "/relatorios/dashboard?atualizar=true",
+    );
 }
 
 export function getReportSummary() {

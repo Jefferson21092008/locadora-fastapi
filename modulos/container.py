@@ -1,5 +1,8 @@
 from modulos.config import Configuracao
 
+from modulos.cache import (
+    CacheRedis,
+)
 from modulos.database import (
     BancoSQLAlchemy,
 )
@@ -49,6 +52,9 @@ from modulos.repositories.vistoria_repository import (
 
 from modulos.servicos.background_job_service import (
     BackgroundJobService,
+)
+from modulos.servicos.cache_service import (
+    CacheService,
 )
 from modulos.servicos.admin_service import (
     AdminService,
@@ -150,6 +156,24 @@ class Container:
             )
 
         self.banco_sqlalchemy.aplicar_migrations()
+
+        self.cache_backend = CacheRedis(
+            redis_url=getattr(
+                self.config,
+                "redis_url",
+                None,
+            ),
+            prefixo=getattr(
+                self.config,
+                "redis_prefixo",
+                "locadora",
+            ),
+            timeout_ms=getattr(
+                self.config,
+                "redis_timeout_ms",
+                500,
+            ),
+        )
 
         self._criar_repositories()
         self._criar_services()
@@ -286,6 +310,14 @@ class Container:
     def _criar_services(
         self,
     ):
+        self.cache_service = (
+            CacheService(
+                cache_backend=(
+                    self.cache_backend
+                ),
+            )
+        )
+
         self.auditoria_service = (
             AuditoriaService(
                 auditoria_repository=(
@@ -490,6 +522,14 @@ class Container:
                 ),
                 relatorio_repository=(
                     self.relatorio_repository
+                ),
+                cache_service=(
+                    self.cache_service
+                ),
+                dashboard_cache_ttl_segundos=getattr(
+                    self.config,
+                    "cache_dashboard_ttl_segundos",
+                    30,
                 ),
             )
         )

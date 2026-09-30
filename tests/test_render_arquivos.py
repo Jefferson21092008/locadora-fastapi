@@ -98,3 +98,22 @@ def test_render_habilita_background_jobs_no_web_service():
     assert "LOCADORA_BACKGROUND_JOBS_ENABLED" in conteudo
     assert 'value: "true"' in conteudo
     assert "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS" in conteudo
+
+
+def test_render_documenta_redis_opcional_sem_versionar_url():
+    conteudo = ler_render_yaml()
+
+    assert "LOCADORA_REDIS_URL" in conteudo
+    assert "LOCADORA_REDIS_PREFIXO" in conteudo
+    assert "LOCADORA_REDIS_TIMEOUT_MS" in conteudo
+    assert "LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS" in conteudo
+
+    trecho = conteudo.split(
+        "- key: LOCADORA_REDIS_URL",
+        1,
+    )[1].split(
+        "- key: LOCADORA_REDIS_PREFIXO",
+        1,
+    )[0]
+
+    assert "sync: false" in trecho

@@ -86,6 +86,10 @@ def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
         "LOCADORA_ADMIN_SENHA",
         "LOCADORA_JWT_SECRET",
         "API_PORT",
+        "LOCADORA_REDIS_URL",
+        "LOCADORA_REDIS_PREFIXO",
+        "LOCADORA_REDIS_TIMEOUT_MS",
+        "LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS",
         "LOCADORA_BACKGROUND_JOBS_ENABLED",
         "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS",
         "LOCADORA_BACKGROUND_JOBS_LOTE",
@@ -95,3 +99,14 @@ def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
     for variavel in variaveis_obrigatorias:
         assert f"{variavel}=" in conteudo
         assert f"{variavel}=\n" not in conteudo
+
+def test_compose_configura_redis_para_cache_e_rate_limit():
+    conteudo = ler_arquivo(
+        "compose.yaml"
+    )
+
+    assert "redis:8-alpine" in conteudo
+    assert "redis://cache:6379/0" in conteudo
+    assert "LOCADORA_REDIS_PREFIXO" in conteudo
+    assert "LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS" in conteudo
+    assert 'test: ["CMD", "redis-cli", "ping"]' in conteudo

@@ -820,3 +820,24 @@ def test_navegacao_autenticada_expoe_notificacoes():
         resposta = client.get(caminho)
         assert resposta.status_code == 200
         assert "/app/notificacoes.html" in resposta.text
+
+
+def test_dashboard_atualizacao_manual_ignora_cache():
+    api_js = client.get(
+        "/app/js/api.js"
+    )
+    dashboard_js = client.get(
+        "/app/js/dashboard.js"
+    )
+
+    assert api_js.status_code == 200
+    assert dashboard_js.status_code == 200
+    assert "?atualizar=true" in api_js.text
+    assert (
+        "getDashboardMetrics(forcarAtualizacao)"
+        in dashboard_js.text
+    )
+    assert (
+        "() => loadDashboard(true)"
+        in dashboard_js.text
+    )

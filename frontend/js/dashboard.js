@@ -243,7 +243,7 @@ function markDashboardError() {
     }
 }
 
-async function loadDashboard() {
+async function loadDashboard(forcarAtualizacao = false) {
     if (!(await restoreSession())) {
         goToLogin();
         return;
@@ -259,7 +259,7 @@ async function loadDashboard() {
             Permissions.RELATORIOS_LER,
         );
         const dashboardData = canViewReports
-            ? await getDashboardMetrics()
+            ? await getDashboardMetrics(forcarAtualizacao)
             : await getSystemStatus();
 
         username.textContent = currentUser.usuario;
@@ -372,6 +372,9 @@ logoutButton.addEventListener("click", async () => {
     goToLogin();
 });
 
-refreshButton.addEventListener("click", loadDashboard);
+refreshButton.addEventListener(
+    "click",
+    () => loadDashboard(true),
+);
 
 loadDashboard();

@@ -254,3 +254,109 @@ def test_metricas_dashboard_calcula_taxa_e_resultado():
     assert resultado["taxa_frota_alugada"] == 30.0
     assert resultado["resultado_bruto"] == 9500.0
     assert resultado["ticket_medio"] == 1200.0
+
+
+class CacheServiceFake:
+    def __init__(self):
+        self.dados = {}
+        self.chamadas_produtor = 0
+        self.ignorar_cache = []
+
+    def obter_ou_calcular(
+        self,
+        chave,
+        ttl_segundos,
+        produtor,
+        ignorar_cache=False,
+    ):
+        self.ignorar_cache.append(
+            ignorar_cache
+        )
+
+        if (
+            not ignorar_cache
+            and chave in self.dados
+        ):
+            return self.dados[chave]
+
+        self.chamadas_produtor += 1
+        valor = produtor()
+        self.dados[chave] = valor
+        return valor
+
+
+def _metricas_dashboard_teste():
+    return {
+        "clientes_ativos": 4,
+        "clientes_inativos": 1,
+        "veiculos_disponiveis": 5,
+        "veiculos_alugados": 3,
+        "veiculos_manutencao": 2,
+        "veiculos_desativados": 1,
+        "alugueis_ativos": 3,
+        "alugueis_finalizados": 10,
+        "manutencoes_ativas": 2,
+        "manutencoes_finalizadas": 7,
+        "receita_alugueis": 12000.0,
+        "custos_manutencao": 2500.0,
+        "ticket_medio": 1200.0,
+    }
+
+
+def test_metricas_dashboard_reutiliza_cache():
+    cache = CacheServiceFake()
+    repository = RelatorioRepositoryFake(
+        _metricas_dashboard_teste()
+    )
+    service = RelatorioService(
+        aluguel_repository=AluguelRepositoryFake(),
+        veiculo_repository=VeiculoRepositoryFake(),
+        cliente_repository=ClienteRepositoryFake(),
+        relatorio_repository=repository,
+        cache_service=cache,
+        dashboard_cache_ttl_segundos=30,
+    )
+
+    primeiro = service.metricas_dashboard()
+    repository.metricas[
+        "receita_alugueis"
+    ] = 99999.0
+    segundo = service.metricas_dashboard()
+
+    assert primeiro == segundo
+    assert primeiro[
+        "receita_alugueis"
+    ] == 12000.0
+    assert cache.chamadas_produtor == 1
+
+
+def test_metricas_dashboard_forca_recalculo_e_atualiza_cache():
+    cache = CacheServiceFake()
+    repository = RelatorioRepositoryFake(
+        _metricas_dashboard_teste()
+    )
+    service = RelatorioService(
+        aluguel_repository=AluguelRepositoryFake(),
+        veiculo_repository=VeiculoRepositoryFake(),
+        cliente_repository=ClienteRepositoryFake(),
+        relatorio_repository=repository,
+        cache_service=cache,
+    )
+
+    service.metricas_dashboard()
+    repository.metricas[
+        "receita_alugueis"
+    ] = 15000.0
+
+    atualizado = service.metricas_dashboard(
+        forcar_atualizacao=True
+    )
+
+    assert atualizado[
+        "receita_alugueis"
+    ] == 15000.0
+    assert atualizado[
+        "resultado_bruto"
+    ] == 12500.0
+    assert cache.chamadas_produtor == 2
+    assert cache.ignorar_cache[-1] is True

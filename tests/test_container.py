@@ -6,6 +6,9 @@ from modulos.database import BancoSQLAlchemy
 from modulos.servicos.background_job_service import (
     BackgroundJobService,
 )
+from modulos.servicos.cache_service import (
+    CacheService,
+)
 from modulos.servicos.admin_service import (
     AdminService,
 )
@@ -79,6 +82,11 @@ def container():
 def test_container_cria_services(
     container,
 ):
+    assert isinstance(
+        container.cache_service,
+        CacheService,
+    )
+
     assert isinstance(
         container.auth_service,
         AuthService,
@@ -303,6 +311,11 @@ def test_relatorio_service_compartilha_repositories(
     assert (
         service.relatorio_repository
         is container.relatorio_repository
+    )
+
+    assert (
+        service.cache_service
+        is container.cache_service
     )
 
     assert (
