@@ -125,3 +125,37 @@ def test_configuracao_normaliza_url_neon_para_psycopg(
     assert "sslmode=require" in (
         configuracao.database_url
     )
+
+
+def test_configuracao_background_jobs(monkeypatch):
+    monkeypatch.setenv(
+        "LOCADORA_ADMIN_SENHA",
+        "senha-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_JWT_SECRET",
+        "segredo-de-teste",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_BACKGROUND_JOBS_ENABLED",
+        "true",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS",
+        "15",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_BACKGROUND_JOBS_LOTE",
+        "8",
+    )
+    monkeypatch.setenv(
+        "LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS",
+        "120",
+    )
+
+    configuracao = Configuracao()
+
+    assert configuracao.background_jobs_enabled is True
+    assert configuracao.background_jobs_intervalo_segundos == 15
+    assert configuracao.background_jobs_lote == 8
+    assert configuracao.background_jobs_timeout_bloqueio_segundos == 120

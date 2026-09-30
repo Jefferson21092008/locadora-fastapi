@@ -3,6 +3,9 @@ import pytest
 from modulos.container import Container
 from modulos.database import BancoSQLAlchemy
 
+from modulos.servicos.background_job_service import (
+    BackgroundJobService,
+)
 from modulos.servicos.admin_service import (
     AdminService,
 )
@@ -141,6 +144,11 @@ def test_container_cria_services(
         NotificacaoService,
     )
 
+    assert isinstance(
+        container.background_job_service,
+        BackgroundJobService,
+    )
+
 
 def test_container_cria_admin_padrao(
     container,
@@ -254,6 +262,19 @@ def test_services_compartilham_repositories(
         container.notificacao_service
         .pagamento_service
         is container.pagamento_service
+    )
+
+
+    assert (
+        container.background_job_service
+        .background_job_repository
+        is container.background_job_repository
+    )
+
+    assert (
+        container.background_job_service
+        .notificacao_service
+        is container.notificacao_service
     )
 
 

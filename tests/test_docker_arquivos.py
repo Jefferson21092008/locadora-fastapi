@@ -86,6 +86,10 @@ def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
         "LOCADORA_ADMIN_SENHA",
         "LOCADORA_JWT_SECRET",
         "API_PORT",
+        "LOCADORA_BACKGROUND_JOBS_ENABLED",
+        "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS",
+        "LOCADORA_BACKGROUND_JOBS_LOTE",
+        "LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS",
     )
 
     for variavel in variaveis_obrigatorias:

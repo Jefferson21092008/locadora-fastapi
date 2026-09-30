@@ -37,6 +37,7 @@ TABELAS_ESPERADAS = {
     "caucoes",
     "pagamentos_financeiros",
     "notificacoes",
+    "tarefas_background",
     "sessoes",
     "tokens_recuperacao_senha",
 }
@@ -358,7 +359,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20260928_0008"
+        assert revisao == "20260930_0009"
 
     finally:
         engine.dispose()
@@ -443,6 +444,7 @@ def test_upgrade_preserva_dados_do_schema_legado(
                         "caucoes",
                         "pagamentos_financeiros",
                         "notificacoes",
+                        "tarefas_background",
                         "sessoes",
                     }
                     else 1

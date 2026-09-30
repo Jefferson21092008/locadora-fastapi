@@ -32,3 +32,15 @@ services:
 
       - key: LOCADORA_AMBIENTE
         value: production
+
+      - key: LOCADORA_BACKGROUND_JOBS_ENABLED
+        value: "true"
+
+      - key: LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS
+        value: "60"
+
+      - key: LOCADORA_BACKGROUND_JOBS_LOTE
+        value: "50"
+
+      - key: LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS
+        value: "900"

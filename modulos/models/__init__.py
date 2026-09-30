@@ -1,4 +1,5 @@
 from modulos.models.base import Base
+from modulos.models.background_job_model import TarefaBackgroundModel
 from modulos.models.aluguel_model import AluguelModel
 from modulos.models.audit_log_model import AuditLogModel
 from modulos.models.cliente_model import ClienteModel
@@ -20,6 +21,7 @@ from modulos.models.vistoria_model import (
 
 __all__ = [
     "Base",
+    "TarefaBackgroundModel",
     "AluguelModel",
     "AuditLogModel",
     "ClienteModel",
