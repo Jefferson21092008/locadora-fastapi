@@ -7,6 +7,8 @@ class RelatorioService:
         veiculo_repository,
         cliente_repository,
         relatorio_repository,
+        cache_service=None,
+        dashboard_cache_ttl_segundos=30,
     ):
         repositories = {
             "AluguelRepository": aluguel_repository,
@@ -25,6 +27,11 @@ class RelatorioService:
         self.veiculo_repository = veiculo_repository
         self.cliente_repository = cliente_repository
         self.relatorio_repository = relatorio_repository
+        self.cache_service = cache_service
+        self.dashboard_cache_ttl_segundos = max(
+            int(dashboard_cache_ttl_segundos),
+            1,
+        )
 
     # ================================================================
     # HISTÓRICO
@@ -106,7 +113,37 @@ class RelatorioService:
     # DASHBOARD
     # ================================================================
 
-    def metricas_dashboard(self):
+    def metricas_dashboard(
+        self,
+        forcar_atualizacao=False,
+    ):
+        if self.cache_service is None:
+            return (
+                self
+                ._calcular_metricas_dashboard()
+            )
+
+        return (
+            self.cache_service
+            .obter_ou_calcular(
+                chave=(
+                    "relatorios:dashboard:v1"
+                ),
+                ttl_segundos=(
+                    self
+                    .dashboard_cache_ttl_segundos
+                ),
+                produtor=(
+                    self
+                    ._calcular_metricas_dashboard
+                ),
+                ignorar_cache=(
+                    forcar_atualizacao
+                ),
+            )
+        )
+
+    def _calcular_metricas_dashboard(self):
         dados = dict(
             self.relatorio_repository
             .metricas_dashboard()

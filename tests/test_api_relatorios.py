@@ -99,9 +99,17 @@ class AuthServiceFake:
 
 
 class RelatorioServiceFake:
+    def __init__(self):
+        self.forcar_atualizacao = None
+
     def metricas_dashboard(
         self,
+        forcar_atualizacao=False,
     ):
+        self.forcar_atualizacao = (
+            forcar_atualizacao
+        )
+
         return {
             "clientes_ativos": 5,
             "clientes_inativos": 1,
@@ -373,6 +381,25 @@ def test_admin_pode_ver_metricas_dashboard(
     assert dados["taxa_frota_alugada"] == 37.5
     assert dados["resultado_bruto"] == 12000.0
     assert dados["ticket_medio"] == 1000.0
+
+
+def test_dashboard_pode_forcar_atualizacao_do_cache(
+    admin_client,
+    ambiente,
+):
+    response = admin_client.get(
+        "/relatorios/dashboard?atualizar=true"
+    )
+
+    assert response.status_code == 200
+
+    _, container_fake = ambiente
+    assert (
+        container_fake
+        .relatorio_service
+        .forcar_atualizacao
+        is True
+    )
 
 
 def test_cliente_nao_pode_ver_metricas_dashboard(

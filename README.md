@@ -1338,3 +1338,57 @@ LOCKED` para reservar trabalho com segurança quando houver mais de um worker.
 
 A sincronização manual de notificações continua disponível como fallback e não
 cria duplicatas, porque a deduplicação final permanece em `NotificacaoService`.
+
+## Trilha principal — Redis e cache compartilhado
+
+A Etapa 20 adiciona Redis/Valkey como infraestrutura **opcional** para cache e
+rate limiting distribuído. O PostgreSQL continua sendo a fonte de verdade e a
+fila persistente da Etapa 19 permanece no banco relacional.
+
+```text
+FastAPI
+  ├── autenticação
+  │     ↓
+  │  RateLimiter
+  │     ↓
+  │  Redis / Valkey
+  │     └── fallback local em memória se indisponível
+  │
+  └── RelatorioService
+        ↓
+     CacheService
+        ↓
+     Redis / Valkey
+        └── cache miss → consulta PostgreSQL
+```
+
+O dashboard administrativo usa o padrão cache-aside na chave
+`relatorios:dashboard:v1`, com TTL curto configurável. A primeira leitura calcula
+as métricas no banco e grava o JSON no cache; as próximas leituras reutilizam o
+valor até o TTL. O botão **Atualizar dados** envia `?atualizar=true`, ignora o
+cache, recalcula no PostgreSQL e substitui a entrada armazenada.
+
+O rate limiter dos fluxos de login, recuperação e redefinição de senha passa a
+usar contadores compartilhados quando `LOCADORA_REDIS_URL` está configurada.
+Assim, duas instâncias da API enxergam o mesmo limite. Se Redis/Valkey ficar
+indisponível, a aplicação degrada para o limiter em memória por processo em vez
+de impedir autenticação.
+
+Variáveis disponíveis:
+
+```text
+LOCADORA_REDIS_URL
+LOCADORA_REDIS_PREFIXO
+LOCADORA_REDIS_TIMEOUT_MS
+LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS
+```
+
+No Docker Compose local existe um serviço `cache` baseado em Redis 8. Em
+produção, a aplicação aceita qualquer endpoint compatível com `redis://` ou
+`rediss://`. A URL não deve ser versionada: configure-a no ambiente do serviço.
+Sem `LOCADORA_REDIS_URL`, cache distribuído fica desativado e o sistema continua
+funcional.
+
+A fila de background jobs **não foi migrada para Redis** nesta etapa. Essa decisão
+preserva a durabilidade já existente no PostgreSQL e evita transformar cache em
+fonte de verdade de tarefas.

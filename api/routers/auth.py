@@ -204,7 +204,8 @@ def login(
 
     if usuario is None:
         rate_limiter.registrar(
-            chave_limite
+            chave_limite,
+            janela_segundos=60,
         )
 
         registrar_evento(
@@ -230,7 +231,8 @@ def login(
 
     if not autenticado:
         rate_limiter.registrar(
-            chave_limite
+            chave_limite,
+            janela_segundos=60,
         )
 
         registrar_evento(
@@ -742,7 +744,8 @@ def solicitar_recuperacao_senha(
         muitas_tentativas()
 
     rate_limiter.registrar(
-        chave_limite
+        chave_limite,
+        janela_segundos=900,
     )
 
     (
@@ -835,7 +838,8 @@ def redefinir_senha(
         muitas_tentativas()
 
     rate_limiter.registrar(
-        chave_limite
+        chave_limite,
+        janela_segundos=900,
     )
 
     mensagem = (
