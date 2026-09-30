@@ -1277,6 +1277,64 @@ A permissão `notificacoes:ler` é atribuída a administradores e clientes. A
 migration `20260928_0008_notificacoes` cria a tabela `notificacoes` e o índice
 por usuário, estado de leitura e data de criação.
 
-A Etapa 19 poderá chamar `NotificacaoService.processar_usuario()` fora do ciclo
-de requisição para transformar esses lembretes em processamento realmente
-agendado, sem duplicar regras de domínio.
+A Etapa 19 passou a chamar `NotificacaoService.processar_usuario()` fora do ciclo
+de requisição por meio da fila persistente, sem duplicar regras de domínio.
+
+## Trilha principal — Background jobs e fila persistente
+
+A Etapa 19 adiciona uma fila persistente em banco para executar trabalho fora do
+ciclo HTTP sem introduzir Redis antes da Etapa 20. O primeiro job automatizado
+reaproveita `NotificacaoService.processar_usuario()` para gerar os lembretes
+diários de todos os usuários ativos.
+
+```text
+Scheduler do worker
+        ↓
+BackgroundJobService
+        ↓
+tarefas_background
+        ↓
+worker reserva uma tarefa
+        ↓
+NotificacaoService
+```
+
+A chave de deduplicação da tarefa inclui data e usuário. Por isso vários ciclos
+do worker podem tentar agendar o mesmo dia sem duplicar trabalho. A fila persiste
+status, número de tentativas, horário de disponibilidade, bloqueio, erro e término.
+Falhas são reagendadas com backoff exponencial e bloqueios abandonados por um
+processo interrompido voltam para a fila após o timeout configurado.
+
+Por padrão, desenvolvimento local mantém o worker embutido desativado. O Render
+ativa `LOCADORA_BACKGROUND_JOBS_ENABLED=true` no mesmo Web Service, evitando criar
+um serviço adicional nesta etapa. Como o Web Service atual usa o plano gratuito,
+o worker é **best effort**: ele roda enquanto a instância está acordada e retoma a
+fila persistida quando a aplicação desperta novamente. Para garantia rígida de
+horário, use no futuro um worker/cron dedicado. Em um deploy com worker dedicado,
+o mesmo processador também pode ser iniciado com:
+
+```bash
+python -m modulos.background_worker
+```
+
+Para executar somente um ciclo, útil em cron, diagnóstico ou CI:
+
+```bash
+python -m modulos.background_worker --once
+```
+
+Variáveis disponíveis:
+
+```text
+LOCADORA_BACKGROUND_JOBS_ENABLED
+LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS
+LOCADORA_BACKGROUND_JOBS_LOTE
+LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS
+```
+
+A migration `20260930_0009_background_jobs` cria `tarefas_background` e o índice
+`idx_tarefas_background_status_disponivel`. O PostgreSQL usa `FOR UPDATE SKIP
+LOCKED` para reservar trabalho com segurança quando houver mais de um worker.
+
+A sincronização manual de notificações continua disponível como fallback e não
+cria duplicatas, porque a deduplicação final permanece em `NotificacaoService`.

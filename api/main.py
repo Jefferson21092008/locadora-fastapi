@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from pathlib import Path
 
 from fastapi import (
@@ -75,6 +77,10 @@ from api.routers.vistorias import (
 
 from modulos.container import (
     Container,
+)
+from modulos.background_worker import (
+    background_jobs_habilitados_por_ambiente,
+    criar_worker_do_container,
 )
 
 
@@ -204,11 +210,29 @@ configurar_monitoramento_erros()
 configurar_logs()
 
 
+@asynccontextmanager
+async def lifespan(app):
+    worker = None
+
+    if background_jobs_habilitados_por_ambiente():
+        container = get_container()
+        worker = criar_worker_do_container(container)
+        worker.iniciar()
+        app.state.background_worker = worker
+
+    try:
+        yield
+    finally:
+        if worker is not None:
+            worker.parar()
+
+
 app = FastAPI(
     title="Locadora API",
     description=descricao_api,
     version="1.0.0",
     openapi_tags=tags_metadata,
+    lifespan=lifespan,
 )
 
 app.middleware("http")(

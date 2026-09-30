@@ -4,6 +4,9 @@ from modulos.database import (
     BancoSQLAlchemy,
 )
 
+from modulos.repositories.background_job_repository import (
+    BackgroundJobRepository,
+)
 from modulos.repositories.aluguel_repository import (
     AluguelRepository,
 )
@@ -44,6 +47,9 @@ from modulos.repositories.vistoria_repository import (
     VistoriaRepository,
 )
 
+from modulos.servicos.background_job_service import (
+    BackgroundJobService,
+)
 from modulos.servicos.admin_service import (
     AdminService,
 )
@@ -171,6 +177,14 @@ class Container:
 
         self.auditoria_repository = (
             AuditoriaRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
+        self.background_job_repository = (
+            BackgroundJobRepository(
                 banco_sqlalchemy=(
                     self.banco_sqlalchemy
                 ),
@@ -445,6 +459,20 @@ class Container:
                 ),
                 email_service=(
                     self.email_service
+                ),
+            )
+        )
+
+        self.background_job_service = (
+            BackgroundJobService(
+                background_job_repository=(
+                    self.background_job_repository
+                ),
+                usuario_repository=(
+                    self.usuario_repository
+                ),
+                notificacao_service=(
+                    self.notificacao_service
                 ),
             )
         )

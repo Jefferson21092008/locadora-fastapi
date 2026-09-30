@@ -26,6 +26,33 @@ DATABASE_URL_PADRAO = (
 )
 
 
+def _env_bool(nome, padrao=False):
+    valor = os.getenv(nome)
+    if valor is None:
+        return padrao
+
+    return valor.strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+        "sim",
+    }
+
+
+def _env_int(nome, padrao, minimo=1):
+    valor = os.getenv(nome)
+    if valor is None:
+        return padrao
+
+    try:
+        convertido = int(valor)
+    except ValueError:
+        return padrao
+
+    return max(convertido, minimo)
+
+
 def normalizar_database_url(
     database_url,
 ):
@@ -120,6 +147,33 @@ class Configuracao:
             )
             or "http://127.0.0.1:8000"
         ).strip().rstrip("/")
+
+        # ============================================================
+        # BACKGROUND JOBS
+        # ============================================================
+
+        self.background_jobs_enabled = _env_bool(
+            "LOCADORA_BACKGROUND_JOBS_ENABLED",
+            False,
+        )
+
+        self.background_jobs_intervalo_segundos = _env_int(
+            "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS",
+            60,
+            minimo=5,
+        )
+
+        self.background_jobs_lote = _env_int(
+            "LOCADORA_BACKGROUND_JOBS_LOTE",
+            50,
+            minimo=1,
+        )
+
+        self.background_jobs_timeout_bloqueio_segundos = _env_int(
+            "LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS",
+            900,
+            minimo=30,
+        )
 
         # ============================================================
         # VALIDAÇÕES OBRIGATÓRIAS

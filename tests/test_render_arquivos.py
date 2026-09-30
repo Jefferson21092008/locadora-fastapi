@@ -90,3 +90,11 @@ def test_health_check_confirma_api_e_banco(
 
     finally:
         get_container.cache_clear()
+
+
+def test_render_habilita_background_jobs_no_web_service():
+    conteudo = ler_render_yaml()
+
+    assert "LOCADORA_BACKGROUND_JOBS_ENABLED" in conteudo
+    assert 'value: "true"' in conteudo
+    assert "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS" in conteudo

@@ -617,6 +617,51 @@ ou todas como lidas e expõe contadores no resumo. O acesso usa a permissão
 `notificacoes:ler`, disponível para os dois papéis atuais.
 
 A migration `20260928_0008_notificacoes` adiciona a tabela e o índice
-`idx_notificacoes_usuario_lida_criada`. O processamento temporal ainda acontece
-quando a aplicação é acessada; a Etapa 19 de background jobs/filas deve apenas
-agendar chamadas ao mesmo service, preservando as regras e a deduplicação.
+`idx_notificacoes_usuario_lida_criada`. A sincronização HTTP permanece como
+fallback, enquanto a Etapa 19 agenda chamadas ao mesmo service por uma fila
+persistente, preservando as regras e a deduplicação.
+
+## Background jobs e fila persistente
+
+A Etapa 19 retira o agendamento de notificações da dependência direta de uma
+requisição do usuário. O domínio das notificações não foi duplicado: o worker
+apenas agenda e orquestra chamadas ao `NotificacaoService`.
+
+```text
+FastAPI lifespan / worker CLI
+        ↓
+BackgroundWorker
+        ↓
+BackgroundJobService
+        ├── UsuarioRepository
+        ├── BackgroundJobRepository
+        └── NotificacaoService
+                ↓
+        tarefas_background
+```
+
+A fila usa PostgreSQL/SQLite já existentes. Cada tarefa possui chave de
+deduplicação, payload JSON, status, tentativas, limite de tentativas, horário de
+disponibilidade, lock, conclusão e último erro. No PostgreSQL, a reserva do
+próximo item usa `FOR UPDATE SKIP LOCKED`, preparando o desenho para múltiplos
+workers sem exigir Redis nesta etapa.
+
+O scheduler executado a cada ciclo cria, de forma idempotente, uma tarefa por
+usuário ativo e por data. O tipo inicial é
+`sincronizar_notificacoes_usuario`. O dispatcher recupera o usuário e chama
+`NotificacaoService.processar_usuario()` com a data original do job.
+
+Falhas reaparecem como `pendente` com backoff exponencial até três tentativas.
+Ao atingir o limite, o estado final é `falhou`. Jobs que ficaram em
+`processando` após queda do processo são recuperados quando o lock ultrapassa o
+timeout configurado.
+
+No deploy atual do Render, o worker é executado dentro do processo do Web Service
+por `lifespan`, controlado por `LOCADORA_BACKGROUND_JOBS_ENABLED`. Como a instância
+atual é gratuita, esse agendamento é best effort: o processo para quando o serviço
+é suspenso por inatividade e retoma a fila persistida no próximo start. O mesmo
+código pode rodar como processo dedicado com `python -m modulos.background_worker`
+sem alterar as regras de negócio.
+
+A Etapa 20 pode substituir ou complementar essa infraestrutura com Redis/cache,
+mas a fila persistente atual não depende dele.
