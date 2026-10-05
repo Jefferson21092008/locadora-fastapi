@@ -28,3 +28,6 @@ dados/*.db
 # Sistema operacional
 .DS_Store
 Thumbs.db
+
+# Backups locais
+backups/

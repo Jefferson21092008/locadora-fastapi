@@ -712,3 +712,43 @@ negócio depende do cache para concluir uma operação.
 verdade dos jobs nesta etapa. A fila já possui deduplicação persistente, retries,
 locks e `FOR UPDATE SKIP LOCKED`, portanto não há ganho suficiente para trocar a
 durabilidade existente apenas por presença do Redis.
+
+## Backup e recuperação
+
+A Etapa 21 adiciona uma camada operacional independente do fluxo HTTP. Backup e
+restore não são endpoints públicos: são comandos administrativos executados por
+CLI para evitar expor uma operação destrutiva pela API.
+
+```text
+Operador / terminal confiável
+        ↓
+modulos.backup_cli
+        ↓
+modulos.backup
+   ├── SQLite → sqlite3 backup + integrity_check
+   └── PostgreSQL → pg_dump / pg_restore
+        ↓
+arquivo + metadata SHA-256
+```
+
+O backup PostgreSQL usa formato custom e não inclui ownership/privileges. Senhas
+são repassadas ao processo cliente por ambiente, não pela linha de comando. A
+metadata registra backend, banco, timestamp, tamanho, checksum e revisão Alembic,
+sem persistir a connection string.
+
+O restore exige destino explícito e confirmação. Para PostgreSQL, `pg_restore`
+usa limpeza controlada, erro fatal em primeira falha e transação única. O runbook
+recomenda sempre validar primeiro em banco descartável.
+
+A retenção local é baseada na quantidade de backups mais recentes. `backups/` é
+ignorado pelo Git e pela imagem Docker. No Render Free, o filesystem do Web
+Service é efêmero; por isso o diretório local nunca é tratado como armazenamento
+permanente de produção.
+
+Redis/Valkey fica fora do backup porque seus dados são reconstruíveis. A fila de
+background, notificações, sessões, reservas, vistorias e financeiro permanecem
+no PostgreSQL e são incluídos no dump lógico.
+
+Para produção em Neon, o runbook combina recovery do provedor com dumps lógicos
+independentes. Isso evita que a estratégia de recuperação dependa de uma única
+camada ou de uma janela de histórico presumida.

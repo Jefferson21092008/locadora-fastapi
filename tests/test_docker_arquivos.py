@@ -110,3 +110,27 @@ def test_compose_configura_redis_para_cache_e_rate_limit():
     assert "LOCADORA_REDIS_PREFIXO" in conteudo
     assert "LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS" in conteudo
     assert 'test: ["CMD", "redis-cli", "ping"]' in conteudo
+
+
+def test_backups_locais_nao_entram_no_git_ou_imagem():
+    gitignore = ler_arquivo(
+        ".gitignore"
+    )
+    dockerignore = ler_arquivo(
+        ".dockerignore"
+    )
+
+    assert "backups/" in gitignore
+    assert "backups/" in dockerignore
+
+
+def test_env_exemplo_documenta_backup_e_recuperacao():
+    conteudo = ler_arquivo(
+        ".env.example"
+    )
+
+    assert "LOCADORA_BACKUP_DATABASE_URL" in conteudo
+    assert "LOCADORA_BACKUP_DIRETORIO=backups" in conteudo
+    assert "LOCADORA_BACKUP_MANTER=7" in conteudo
+    assert "LOCADORA_PG_DUMP" in conteudo
+    assert "LOCADORA_PG_RESTORE" in conteudo
