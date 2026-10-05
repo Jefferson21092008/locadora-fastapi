@@ -214,5 +214,5 @@ def test_configuracao_redis_e_opcional(monkeypatch):
 
     assert configuracao.redis_configurado is False
     assert configuracao.redis_url is None
-    assert configuracao.redis_prefixo == "locadora"
+    assert configuracao.redis_prefixo == "locadora:test"
     assert configuracao.cache_dashboard_ttl_segundos == 30

@@ -752,3 +752,12 @@ no PostgreSQL e são incluídos no dump lógico.
 Para produção em Neon, o runbook combina recovery do provedor com dumps lógicos
 independentes. Isso evita que a estratégia de recuperação dependa de uma única
 camada ou de uma janela de histórico presumida.
+
+
+## Separação de ambientes
+
+A Etapa 22 centraliza o ambiente em `modulos/config.py`. `LOCADORA_AMBIENTE` aceita `development`, `test`, `staging` e `production`; Sentry e headers de segurança consomem a mesma fonte de verdade.
+
+Em `staging` e `production`, a aplicação falha cedo quando `LOCADORA_DATABASE_URL` não foi definida, quando o banco não é PostgreSQL ou quando `LOCADORA_PUBLIC_URL` não usa HTTPS. Isso impede que um deploy real suba silenciosamente com o SQLite local de desenvolvimento.
+
+Staging e produção usam bancos, credenciais e namespaces Redis independentes. O CI roda explicitamente com `LOCADORA_AMBIENTE=test`. Consulte `docs/ambientes.md` para a matriz operacional completa.

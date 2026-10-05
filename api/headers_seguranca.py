@@ -1,7 +1,8 @@
 import os
 
+from modulos.config import ambiente_atual
 
-ENV_AMBIENTE = "LOCADORA_AMBIENTE"
+
 ENV_PUBLIC_URL = "LOCADORA_PUBLIC_URL"
 
 CSP_FRONTEND = (
@@ -19,13 +20,7 @@ CSP_FRONTEND = (
 
 
 def _producao_https():
-    ambiente = (
-        os.getenv(
-            ENV_AMBIENTE,
-            "development",
-        )
-        or "development"
-    ).strip().lower()
+    ambiente = ambiente_atual()
 
     public_url = (
         os.getenv(

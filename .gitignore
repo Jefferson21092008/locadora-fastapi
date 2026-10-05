@@ -17,7 +17,12 @@ coverage.xml
 
 # Variáveis de ambiente
 .env
-.env.docker
+.env.*
+!.env.example
+!.env.docker.example
+!.env.development.example
+!.env.staging.example
+!.env.production.example
 
 # Banco local
 dados/*.db

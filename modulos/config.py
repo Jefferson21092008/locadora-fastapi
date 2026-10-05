@@ -25,6 +25,51 @@ DATABASE_URL_PADRAO = (
     f"sqlite:///{DATABASE_PATH.as_posix()}"
 )
 
+AMBIENTE_PADRAO = "development"
+AMBIENTES_VALIDOS = {
+    "development",
+    "test",
+    "staging",
+    "production",
+}
+AMBIENTES_ALIASES = {
+    "dev": "development",
+    "testing": "test",
+    "stage": "staging",
+    "prod": "production",
+}
+
+
+def normalizar_ambiente(valor):
+    ambiente = str(
+        valor or AMBIENTE_PADRAO
+    ).strip().lower()
+
+    ambiente = AMBIENTES_ALIASES.get(
+        ambiente,
+        ambiente,
+    )
+
+    if ambiente not in AMBIENTES_VALIDOS:
+        opcoes = ", ".join(
+            sorted(AMBIENTES_VALIDOS)
+        )
+        raise RuntimeError(
+            "LOCADORA_AMBIENTE inválido. "
+            f"Use um destes valores: {opcoes}."
+        )
+
+    return ambiente
+
+
+def ambiente_atual():
+    return normalizar_ambiente(
+        os.getenv(
+            "LOCADORA_AMBIENTE",
+            AMBIENTE_PADRAO,
+        )
+    )
+
 
 def _env_bool(nome, padrao=False):
     valor = os.getenv(nome)
@@ -96,6 +141,12 @@ class Configuracao:
 
     def __init__(self):
         # ============================================================
+        # AMBIENTE
+        # ============================================================
+
+        self.ambiente = ambiente_atual()
+
+        # ============================================================
         # ADMIN
         # ============================================================
 
@@ -120,11 +171,13 @@ class Configuracao:
         # BANCO DE DADOS
         # ============================================================
 
+        database_url_env = os.getenv(
+            "LOCADORA_DATABASE_URL"
+        )
+
         self.database_url = (
             normalizar_database_url(
-                os.getenv(
-                    "LOCADORA_DATABASE_URL"
-                )
+                database_url_env
                 or DATABASE_URL_PADRAO
             )
         )
@@ -143,14 +196,18 @@ class Configuracao:
             else None
         )
 
+        redis_prefixo_padrao = (
+            f"locadora:{self.ambiente}"
+        )
+
         self.redis_prefixo = (
             os.getenv(
                 "LOCADORA_REDIS_PREFIXO",
-                "locadora",
+                redis_prefixo_padrao,
             )
             .strip()
             .strip(":")
-            or "locadora"
+            or redis_prefixo_padrao
         )
 
         self.redis_timeout_ms = _env_int(
@@ -228,6 +285,53 @@ class Configuracao:
                 "LOCADORA_JWT_SECRET "
                 "não foi configurada."
             )
+
+        if self.ambiente in {
+            "staging",
+            "production",
+        }:
+            if not database_url_env:
+                raise RuntimeError(
+                    "LOCADORA_DATABASE_URL deve ser configurada "
+                    f"explicitamente no ambiente {self.ambiente}."
+                )
+
+            if not self.database_url.startswith(
+                "postgresql+psycopg://"
+            ):
+                raise RuntimeError(
+                    "Staging e production devem usar PostgreSQL "
+                    "em LOCADORA_DATABASE_URL."
+                )
+
+            if not self.public_url.lower().startswith(
+                "https://"
+            ):
+                raise RuntimeError(
+                    "LOCADORA_PUBLIC_URL deve usar HTTPS em "
+                    f"{self.ambiente}."
+                )
+
+
+    # ================================================================
+    # AMBIENTE
+    # ================================================================
+
+    @property
+    def em_desenvolvimento(self):
+        return self.ambiente == "development"
+
+    @property
+    def em_teste(self):
+        return self.ambiente == "test"
+
+    @property
+    def em_staging(self):
+        return self.ambiente == "staging"
+
+    @property
+    def em_producao(self):
+        return self.ambiente == "production"
 
     # ================================================================
     # REDIS / CACHE

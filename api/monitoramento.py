@@ -11,20 +11,10 @@ from sentry_sdk.integrations.fastapi import (
     FastApiIntegration,
 )
 
+from modulos.config import ambiente_atual
+
 
 ENV_SENTRY_DSN = "LOCADORA_SENTRY_DSN"
-ENV_AMBIENTE = "LOCADORA_AMBIENTE"
-AMBIENTE_PADRAO = "development"
-
-
-def _ambiente_atual():
-    return (
-        os.getenv(
-            ENV_AMBIENTE,
-            AMBIENTE_PADRAO,
-        )
-        or AMBIENTE_PADRAO
-    ).strip() or AMBIENTE_PADRAO
 
 
 def _url_sem_query(
@@ -116,7 +106,7 @@ def configurar_monitoramento_erros():
     sentry_sdk.init(
         dsn=dsn,
         environment=(
-            _ambiente_atual()
+            ambiente_atual()
         ),
         integrations=[
             FastApiIntegration()

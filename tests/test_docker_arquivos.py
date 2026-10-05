@@ -85,6 +85,8 @@ def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
         "LOCADORA_ADMIN_USUARIO",
         "LOCADORA_ADMIN_SENHA",
         "LOCADORA_JWT_SECRET",
+        "LOCADORA_AMBIENTE",
+        "LOCADORA_PUBLIC_URL",
         "API_PORT",
         "LOCADORA_REDIS_URL",
         "LOCADORA_REDIS_PREFIXO",
