@@ -1392,3 +1392,39 @@ funcional.
 A fila de background jobs **não foi migrada para Redis** nesta etapa. Essa decisão
 preserva a durabilidade já existente no PostgreSQL e evita transformar cache em
 fonte de verdade de tarefas.
+
+## Trilha principal — Backup e recuperação
+
+A Etapa 21 adiciona um procedimento operacional de backup, verificação e restore
+sem usar o filesystem efêmero do Render como armazenamento definitivo.
+
+O comando principal é:
+
+```bash
+python -m modulos.backup_cli criar
+```
+
+Em PostgreSQL/Neon ele usa `pg_dump` em formato custom; em SQLite usa a API de
+backup nativa. Para Neon, `LOCADORA_BACKUP_DATABASE_URL` pode guardar uma URL
+direta separada da conexão pooled usada pela aplicação. Cada arquivo recebe
+metadata sem credenciais, SHA-256 e a revisão
+Alembic quando identificável. O restore exige uma URL de destino explícita e a
+flag `--confirmar`, reduzindo o risco de sobrescrever produção por engano.
+
+Comandos disponíveis:
+
+```bash
+python -m modulos.backup_cli criar
+python -m modulos.backup_cli listar
+python -m modulos.backup_cli verificar backups/ARQUIVO
+python -m modulos.backup_cli restaurar backups/ARQUIVO --destino-url URL --confirmar
+python -m modulos.backup_cli limpar --manter 7 --confirmar
+```
+
+Backups locais ficam em `backups/`, que é ignorado pelo Git e pelo Docker. Redis
+não é copiado porque contém apenas cache/rate limit reconstruíveis. A fila da
+Etapa 19 continua protegida porque está no PostgreSQL.
+
+O runbook completo, incluindo recovery drill e cuidados específicos com
+Neon/Render, está em `docs/backup-recuperacao.md`. Não há migration nova nesta
+etapa; o Alembic head continua em `20260930_0009_background_jobs`.
