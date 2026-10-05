@@ -1428,3 +1428,10 @@ Etapa 19 continua protegida porque está no PostgreSQL.
 O runbook completo, incluindo recovery drill e cuidados específicos com
 Neon/Render, está em `docs/backup-recuperacao.md`. Não há migration nova nesta
 etapa; o Alembic head continua em `20260930_0009_background_jobs`.
+
+
+## Ambientes dev / staging / prod
+
+A configuração de ambiente é centralizada por `LOCADORA_AMBIENTE`, com os valores `development`, `test`, `staging` e `production`. Staging e produção recusam fallback SQLite, exigem PostgreSQL explícito e `LOCADORA_PUBLIC_URL` em HTTPS.
+
+Modelos seguros estão em `.env.development.example`, `.env.staging.example` e `.env.production.example`. O fluxo e as regras de isolamento estão documentados em [`docs/ambientes.md`](docs/ambientes.md). O blueprint `render.staging.yaml` serve como referência para um serviço de homologação separado do serviço de produção.

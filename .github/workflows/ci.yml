@@ -37,6 +37,7 @@ jobs:
 
     env:
       PYTHONUTF8: "1"
+      LOCADORA_AMBIENTE: test
       LOCADORA_ADMIN_USUARIO: admin_ci
       LOCADORA_ADMIN_SENHA: senha-temporaria-do-admin-ci
       LOCADORA_JWT_SECRET: chave-jwt-temporaria-exclusiva-do-ci-1234567890
@@ -88,6 +89,7 @@ jobs:
 
     env:
       PYTHONUTF8: "1"
+      LOCADORA_AMBIENTE: test
       LOCADORA_ADMIN_USUARIO: admin_e2e
       LOCADORA_ADMIN_SENHA: senha-temporaria-do-admin-e2e
       LOCADORA_JWT_SECRET: chave-jwt-temporaria-exclusiva-do-e2e-1234567890

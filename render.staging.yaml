@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: locadora-fastapi
+    name: locadora-fastapi-staging
     runtime: docker
     plan: free
     region: virginia
@@ -9,8 +9,11 @@ services:
     healthCheckPath: /health
     autoDeployTrigger: checksPass
     envVars:
+      - key: LOCADORA_AMBIENTE
+        value: staging
+
       - key: LOCADORA_ADMIN_USUARIO
-        value: admin
+        value: admin_staging
 
       - key: LOCADORA_ADMIN_SENHA
         sync: false
@@ -21,23 +24,17 @@ services:
       - key: LOCADORA_DATABASE_URL
         sync: false
 
-      - key: LOCADORA_BREVO_API_KEY
-        sync: false
-
-      - key: LOCADORA_EMAIL_REMETENTE
-        sync: false
-
       - key: LOCADORA_PUBLIC_URL
-        value: https://locadora-fastapi.onrender.com
+        value: https://locadora-fastapi-staging.onrender.com
 
-      - key: LOCADORA_AMBIENTE
-        value: production
+      - key: LOCADORA_SENTRY_DSN
+        sync: false
 
       - key: LOCADORA_REDIS_URL
         sync: false
 
       - key: LOCADORA_REDIS_PREFIXO
-        value: locadora:production
+        value: locadora:staging
 
       - key: LOCADORA_REDIS_TIMEOUT_MS
         value: "500"
@@ -45,14 +42,6 @@ services:
       - key: LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS
         value: "30"
 
+      # Evita disparar lembretes/e-mails automáticos durante homologação.
       - key: LOCADORA_BACKGROUND_JOBS_ENABLED
-        value: "true"
-
-      - key: LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS
-        value: "60"
-
-      - key: LOCADORA_BACKGROUND_JOBS_LOTE
-        value: "50"
-
-      - key: LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS
-        value: "900"
+        value: "false"

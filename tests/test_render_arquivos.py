@@ -117,3 +117,11 @@ def test_render_documenta_redis_opcional_sem_versionar_url():
     )[0]
 
     assert "sync: false" in trecho
+
+
+def test_render_producao_declara_ambiente_e_namespace_redis():
+    conteudo = ler_render_yaml()
+
+    assert "LOCADORA_AMBIENTE" in conteudo
+    assert "value: production" in conteudo
+    assert "value: locadora:production" in conteudo
