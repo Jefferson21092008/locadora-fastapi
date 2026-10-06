@@ -137,3 +137,10 @@ jobs:
 
       - name: Construir imagem da API
         run: docker build --tag locadora-api:ci .
+
+      - name: Validar hardening da imagem
+        run: |
+          test "$(docker image inspect locadora-api:ci --format '{{.Config.User}}')" = "app:app"
+          docker image inspect locadora-api:ci --format '{{json .Config.Healthcheck}}' | grep -q 'health'
+          docker run --rm --entrypoint python locadora-api:ci -c "import os; assert os.getuid() == 10001"
+          docker run --rm --entrypoint python locadora-api:ci -c "import importlib.util; assert importlib.util.find_spec('pytest') is None"

@@ -32,16 +32,23 @@ def test_render_usa_docker_free_e_health_check():
     assert "autoDeployTrigger: checksPass" in conteudo
 
 
-def test_docker_executa_migration_e_usa_port_da_plataforma():
-    conteudo = (
+def test_docker_executa_entrypoint_endurecido_e_usa_port_da_plataforma():
+    dockerfile = (
         BASE_DIR
         .joinpath("Dockerfile")
         .read_text(encoding="utf-8")
     )
+    entrypoint = (
+        BASE_DIR
+        .joinpath("modulos", "container_entrypoint.py")
+        .read_text(encoding="utf-8")
+    )
 
-    assert "python -m alembic upgrade head" in conteudo
-    assert "--host 0.0.0.0" in conteudo
-    assert "${PORT:-10000}" in conteudo
+    assert "modulos.container_entrypoint" in dockerfile
+    assert 'os.environ.get("PORT", "10000")' in entrypoint
+    assert '"alembic",' in entrypoint
+    assert '"uvicorn",' in entrypoint
+    assert '"0.0.0.0",' in entrypoint
 
 
 def test_render_nao_versiona_segredos():

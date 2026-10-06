@@ -6,18 +6,28 @@ venv
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 .env
 .env.*
-!.env.example
-!.env.docker.example
+*.example
 
+dados/
 dados/*.db
+backups/
 tests/
+docs/
 
 *.zip
 *.pdf
 *.docx
+*.md
 
-# Backups locais nunca entram na imagem
-backups/
+requirements-dev.txt
+pytest.ini
+pyproject.toml
+compose.yaml
+render*.yaml
+carros.py
