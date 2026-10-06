@@ -2,6 +2,8 @@
 
 Este documento apresenta a arquitetura atual da Locadora, mostrando como os principais componentes da aplicação se relacionam desde o frontend até o banco de dados e os serviços externos.
 
+Para uma visão resumida dos trade-offs e dos motivos para manter o sistema como monólito modular, consulte [`docs/decisoes-arquiteturais.md`](decisoes-arquiteturais.md). As evidências do fechamento da trilha principal estão em [`docs/validacao-final.md`](validacao-final.md).
+
 ## Visão geral
 
 A Locadora utiliza uma arquitetura em camadas para separar responsabilidades entre interface, API, regras de negócio e persistência de dados.
