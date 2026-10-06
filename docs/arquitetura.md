@@ -772,3 +772,14 @@ No Compose local, `migrate` continua responsável por Alembic e a API desabilita
 
 `requirements.txt` passa a representar somente runtime; ferramentas de teste ficam em `requirements-dev.txt`. O CI constrói a imagem e verifica usuário efetivo não root, healthcheck e ausência de `pytest` no runtime. O runbook completo está em `docs/docker-hardening.md`.
 
+
+## Medição de desempenho
+
+A Etapa 24 mantém testes de carga fora do runtime da aplicação. O gerador fica
+em `scripts/performance/` e usa o cliente HTTP do ambiente de desenvolvimento
+para exercitar a API externamente, preservando a separação entre código de
+produção e ferramentas de benchmark.
+
+Os resultados locais são gravados em `performance-results/` e não são
+versionados. O fluxo recomendado é baseline -> hipótese -> mudança pequena ->
+mesma carga -> comparação, evitando otimizações sem evidência.

@@ -31,3 +31,5 @@ pyproject.toml
 compose.yaml
 render*.yaml
 carros.py
+
+performance-results/

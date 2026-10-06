@@ -1430,3 +1430,17 @@ etapa; o Alembic head continua em `20260930_0009_background_jobs`.
 A configuração de ambiente é centralizada por `LOCADORA_AMBIENTE`, com os valores `development`, `test`, `staging` e `production`. Staging e produção recusam fallback SQLite, exigem PostgreSQL explícito e `LOCADORA_PUBLIC_URL` em HTTPS.
 
 Modelos seguros estão em `.env.development.example`, `.env.staging.example` e `.env.production.example`. O fluxo e as regras de isolamento estão documentados em [`docs/ambientes.md`](docs/ambientes.md). O blueprint `render.staging.yaml` serve como referência para um serviço de homologação separado do serviço de produção.
+
+## Trilha principal — testes de carga e otimização
+
+A Etapa 24 adiciona uma baseline reproduzível de desempenho sem transformar
+benchmark em teste unitário. O runner assíncrono em
+`scripts/performance/load_test.py` mede taxa de sucesso, throughput e latências
+média/p50/p95/p99, com cenários para health check, paginação de veículos e
+dashboard com e sem reaproveitamento de cache.
+
+Por segurança, o alvo padrão é local e destinos remotos exigem opt-in explícito.
+Credenciais de carga são lidas de variáveis de ambiente e não entram nos
+resultados. O procedimento completo está em `docs/testes-carga-otimizacao.md`.
+A regra desta etapa é medir antes de otimizar e comparar a mesma carga antes e
+depois de cada mudança.
