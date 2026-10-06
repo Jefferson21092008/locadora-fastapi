@@ -223,6 +223,43 @@ class Configuracao:
         )
 
         # ============================================================
+        # ESCALA HORIZONTAL / POOL DE CONEXÕES
+        # ============================================================
+
+        self.escala_horizontal_enabled = _env_bool(
+            "LOCADORA_ESCALA_HORIZONTAL_ENABLED",
+            False,
+        )
+
+        self.workers_embutidos = _env_bool(
+            "LOCADORA_WORKERS_EMBUTIDOS",
+            not self.escala_horizontal_enabled,
+        )
+
+        self.container_aplicar_migrations = _env_bool(
+            "LOCADORA_CONTAINER_APLICAR_MIGRATIONS",
+            True,
+        )
+
+        self.db_pool_size = _env_int(
+            "LOCADORA_DB_POOL_SIZE",
+            5,
+            minimo=1,
+        )
+
+        self.db_max_overflow = _env_int(
+            "LOCADORA_DB_MAX_OVERFLOW",
+            5,
+            minimo=0,
+        )
+
+        self.db_pool_timeout_segundos = _env_int(
+            "LOCADORA_DB_POOL_TIMEOUT_SEGUNDOS",
+            30,
+            minimo=1,
+        )
+
+        # ============================================================
         # E-MAIL / BREVO
         # ============================================================
 
@@ -349,6 +386,34 @@ class Configuracao:
                 raise RuntimeError(
                     "LOCADORA_PUBLIC_URL deve usar HTTPS em "
                     f"{self.ambiente}."
+                )
+
+        if self.escala_horizontal_enabled:
+            if not self.database_url.startswith(
+                "postgresql+psycopg://"
+            ):
+                raise RuntimeError(
+                    "Escala horizontal exige PostgreSQL compartilhado."
+                )
+
+            if not self.redis_configurado:
+                raise RuntimeError(
+                    "Escala horizontal exige LOCADORA_REDIS_URL "
+                    "para cache e rate limiting compartilhados."
+                )
+
+            if self.workers_embutidos:
+                raise RuntimeError(
+                    "Escala horizontal exige "
+                    "LOCADORA_WORKERS_EMBUTIDOS=false. "
+                    "Execute os workers como processos separados."
+                )
+
+            if self.container_aplicar_migrations:
+                raise RuntimeError(
+                    "Escala horizontal exige "
+                    "LOCADORA_CONTAINER_APLICAR_MIGRATIONS=false. "
+                    "Execute migrations uma única vez antes das réplicas."
                 )
 
 

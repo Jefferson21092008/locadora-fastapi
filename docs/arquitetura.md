@@ -879,3 +879,37 @@ negócio e a persistência do evento, mas não promete exatamente uma execução
 efeitos externos. O Alembic head passa a ser `20261006_0011_eventos_outbox`.
 
 Runbook: `docs/mensageria-outbox.md`.
+
+## Escala horizontal
+
+A Etapa 28 torna explícita a separação entre processos web e workers. Réplicas
+FastAPI compartilham PostgreSQL e Redis e não executam scheduler, outbox worker
+nem Alembic dentro de cada processo quando
+`LOCADORA_ESCALA_HORIZONTAL_ENABLED=true`.
+
+```text
+Nginx / balanceador
+        ↓
+┌───────┼────────┐
+│       │        │
+API A   API B    API N
+│       │        │
+└───┬───┴────┬───┘
+    │        │
+PostgreSQL  Redis
+    │
+workers dedicados
+```
+
+A autenticação continua portátil entre réplicas porque o access token usa o
+mesmo segredo JWT e a sessão de refresh é persistida no PostgreSQL. Cache e rate
+limit usam Redis compartilhado. Background jobs e outbox usam `FOR UPDATE SKIP
+LOCKED`, permitindo concorrência entre workers.
+
+O pool SQLAlchemy é limitado por réplica através de `LOCADORA_DB_POOL_SIZE`,
+`LOCADORA_DB_MAX_OVERFLOW` e `LOCADORA_DB_POOL_TIMEOUT_SEGUNDOS`. A API expõe
+`X-Locadora-Instance` e `/ready` para observar balanceamento e readiness.
+
+O deploy atual do Render permanece single-instance. O modo horizontal deve ser
+habilitado somente junto de migration dedicada e workers separados. Runbook:
+`docs/escala-horizontal.md`.

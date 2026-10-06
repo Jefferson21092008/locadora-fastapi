@@ -1,3 +1,5 @@
+from sqlalchemy.exc import IntegrityError
+
 from modulos.config import Configuracao
 
 from modulos.cache import (
@@ -160,11 +162,31 @@ class Container:
 
             self.banco_sqlalchemy = (
                 BancoSQLAlchemy(
-                    database_url
+                    database_url,
+                    pool_size=getattr(
+                        self.config,
+                        "db_pool_size",
+                        5,
+                    ),
+                    max_overflow=getattr(
+                        self.config,
+                        "db_max_overflow",
+                        5,
+                    ),
+                    pool_timeout=getattr(
+                        self.config,
+                        "db_pool_timeout_segundos",
+                        30,
+                    ),
                 )
             )
 
-        self.banco_sqlalchemy.aplicar_migrations()
+        if getattr(
+            self.config,
+            "container_aplicar_migrations",
+            True,
+        ):
+            self.banco_sqlalchemy.aplicar_migrations()
 
         self.cache_backend = CacheRedis(
             redis_url=getattr(
@@ -656,6 +678,27 @@ class Container:
                     role=Role.ADMIN,
                 )
             )
+
+        except IntegrityError as erro:
+            # Duas réplicas podem iniciar no mesmo instante. A constraint
+            # UNIQUE de usuários decide a corrida; a perdedora relê o admin
+            # persistido pela outra réplica e continua normalmente.
+            usuario = (
+                self.auth_service
+                .buscar_por_usuario(
+                    self.config.admin_usuario
+                )
+            )
+
+            if (
+                usuario is not None
+                and usuario.role == Role.ADMIN
+            ):
+                return
+
+            raise RuntimeError(
+                "Não foi possível criar o administrador inicial."
+            ) from erro
 
         except ErroAplicacao as erro:
             raise RuntimeError(

@@ -41,6 +41,10 @@ ALEMBIC_INI = (
 
 def criar_engine_sqlalchemy(
     database_url,
+    *,
+    pool_size=5,
+    max_overflow=5,
+    pool_timeout=30,
 ):
     argumentos_conexao = {}
     backend = (
@@ -62,9 +66,14 @@ def criar_engine_sqlalchemy(
     }
 
     if backend == "postgresql":
-        argumentos_engine[
-            "pool_recycle"
-        ] = 300
+        argumentos_engine.update(
+            {
+                "pool_recycle": 300,
+                "pool_size": max(int(pool_size), 1),
+                "max_overflow": max(int(max_overflow), 0),
+                "pool_timeout": max(int(pool_timeout), 1),
+            }
+        )
 
     engine = create_engine(
         database_url,
@@ -111,6 +120,10 @@ class BancoSQLAlchemy:
     def __init__(
         self,
         database_url,
+        *,
+        pool_size=5,
+        max_overflow=5,
+        pool_timeout=30,
     ):
         self.database_url = (
             database_url
@@ -118,7 +131,10 @@ class BancoSQLAlchemy:
 
         self.engine = (
             criar_engine_sqlalchemy(
-                database_url
+                database_url,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
+                pool_timeout=pool_timeout,
             )
         )
 

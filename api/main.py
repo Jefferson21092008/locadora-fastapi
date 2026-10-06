@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import (
     Depends,
     FastAPI,
+    HTTPException,
 )
 
 from fastapi.staticfiles import (
@@ -85,6 +86,10 @@ from modulos.background_worker import (
 from modulos.outbox_worker import (
     criar_worker_outbox_do_container,
     mensageria_habilitada_por_ambiente,
+)
+from modulos.escala_horizontal import (
+    identificador_instancia,
+    workers_embutidos_habilitados,
 )
 
 
@@ -220,18 +225,26 @@ async def lifespan(app):
     outbox_worker = None
     container = None
 
-    if (
+    workers_embutidos = workers_embutidos_habilitados()
+
+    if workers_embutidos and (
         background_jobs_habilitados_por_ambiente()
         or mensageria_habilitada_por_ambiente()
     ):
         container = get_container()
 
-    if background_jobs_habilitados_por_ambiente():
+    if (
+        workers_embutidos
+        and background_jobs_habilitados_por_ambiente()
+    ):
         background_worker = criar_worker_do_container(container)
         background_worker.iniciar()
         app.state.background_worker = background_worker
 
-    if mensageria_habilitada_por_ambiente():
+    if (
+        workers_embutidos
+        and mensageria_habilitada_por_ambiente()
+    ):
         outbox_worker = criar_worker_outbox_do_container(container)
         outbox_worker.iniciar()
         app.state.outbox_worker = outbox_worker
@@ -380,6 +393,40 @@ def health(
 
     return {
         "status": "ok"
+    }
+
+
+@app.get(
+    "/ready",
+    include_in_schema=False,
+)
+def readiness(
+    container: Container = Depends(
+        get_container
+    ),
+):
+    """Readiness para balanceadores e orquestradores."""
+    container.banco_sqlalchemy.testar_conexao()
+
+    if (
+        getattr(
+            container.config,
+            "escala_horizontal_enabled",
+            False,
+        )
+        and not container.cache_backend.ping()
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Redis compartilhado indisponível para "
+                "escala horizontal."
+            ),
+        )
+
+    return {
+        "status": "ready",
+        "instance_id": identificador_instancia(),
     }
 
 

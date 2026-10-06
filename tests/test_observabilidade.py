@@ -13,6 +13,9 @@ from api.observabilidade import (
     logger_http,
     registrar_evento,
 )
+from modulos.escala_horizontal import (
+    HEADER_INSTANCIA,
+)
 
 
 def test_resposta_recebe_request_id_uuid():
@@ -27,6 +30,7 @@ def test_resposta_recebe_request_id_uuid():
 
     assert resposta.status_code == 200
     assert str(UUID(request_id)) == request_id
+    assert resposta.headers[HEADER_INSTANCIA]
 
 
 def test_request_id_muda_entre_requisicoes():
@@ -83,6 +87,7 @@ def test_log_http_registra_campos_estruturados(
     assert extra["path"] == "/"
     assert extra["status_code"] == 200
     assert extra["duration_ms"] >= 0
+    assert extra["instance_id"]
     assert (
         extra["request_id"]
         == resposta.headers[

@@ -101,3 +101,10 @@ def test_main_pode_pular_migration(monkeypatch):
         container_entrypoint.main()
 
     migrar.assert_not_called()
+
+def test_main_bloqueia_migration_em_replica_horizontal(monkeypatch):
+    monkeypatch.setenv("LOCADORA_ESCALA_HORIZONTAL_ENABLED", "true")
+    monkeypatch.setenv("LOCADORA_EXECUTAR_MIGRATIONS", "true")
+
+    with pytest.raises(RuntimeError, match="migrations fora das réplicas"):
+        container_entrypoint.main()
