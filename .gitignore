@@ -36,3 +36,6 @@ Thumbs.db
 
 # Backups locais
 backups/
+
+# Resultados locais de testes de carga
+performance-results/
