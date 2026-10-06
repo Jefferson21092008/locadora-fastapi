@@ -1,4 +1,5 @@
 from modulos.consultas import ResultadoPaginado
+from modulos.eventos import publicar_evento
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
@@ -21,10 +22,12 @@ class PagamentoService:
         aluguel_repository,
         pagamento_repository,
         vistoria_service,
+        evento_barramento=None,
     ):
         self.aluguel_repository = aluguel_repository
         self.pagamento_repository = pagamento_repository
         self.vistoria_service = vistoria_service
+        self.evento_barramento = evento_barramento
 
     def _obter_aluguel(self, id_aluguel):
         aluguel = (
@@ -209,13 +212,26 @@ class PagamentoService:
             + resumo["saldo_pendente"]
         )
 
-        return (
+        pagamento_registrado = (
             self.pagamento_repository
             .registrar(
                 pagamento,
                 limite_adicional=limite_adicional,
             )
         )
+
+        publicar_evento(
+            self.evento_barramento,
+            "pagamento.registrado",
+            agregado_tipo="pagamento",
+            agregado_id=pagamento_registrado.id,
+            dados={
+                "aluguel_id": id_aluguel,
+                "valor": pagamento_registrado.valor,
+                "forma": pagamento_registrado.forma,
+            },
+        )
+        return pagamento_registrado
 
     def estornar_pagamento(
         self,
@@ -250,6 +266,16 @@ class PagamentoService:
                 "Pagamento não encontrado."
             )
 
+        publicar_evento(
+            self.evento_barramento,
+            "pagamento.estornado",
+            agregado_tipo="pagamento",
+            agregado_id=atualizado.id,
+            dados={
+                "aluguel_id": atualizado.aluguel_id,
+                "valor": atualizado.valor,
+            },
+        )
         return atualizado
 
     def consultar_contas(

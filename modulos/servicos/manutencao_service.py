@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from modulos.eventos import publicar_evento
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
@@ -15,6 +16,7 @@ class ManutencaoService:
         veiculo_service,
         manutencao_repository,
         reserva_repository=None,
+        evento_barramento=None,
     ):
         if veiculo_service is None:
             raise ValueError(
@@ -35,6 +37,7 @@ class ManutencaoService:
         self.reserva_repository = (
             reserva_repository
         )
+        self.evento_barramento = evento_barramento
 
     def buscar_por_id(
         self,
@@ -226,6 +229,18 @@ class ManutencaoService:
             raise
 
         manutencao.id = novo_id
+
+        publicar_evento(
+            self.evento_barramento,
+            "manutencao.aberta",
+            agregado_tipo="manutencao",
+            agregado_id=manutencao.id,
+            dados={
+                "veiculo_id": manutencao.veiculo_id,
+                "tipo": manutencao.tipo,
+                "prioridade": manutencao.prioridade,
+            },
+        )
         return manutencao
 
     def atualizar(
@@ -284,6 +299,16 @@ class ManutencaoService:
             )
             raise
 
+        publicar_evento(
+            self.evento_barramento,
+            "manutencao.atualizada",
+            agregado_tipo="manutencao",
+            agregado_id=manutencao.id,
+            dados={
+                "veiculo_id": manutencao.veiculo_id,
+                "campos": sorted(alteracoes),
+            },
+        )
         return manutencao
 
     def finalizar(
@@ -374,6 +399,17 @@ class ManutencaoService:
             )
             raise
 
+        publicar_evento(
+            self.evento_barramento,
+            "manutencao.finalizada",
+            agregado_tipo="manutencao",
+            agregado_id=manutencao.id,
+            dados={
+                "veiculo_id": manutencao.veiculo_id,
+                "custo": manutencao.custo,
+                "data_fim": manutencao.data_fim,
+            },
+        )
         return manutencao
 
     def consultar_manutencoes(

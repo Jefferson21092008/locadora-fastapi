@@ -819,3 +819,33 @@ desenvolvimento e testes comuns, mas os testes de concorrência real usam
 PostgreSQL porque `FOR UPDATE` não possui a mesma semântica no SQLite.
 
 Detalhes operacionais e invariantes: `docs/concorrencia-consistencia.md`.
+
+## Arquitetura orientada a eventos
+
+A Etapa 26 adiciona um barramento de eventos de aplicação **dentro do monólito**.
+Services publicam fatos somente depois que a persistência principal foi concluída
+com sucesso. O envelope `EventoAplicacao` possui UUID, nome, versão, timestamp
+UTC, referência do agregado e payload mínimo.
+
+```text
+Service → Repository → commit
+                    ↓
+             EventoAplicacao
+                    ↓
+             BarramentoEventos
+                    ↓
+                 handlers
+```
+
+O primeiro consumidor desacoplado invalida a chave de cache do dashboard em
+mudanças de aluguel e manutenção. Dessa forma os services transacionais não
+precisam conhecer Redis nem o serviço de relatórios.
+
+O barramento é síncrono e em memória. Falhas de handlers são registradas e
+isoladas porque a transação principal já terminou; a API não devolve um falso
+erro depois de um commit válido. A etapa não oferece durabilidade ou garantia de
+entrega entre processos. Essas propriedades ficam reservadas para a camada de
+mensageria posterior, preferencialmente apoiada em outbox transacional.
+
+Contrato, catálogo inicial e regras de evolução estão em
+`docs/arquitetura-eventos.md`. Não há migration nova na Etapa 26.

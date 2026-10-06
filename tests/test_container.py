@@ -1,6 +1,7 @@
 import pytest
 
 from modulos.container import Container
+from modulos.eventos import BarramentoEventos
 from modulos.database import BancoSQLAlchemy
 
 from modulos.servicos.background_job_service import (
@@ -82,6 +83,11 @@ def container():
 def test_container_cria_services(
     container,
 ):
+    assert isinstance(
+        container.evento_barramento,
+        BarramentoEventos,
+    )
+
     assert isinstance(
         container.cache_service,
         CacheService,
@@ -283,6 +289,23 @@ def test_services_compartilham_repositories(
         container.background_job_service
         .notificacao_service
         is container.notificacao_service
+    )
+
+    assert (
+        container.aluguel_service.evento_barramento
+        is container.evento_barramento
+    )
+    assert (
+        container.reserva_service.evento_barramento
+        is container.evento_barramento
+    )
+    assert (
+        container.manutencao_service.evento_barramento
+        is container.evento_barramento
+    )
+    assert (
+        container.pagamento_service.evento_barramento
+        is container.evento_barramento
     )
 
 

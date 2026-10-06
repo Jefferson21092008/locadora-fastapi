@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from modulos.alugueis import Aluguel
 from modulos.pagamentos import Pagamento
 
+from modulos.eventos import publicar_evento
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
@@ -17,6 +18,7 @@ class AluguelService:
         veiculo_service,
         aluguel_repository,
         reserva_service=None,
+        evento_barramento=None,
     ):
         """Recebe as dependências prontas por injeção."""
         if veiculo_service is None:
@@ -32,6 +34,7 @@ class AluguelService:
         self.veiculo_service = veiculo_service
         self.aluguel_repository = aluguel_repository
         self.reserva_service = reserva_service
+        self.evento_barramento = evento_barramento
 
     # ================================================================
     # CONSULTAS
@@ -221,6 +224,31 @@ class AluguelService:
 
         aluguel.id = novo_id
 
+        publicar_evento(
+            self.evento_barramento,
+            "aluguel.criado",
+            agregado_tipo="aluguel",
+            agregado_id=aluguel.id,
+            dados={
+                "cliente_id": aluguel.cliente_id,
+                "veiculo_id": aluguel.veiculo_id,
+                "dias": aluguel.dias,
+            },
+        )
+
+        if reserva_para_converter is not None:
+            publicar_evento(
+                self.evento_barramento,
+                "reserva.convertida",
+                agregado_tipo="reserva",
+                agregado_id=getattr(reserva_para_converter, "id", None),
+                dados={
+                    "aluguel_id": aluguel.id,
+                    "veiculo_id": aluguel.veiculo_id,
+                    "cliente_id": aluguel.cliente_id,
+                },
+            )
+
         return aluguel
 
     # ================================================================
@@ -360,6 +388,20 @@ class AluguelService:
             )
 
             raise
+
+        publicar_evento(
+            self.evento_barramento,
+            "aluguel.finalizado",
+            agregado_tipo="aluguel",
+            agregado_id=aluguel.id,
+            dados={
+                "cliente_id": aluguel.cliente_id,
+                "veiculo_id": aluguel.veiculo_id,
+                "valor": aluguel.valor,
+                "dias_atraso": aluguel.dias_atraso,
+                "multa": aluguel.multa,
+            },
+        )
 
         return {
             "aluguel": aluguel,
