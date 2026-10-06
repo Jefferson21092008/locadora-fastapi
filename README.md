@@ -395,7 +395,7 @@ Para apagar também o volume e reiniciar o banco do zero:
 docker compose --env-file .env.docker down --volumes
 ```
 
-A API é executada no container por um usuário Linux sem privilégios administrativos e não utiliza `--reload` em produção.
+A API é executada no container por um usuário Linux sem privilégios administrativos e não utiliza `--reload` em produção. A imagem usa build multi-stage, healthcheck próprio e copia apenas artefatos necessários ao runtime. No Compose, `api` e `migrate` usam filesystem somente leitura, `cap_drop: ALL`, `no-new-privileges`, `/tmp` temporário e limites de PIDs. Detalhes e limitações estão em [`docs/docker-hardening.md`](docs/docker-hardening.md).
 
 ## Integração contínua
 
@@ -412,7 +412,8 @@ O pipeline valida, entre outros pontos:
 7. cobertura de código com mínimo obrigatório de 85%;
 8. testes E2E com Playwright em Chromium;
 9. construção da imagem Docker;
-10. configuração Docker Compose.
+10. configuração Docker Compose;
+11. hardening da imagem: usuário efetivo, healthcheck e ausência de dependências de teste.
 
 Os testes convencionais e os testes E2E são executados em jobs separados. O job principal ignora `tests/e2e`, enquanto o job E2E instala o Chromium e executa os testes de navegador de forma independente.
 
@@ -867,13 +868,7 @@ O arquivo `render.yaml` configura o serviço com:
 - segredo JWT gerado pelo Render;
 - secrets sensíveis cadastrados fora do Git.
 
-O `Dockerfile` inicia o container executando primeiro:
-
-```text
-python -m alembic upgrade head
-```
-
-e depois inicia o Uvicorn em `0.0.0.0` usando a porta fornecida pela variável `PORT` do Render.
+O `Dockerfile` inicia `python -m modulos.container_entrypoint`. Esse entrypoint executa Alembic diretamente por `subprocess` quando `LOCADORA_EXECUTAR_MIGRATIONS` está habilitado e depois substitui o processo pelo Uvicorn, sem usar `sh -c`. A porta vem de `PORT`, fornecida pelo Render.
 
 ### Neon
 

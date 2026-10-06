@@ -761,3 +761,14 @@ A Etapa 22 centraliza o ambiente em `modulos/config.py`. `LOCADORA_AMBIENTE` ace
 Em `staging` e `production`, a aplicação falha cedo quando `LOCADORA_DATABASE_URL` não foi definida, quando o banco não é PostgreSQL ou quando `LOCADORA_PUBLIC_URL` não usa HTTPS. Isso impede que um deploy real suba silenciosamente com o SQLite local de desenvolvimento.
 
 Staging e produção usam bancos, credenciais e namespaces Redis independentes. O CI roda explicitamente com `LOCADORA_AMBIENTE=test`. Consulte `docs/ambientes.md` para a matriz operacional completa.
+
+## Docker hardening
+
+A Etapa 23 endurece a camada de container sem alterar a arquitetura de domínio. O build passa a ser multi-stage: dependências de runtime são preparadas no estágio `builder`, enquanto o estágio final recebe apenas o virtualenv e os diretórios necessários à API, migrations e frontend.
+
+O processo final roda como `app` (UID/GID 10001), sem home e sem shell de login. O startup deixa de depender de `sh -c`: `modulos.container_entrypoint` valida a porta, executa migrations quando necessário e usa `os.execv` para entregar o PID ao Uvicorn. A imagem inclui healthcheck em `/health` e sinal de parada `SIGTERM`.
+
+No Compose local, `migrate` continua responsável por Alembic e a API desabilita sua migration de startup. Ambos os serviços de aplicação usam root filesystem somente leitura, `/tmp` temporário, `cap_drop: ALL`, `no-new-privileges` e limite de processos. O PostgreSQL e o Redis mantêm as imagens oficiais sem aplicação cega das mesmas restrições, pois seus entrypoints possuem necessidades próprias de inicialização.
+
+`requirements.txt` passa a representar somente runtime; ferramentas de teste ficam em `requirements-dev.txt`. O CI constrói a imagem e verifica usuário efetivo não root, healthcheck e ausência de `pytest` no runtime. O runbook completo está em `docs/docker-hardening.md`.
+

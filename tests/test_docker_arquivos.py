@@ -24,10 +24,9 @@ def test_dockerfile_executa_api_sem_usuario_root():
 
     assert "FROM python:3.14-slim" in conteudo
     assert "USER app" in conteudo
-    assert "python -m alembic upgrade head" in conteudo
-    assert "python -m uvicorn api.main:app" in conteudo
-    assert "--host 0.0.0.0" in conteudo
-    assert "${PORT:-10000}" in conteudo
+    assert "modulos.container_entrypoint" in conteudo
+    assert "HEALTHCHECK" in conteudo
+    assert "USER app:app" in conteudo
 
 def test_dockerignore_protege_segredos_e_banco_local():
     conteudo = ler_arquivo(
@@ -96,6 +95,7 @@ def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
         "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS",
         "LOCADORA_BACKGROUND_JOBS_LOTE",
         "LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS",
+        "LOCADORA_EXECUTAR_MIGRATIONS",
     )
 
     for variavel in variaveis_obrigatorias:

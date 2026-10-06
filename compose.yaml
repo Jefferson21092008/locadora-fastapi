@@ -16,6 +16,8 @@ x-locadora-environment: &locadora-environment
   LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS: ${LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS:-60}
   LOCADORA_BACKGROUND_JOBS_LOTE: ${LOCADORA_BACKGROUND_JOBS_LOTE:-50}
   LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS: ${LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS:-900}
+  LOCADORA_EXECUTAR_MIGRATIONS: "false"
+  PORT: "8000"
 
 services:
   db:
@@ -56,6 +58,14 @@ services:
       db:
         condition: service_healthy
     command: ["python", "-m", "alembic", "upgrade", "head"]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
     restart: "no"
 
   api:
@@ -82,6 +92,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
     init: true
     restart: unless-stopped
 
