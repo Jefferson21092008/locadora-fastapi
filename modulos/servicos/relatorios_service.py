@@ -1,6 +1,8 @@
 class RelatorioService:
     """Consultas e cálculos relacionados aos relatórios."""
 
+    CHAVE_CACHE_DASHBOARD = "relatorios:dashboard:v1"
+
     def __init__(
         self,
         aluguel_repository,
@@ -127,7 +129,7 @@ class RelatorioService:
             self.cache_service
             .obter_ou_calcular(
                 chave=(
-                    "relatorios:dashboard:v1"
+                    self.CHAVE_CACHE_DASHBOARD
                 ),
                 ttl_segundos=(
                     self

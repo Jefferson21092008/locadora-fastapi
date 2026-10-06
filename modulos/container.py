@@ -107,6 +107,9 @@ from modulos.servicos.vistoria_service import (
 
 from modulos.usuarios import Role
 
+from modulos.event_handlers import registrar_handlers_padrao
+from modulos.eventos import BarramentoEventos
+
 from modulos.excecoes import (
     ErroAplicacao,
 )
@@ -175,8 +178,10 @@ class Container:
             ),
         )
 
+        self.evento_barramento = BarramentoEventos()
         self._criar_repositories()
         self._criar_services()
+        self._registrar_event_handlers()
         self._garantir_admin_padrao()
 
     # ================================================================
@@ -390,6 +395,9 @@ class Container:
                 reserva_repository=(
                     self.reserva_repository
                 ),
+                evento_barramento=(
+                    self.evento_barramento
+                ),
             )
         )
 
@@ -406,6 +414,9 @@ class Container:
                 ),
                 manutencao_repository=(
                     self.manutencao_repository
+                ),
+                evento_barramento=(
+                    self.evento_barramento
                 ),
             )
         )
@@ -438,6 +449,9 @@ class Container:
                 reserva_service=(
                     self.reserva_service
                 ),
+                evento_barramento=(
+                    self.evento_barramento
+                ),
             )
         )
 
@@ -462,6 +476,9 @@ class Container:
                 ),
                 vistoria_service=(
                     self.vistoria_service
+                ),
+                evento_barramento=(
+                    self.evento_barramento
                 ),
             )
         )
@@ -546,6 +563,18 @@ class Container:
             AdminService(
                 self.auth_service
             )
+        )
+
+    # ================================================================
+    # EVENTOS
+    # ================================================================
+
+    def _registrar_event_handlers(
+        self,
+    ):
+        self.event_handlers = registrar_handlers_padrao(
+            barramento=self.evento_barramento,
+            cache_service=self.cache_service,
         )
 
     # ================================================================

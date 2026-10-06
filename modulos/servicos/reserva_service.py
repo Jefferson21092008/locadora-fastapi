@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from modulos.eventos import publicar_evento
 from modulos.excecoes import (
     ConflitoConcorrencia,
     RecursoNaoEncontrado,
@@ -17,6 +18,7 @@ class ReservaService:
         reserva_repository,
         aluguel_repository,
         manutencao_repository,
+        evento_barramento=None,
     ):
         if veiculo_service is None:
             raise ValueError(
@@ -31,6 +33,7 @@ class ReservaService:
         self.reserva_repository = reserva_repository
         self.aluguel_repository = aluguel_repository
         self.manutencao_repository = manutencao_repository
+        self.evento_barramento = evento_barramento
 
     @staticmethod
     def _data_iso(valor, nome):
@@ -250,6 +253,19 @@ class ReservaService:
                 reserva
             )
         )
+
+        publicar_evento(
+            self.evento_barramento,
+            "reserva.criada",
+            agregado_tipo="reserva",
+            agregado_id=reserva.id,
+            dados={
+                "cliente_id": reserva.cliente_id,
+                "veiculo_id": reserva.veiculo_id,
+                "data_inicio": reserva.data_inicio,
+                "data_fim": reserva.data_fim,
+            },
+        )
         return reserva
 
     def listar_todas(self):
@@ -304,6 +320,17 @@ class ReservaService:
         self.reserva_repository.atualizar_status(
             reserva,
             status_esperado="ativa",
+        )
+
+        publicar_evento(
+            self.evento_barramento,
+            "reserva.cancelada",
+            agregado_tipo="reserva",
+            agregado_id=reserva.id,
+            dados={
+                "cliente_id": reserva.cliente_id,
+                "veiculo_id": reserva.veiculo_id,
+            },
         )
         return reserva
 

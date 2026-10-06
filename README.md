@@ -1463,3 +1463,26 @@ parcial único `idx_aluguel_ativo_veiculo`, impedindo no próprio banco mais de 
 aluguel ativo por veículo. O runbook e a estratégia de testes PostgreSQL estão
 documentados em
 [`docs/concorrencia-consistencia.md`](docs/concorrencia-consistencia.md).
+
+## Trilha principal — arquitetura orientada a eventos
+
+A Etapa 26 introduz eventos de aplicação sem decompor a Locadora em
+microserviços. Os fluxos de aluguel, reserva, manutenção e pagamento publicam
+fatos versionados depois de a escrita principal ter sido confirmada.
+
+O `Container` compartilha um único `BarramentoEventos`. Consumers podem assinar
+um nome específico sem criar dependência direta entre o service que realizou a
+operação e a reação secundária. O primeiro uso real é a invalidação automática
+do cache do dashboard quando eventos de aluguel ou manutenção alteram suas
+métricas.
+
+O barramento atual é síncrono e em memória: ele serve para organizar contratos e
+desacoplamento, não para prometer entrega durável. Falhas de handlers são
+isoladas e logadas para evitar retornar erro depois que a transação de negócio
+já foi commitada. Mensageria persistente e garantia entre processos ficam para a
+etapa seguinte.
+
+Detalhes do envelope, catálogo de eventos e limitações estão em
+[`docs/arquitetura-eventos.md`](docs/arquitetura-eventos.md). Não há migration
+nova nesta etapa; o Alembic head continua
+`20261006_0010_consistencia_concorrencia`.
