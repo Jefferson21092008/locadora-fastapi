@@ -101,6 +101,12 @@ def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
         "LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS",
         "LOCADORA_MENSAGERIA_RETRY_BASE_SEGUNDOS",
         "LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS",
+        "LOCADORA_ESCALA_HORIZONTAL_ENABLED",
+        "LOCADORA_WORKERS_EMBUTIDOS",
+        "LOCADORA_CONTAINER_APLICAR_MIGRATIONS",
+        "LOCADORA_DB_POOL_SIZE",
+        "LOCADORA_DB_MAX_OVERFLOW",
+        "LOCADORA_DB_POOL_TIMEOUT_SEGUNDOS",
         "LOCADORA_EXECUTAR_MIGRATIONS",
     )
 
@@ -151,3 +157,11 @@ def test_compose_habilita_mensageria_outbox():
     assert "LOCADORA_MENSAGERIA_INTERVALO_SEGUNDOS" in conteudo
     assert "LOCADORA_MENSAGERIA_LOTE" in conteudo
     assert "LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS" in conteudo
+
+def test_compose_api_fica_atras_do_gateway_para_permitir_replicas():
+    conteudo = ler_arquivo("compose.yaml")
+
+    assert "gateway:" in conteudo
+    assert '"127.0.0.1:${API_PORT:-8000}:8080"' in conteudo
+    assert 'expose:\n      - "8000"' in conteudo
+    assert "http://127.0.0.1:8000/ready" in conteudo

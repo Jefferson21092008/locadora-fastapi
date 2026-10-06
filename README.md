@@ -1515,3 +1515,35 @@ partir da mensagem durável, e não duplicados no caminho síncrono da requisiç
 
 Configuração e operação estão em
 [`docs/mensageria-outbox.md`](docs/mensageria-outbox.md).
+
+## Trilha principal — escala horizontal
+
+A Etapa 28 prepara o monólito para múltiplas réplicas HTTP sem mover estado de
+sessão ou filas para memória local. O Compose passa a colocar as APIs atrás de
+um gateway Nginx, enquanto PostgreSQL e Redis permanecem compartilhados.
+
+```text
+Gateway
+  ├── API réplica A ─┐
+  ├── API réplica B ─┼── PostgreSQL + Redis
+  └── API réplica N ─┘
+
+BackgroundWorker dedicado
+OutboxWorker dedicado
+```
+
+Workers embutidos e migrations por réplica são bloqueados no modo horizontal.
+O pool SQLAlchemy passa a ter limites explícitos por processo, e cada resposta
+expõe `X-Locadora-Instance` para validar a distribuição de tráfego. A nova rota
+`/ready` exige Redis quando a aplicação está em modo horizontal.
+
+Teste local com duas réplicas:
+
+```bash
+docker compose --env-file .env.docker up -d --build --scale api=2 --scale outbox-worker=2
+python -m scripts.horizontal.check_replicas --requests 30 --min-instances 2
+```
+
+A Etapa 28 não cria migration; o head permanece
+`20261006_0011_eventos_outbox`. Detalhes e runbook estão em
+[`docs/escala-horizontal.md`](docs/escala-horizontal.md).

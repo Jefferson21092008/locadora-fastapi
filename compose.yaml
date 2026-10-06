@@ -22,8 +22,26 @@ x-locadora-environment: &locadora-environment
   LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS: ${LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS:-60}
   LOCADORA_MENSAGERIA_RETRY_BASE_SEGUNDOS: ${LOCADORA_MENSAGERIA_RETRY_BASE_SEGUNDOS:-5}
   LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS: ${LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS:-300}
+  LOCADORA_ESCALA_HORIZONTAL_ENABLED: ${LOCADORA_ESCALA_HORIZONTAL_ENABLED:-true}
+  LOCADORA_WORKERS_EMBUTIDOS: ${LOCADORA_WORKERS_EMBUTIDOS:-false}
+  LOCADORA_CONTAINER_APLICAR_MIGRATIONS: ${LOCADORA_CONTAINER_APLICAR_MIGRATIONS:-false}
+  LOCADORA_DB_POOL_SIZE: ${LOCADORA_DB_POOL_SIZE:-3}
+  LOCADORA_DB_MAX_OVERFLOW: ${LOCADORA_DB_MAX_OVERFLOW:-2}
+  LOCADORA_DB_POOL_TIMEOUT_SEGUNDOS: ${LOCADORA_DB_POOL_TIMEOUT_SEGUNDOS:-15}
   LOCADORA_EXECUTAR_MIGRATIONS: "false"
   PORT: "8000"
+
+x-locadora-runtime: &locadora-runtime
+  image: locadora-api:local
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  init: true
+  restart: unless-stopped
 
 services:
   db:
@@ -75,7 +93,7 @@ services:
     restart: "no"
 
   api:
-    image: locadora-api:local
+    <<: *locadora-runtime
     build:
       context: .
     environment: *locadora-environment
@@ -86,27 +104,65 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    ports:
-      - "127.0.0.1:${API_PORT:-8000}:8000"
+    expose:
+      - "8000"
     healthcheck:
       test:
         - CMD
         - python
         - -c
-        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/status', timeout=3)
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3)
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
-    read_only: true
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
     pids_limit: 256
-    init: true
+
+  background-worker:
+    <<: *locadora-runtime
+    environment: *locadora-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["python", "-m", "modulos.background_worker"]
+    healthcheck:
+      disable: true
+    pids_limit: 128
+
+  outbox-worker:
+    <<: *locadora-runtime
+    environment: *locadora-environment
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: ["python", "-m", "modulos.outbox_worker"]
+    healthcheck:
+      disable: true
+    pids_limit: 128
+
+  gateway:
+    image: nginx:1.28-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8080"
+    volumes:
+      - ./infra/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
 volumes:

@@ -2,6 +2,10 @@ import os
 import subprocess
 import sys
 
+from modulos.escala_horizontal import (
+    escala_horizontal_habilitada,
+)
+
 
 VALORES_TRUE = {"1", "true", "yes", "on"}
 VALORES_FALSE = {"0", "false", "no", "off"}
@@ -65,10 +69,22 @@ def comando_uvicorn(porta):
 
 
 def main():
-    if ler_booleano_ambiente(
+    executar_migrations_no_start = ler_booleano_ambiente(
         "LOCADORA_EXECUTAR_MIGRATIONS",
         True,
+    )
+
+    if (
+        escala_horizontal_habilitada()
+        and executar_migrations_no_start
     ):
+        raise RuntimeError(
+            "Escala horizontal exige migrations fora das réplicas web. "
+            "Defina LOCADORA_EXECUTAR_MIGRATIONS=false e execute "
+            "alembic upgrade head em uma etapa dedicada."
+        )
+
+    if executar_migrations_no_start:
         executar_migrations()
 
     comando = comando_uvicorn(obter_porta())

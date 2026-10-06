@@ -192,3 +192,10 @@ A suíte cobre:
 
 Em PostgreSQL, a migration deve ser validada junto da suíte de integração antes
 do merge.
+
+## Escala horizontal
+
+A Etapa 28 separa o `OutboxWorker` das réplicas HTTP e valida múltiplos workers
+concorrentes. A reserva continua baseada em `FOR UPDATE SKIP LOCKED`; portanto a
+semântica at-least-once e a exigência de handlers idempotentes permanecem. Veja
+`docs/escala-horizontal.md`.

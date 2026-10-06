@@ -42,6 +42,27 @@ services:
       - key: LOCADORA_CACHE_DASHBOARD_TTL_SEGUNDOS
         value: "30"
 
+      # Deploy atual é single-instance. Para múltiplas réplicas,
+      # desative workers embutidos e use processos dedicados.
+      - key: LOCADORA_ESCALA_HORIZONTAL_ENABLED
+        value: "false"
+
+      - key: LOCADORA_WORKERS_EMBUTIDOS
+        value: "true"
+
+      # O entrypoint executa Alembic antes de iniciar o Uvicorn.
+      - key: LOCADORA_CONTAINER_APLICAR_MIGRATIONS
+        value: "false"
+
+      - key: LOCADORA_DB_POOL_SIZE
+        value: "5"
+
+      - key: LOCADORA_DB_MAX_OVERFLOW
+        value: "5"
+
+      - key: LOCADORA_DB_POOL_TIMEOUT_SEGUNDOS
+        value: "30"
+
       # Evita disparar lembretes/e-mails automáticos durante homologação.
       - key: LOCADORA_BACKGROUND_JOBS_ENABLED
         value: "false"

@@ -12,6 +12,10 @@ from uuid import uuid4
 from api.monitoramento import (
     associar_request_id,
 )
+from modulos.escala_horizontal import (
+    HEADER_INSTANCIA,
+    identificador_instancia,
+)
 
 
 NOME_LOGGER_BASE = "locadora"
@@ -26,6 +30,7 @@ CAMPOS_ESTRUTURADOS = (
     "duration_ms",
     "user_id",
     "role",
+    "instance_id",
 )
 
 
@@ -202,6 +207,7 @@ async def middleware_observabilidade(
 
     inicio = perf_counter()
     status_code = 500
+    instance_id = identificador_instancia()
 
     try:
         response = await call_next(
@@ -214,6 +220,9 @@ async def middleware_observabilidade(
         response.headers[
             HEADER_REQUEST_ID
         ] = request_id
+        response.headers[
+            HEADER_INSTANCIA
+        ] = instance_id
 
         return response
 
@@ -247,6 +256,9 @@ async def middleware_observabilidade(
                 ),
                 "duration_ms": (
                     duracao_ms
+                ),
+                "instance_id": (
+                    instance_id
                 ),
             },
         )

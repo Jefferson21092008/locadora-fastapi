@@ -147,3 +147,11 @@ def test_render_habilita_mensageria_outbox_em_producao():
     )[0]
     assert 'value: "true"' in trecho
     assert "LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS" in conteudo
+
+def test_render_declara_modo_single_instance_atual():
+    conteudo = ler_render_yaml()
+
+    assert "LOCADORA_ESCALA_HORIZONTAL_ENABLED" in conteudo
+    assert "LOCADORA_WORKERS_EMBUTIDOS" in conteudo
+    assert "LOCADORA_CONTAINER_APLICAR_MIGRATIONS" in conteudo
+    assert "LOCADORA_DB_POOL_SIZE" in conteudo
