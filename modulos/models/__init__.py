@@ -5,6 +5,7 @@ from modulos.models.audit_log_model import AuditLogModel
 from modulos.models.cliente_model import ClienteModel
 from modulos.models.manutencao_model import ManutencaoModel
 from modulos.models.notificacao_model import NotificacaoModel
+from modulos.models.outbox_event_model import EventoOutboxModel
 from modulos.models.pagamento_model import PagamentoFinanceiroModel
 from modulos.models.reserva_model import ReservaModel
 from modulos.models.sessao_model import SessaoModel
@@ -27,6 +28,7 @@ __all__ = [
     "ClienteModel",
     "ManutencaoModel",
     "NotificacaoModel",
+    "EventoOutboxModel",
     "PagamentoFinanceiroModel",
     "ReservaModel",
     "SessaoModel",

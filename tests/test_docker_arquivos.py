@@ -95,6 +95,12 @@ def test_env_docker_exemplo_documenta_variaveis_obrigatorias():
         "LOCADORA_BACKGROUND_JOBS_INTERVALO_SEGUNDOS",
         "LOCADORA_BACKGROUND_JOBS_LOTE",
         "LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS",
+        "LOCADORA_MENSAGERIA_ENABLED",
+        "LOCADORA_MENSAGERIA_INTERVALO_SEGUNDOS",
+        "LOCADORA_MENSAGERIA_LOTE",
+        "LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS",
+        "LOCADORA_MENSAGERIA_RETRY_BASE_SEGUNDOS",
+        "LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS",
         "LOCADORA_EXECUTAR_MIGRATIONS",
     )
 
@@ -136,3 +142,12 @@ def test_env_exemplo_documenta_backup_e_recuperacao():
     assert "LOCADORA_BACKUP_MANTER=7" in conteudo
     assert "LOCADORA_PG_DUMP" in conteudo
     assert "LOCADORA_PG_RESTORE" in conteudo
+
+
+def test_compose_habilita_mensageria_outbox():
+    conteudo = ler_arquivo("compose.yaml")
+
+    assert "LOCADORA_MENSAGERIA_ENABLED" in conteudo
+    assert "LOCADORA_MENSAGERIA_INTERVALO_SEGUNDOS" in conteudo
+    assert "LOCADORA_MENSAGERIA_LOTE" in conteudo
+    assert "LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS" in conteudo

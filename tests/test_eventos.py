@@ -139,3 +139,20 @@ def test_publicar_evento_sem_barramento_e_noop():
         )
         is None
     )
+
+
+def test_barramento_pode_adiar_despacho_para_outbox():
+    barramento = BarramentoEventos(despacho_imediato=False)
+    recebidos = []
+    barramento.assinar("aluguel.criado", recebidos.append)
+    evento = EventoAplicacao(nome="aluguel.criado")
+
+    adiado = barramento.publicar(evento)
+    assert adiado.adiado is True
+    assert adiado.handlers_executados == 0
+    assert recebidos == []
+
+    processado = barramento.publicar(evento, forcar=True)
+    assert processado.adiado is False
+    assert processado.handlers_executados == 1
+    assert recebidos == [evento]

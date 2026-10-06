@@ -849,3 +849,33 @@ mensageria posterior, preferencialmente apoiada em outbox transacional.
 
 Contrato, catálogo inicial e regras de evolução estão em
 `docs/arquitetura-eventos.md`. Não há migration nova na Etapa 26.
+
+## Mensageria durável / Transactional Outbox
+
+A Etapa 27 persiste os eventos da aplicação na tabela `eventos_outbox` junto da
+mesma transação que altera o estado de negócio. O fluxo passa a ser:
+
+```text
+Service
+  ↓
+Repository
+  ├─ mutação de negócio
+  ├─ EventoAplicacao → eventos_outbox
+  └─ commit único
+       ↓
+ OutboxWorker
+       ↓
+ BarramentoEventos
+       ↓
+ handlers idempotentes
+```
+
+O PostgreSQL usa `FOR UPDATE SKIP LOCKED` para reservar mensagens concorrentes.
+Falhas temporárias usam retry com backoff; locks abandonados são recuperados; ao
+atingir o limite de tentativas a mensagem fica em `falhou` para investigação.
+
+A entrega é at-least-once. A outbox elimina a janela entre o commit da regra de
+negócio e a persistência do evento, mas não promete exatamente uma execução de
+efeitos externos. O Alembic head passa a ser `20261006_0011_eventos_outbox`.
+
+Runbook: `docs/mensageria-outbox.md`.

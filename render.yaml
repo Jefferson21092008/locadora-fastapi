@@ -56,3 +56,21 @@ services:
 
       - key: LOCADORA_BACKGROUND_JOBS_TIMEOUT_BLOQUEIO_SEGUNDOS
         value: "900"
+
+      - key: LOCADORA_MENSAGERIA_ENABLED
+        value: "true"
+
+      - key: LOCADORA_MENSAGERIA_INTERVALO_SEGUNDOS
+        value: "5"
+
+      - key: LOCADORA_MENSAGERIA_LOTE
+        value: "100"
+
+      - key: LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS
+        value: "60"
+
+      - key: LOCADORA_MENSAGERIA_RETRY_BASE_SEGUNDOS
+        value: "5"
+
+      - key: LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS
+        value: "300"

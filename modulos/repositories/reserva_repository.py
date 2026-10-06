@@ -11,6 +11,7 @@ from modulos.concorrencia import (
     buscar_por_id_para_atualizacao,
 )
 from modulos.consultas import ResultadoPaginado
+from modulos.outbox import persistir_eventos_outbox
 from modulos.excecoes import ConflitoConcorrencia
 from modulos.models.aluguel_model import AluguelModel
 from modulos.models.manutencao_model import ManutencaoModel
@@ -173,6 +174,10 @@ class ReservaRepository:
                 sessao.add(model)
                 sessao.flush()
                 novo_id = model.id
+                persistir_eventos_outbox(
+                    sessao,
+                    {"reserva_id": novo_id},
+                )
                 sessao.commit()
                 return novo_id
             except Exception:
@@ -392,6 +397,7 @@ class ReservaRepository:
                 model.convertida_em = dados.get(
                     "convertida_em"
                 )
+                persistir_eventos_outbox(sessao)
                 sessao.commit()
 
             except Exception:

@@ -28,6 +28,9 @@ from modulos.servicos.manutencao_service import (
 from modulos.servicos.notificacao_service import (
     NotificacaoService,
 )
+from modulos.servicos.outbox_service import (
+    OutboxService,
+)
 from modulos.servicos.pagamento_service import (
     PagamentoService,
 )
@@ -163,6 +166,12 @@ def test_container_cria_services(
         BackgroundJobService,
     )
 
+    assert isinstance(
+        container.outbox_service,
+        OutboxService,
+    )
+    assert container.evento_barramento.despacho_imediato is False
+
 
 def test_container_cria_admin_padrao(
     container,
@@ -283,6 +292,15 @@ def test_services_compartilham_repositories(
         container.background_job_service
         .background_job_repository
         is container.background_job_repository
+    )
+
+    assert (
+        container.outbox_service.outbox_repository
+        is container.outbox_repository
+    )
+    assert (
+        container.outbox_service.barramento
+        is container.evento_barramento
     )
 
     assert (

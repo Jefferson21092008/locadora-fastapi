@@ -16,6 +16,7 @@ from modulos.concorrencia import (
     buscar_por_id_para_atualizacao,
 )
 from modulos.consultas import ResultadoPaginado
+from modulos.outbox import persistir_eventos_outbox
 from modulos.excecoes import ConflitoConcorrencia
 from modulos.models.aluguel_model import (
     AluguelModel,
@@ -382,8 +383,13 @@ class AluguelRepository:
                     )
                 )
 
-                # Aluguel e alteração do veículo são confirmados
-                # na mesma transação protegida pelo lock do veículo.
+                # Aluguel, alteração do veículo e eventos da outbox
+                # são confirmados na mesma transação.
+                sessao.flush()
+                persistir_eventos_outbox(
+                    sessao,
+                    {"aluguel_id": model_aluguel.id},
+                )
                 sessao.commit()
                 sessao.refresh(
                     model_aluguel
@@ -514,8 +520,9 @@ class AluguelRepository:
                     )
                 )
 
-                # Finalização do aluguel e liberação do veículo
-                # ficam na mesma transação.
+                # Finalização do aluguel, liberação do veículo e
+                # evento da outbox ficam na mesma transação.
+                persistir_eventos_outbox(sessao)
                 sessao.commit()
 
                 return None

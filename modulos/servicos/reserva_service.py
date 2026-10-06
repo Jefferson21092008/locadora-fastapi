@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
-from modulos.eventos import publicar_evento
+from modulos.eventos import EventoAplicacao
+from modulos.outbox import operacao_com_outbox
 from modulos.excecoes import (
     ConflitoConcorrencia,
     RecursoNaoEncontrado,
@@ -247,25 +248,30 @@ class ReservaService:
                 mensagem
             )
 
-        reserva.id = (
-            self.reserva_repository
-            .registrar(
-                reserva
-            )
-        )
-
-        publicar_evento(
+        with operacao_com_outbox(
             self.evento_barramento,
-            "reserva.criada",
-            agregado_tipo="reserva",
-            agregado_id=reserva.id,
-            dados={
-                "cliente_id": reserva.cliente_id,
-                "veiculo_id": reserva.veiculo_id,
-                "data_inicio": reserva.data_inicio,
-                "data_fim": reserva.data_fim,
-            },
-        )
+            lambda contexto: EventoAplicacao(
+                nome="reserva.criada",
+                agregado_tipo="reserva",
+                agregado_id=contexto["reserva_id"],
+                dados={
+                    "cliente_id": reserva.cliente_id,
+                    "veiculo_id": reserva.veiculo_id,
+                    "data_inicio": reserva.data_inicio,
+                    "data_fim": reserva.data_fim,
+                },
+            ),
+        ) as lote_eventos:
+            reserva.id = (
+                self.reserva_repository
+                .registrar(
+                    reserva
+                )
+            )
+            lote_eventos.materializar(
+                {"reserva_id": reserva.id}
+            )
+
         return reserva
 
     def listar_todas(self):
@@ -317,21 +323,24 @@ class ReservaService:
                 mensagem
             )
 
-        self.reserva_repository.atualizar_status(
-            reserva,
-            status_esperado="ativa",
-        )
-
-        publicar_evento(
+        with operacao_com_outbox(
             self.evento_barramento,
-            "reserva.cancelada",
-            agregado_tipo="reserva",
-            agregado_id=reserva.id,
-            dados={
-                "cliente_id": reserva.cliente_id,
-                "veiculo_id": reserva.veiculo_id,
-            },
-        )
+            EventoAplicacao(
+                nome="reserva.cancelada",
+                agregado_tipo="reserva",
+                agregado_id=reserva.id,
+                dados={
+                    "cliente_id": reserva.cliente_id,
+                    "veiculo_id": reserva.veiculo_id,
+                },
+            ),
+        ) as lote_eventos:
+            self.reserva_repository.atualizar_status(
+                reserva,
+                status_esperado="ativa",
+            )
+            lote_eventos.materializar()
+
         return reserva
 
     def cancelar_do_cliente(

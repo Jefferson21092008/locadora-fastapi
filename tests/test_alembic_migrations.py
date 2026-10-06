@@ -38,6 +38,7 @@ TABELAS_ESPERADAS = {
     "pagamentos_financeiros",
     "notificacoes",
     "tarefas_background",
+    "eventos_outbox",
     "sessoes",
     "tokens_recuperacao_senha",
 }
@@ -359,7 +360,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20261006_0010"
+        assert revisao == "20261006_0011"
 
     finally:
         engine.dispose()
@@ -445,6 +446,7 @@ def test_upgrade_preserva_dados_do_schema_legado(
                         "pagamentos_financeiros",
                         "notificacoes",
                         "tarefas_background",
+                        "eventos_outbox",
                         "sessoes",
                     }
                     else 1

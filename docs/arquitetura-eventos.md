@@ -174,3 +174,18 @@ A suíte cobre:
 - invalidação do cache do dashboard por eventos relevantes.
 
 Não há migration nova nesta etapa.
+
+## Evolução na Etapa 27: Transactional Outbox
+
+A limitação de durabilidade descrita nesta documentação foi tratada na Etapa 27.
+Os mesmos contratos `EventoAplicacao` passam a ser registrados em
+`eventos_outbox` na **mesma transação** da mutação de negócio e processados por
+um worker com retry.
+
+O barramento continua existindo como mecanismo de despacho para handlers, mas o
+`Container` o usa em modo adiado. O worker da outbox é quem força a entrega do
+evento persistido. A semântica é at-least-once, portanto consumers duráveis
+devem ser idempotentes.
+
+Detalhes operacionais, estados, backoff e recuperação de locks estão em
+[`docs/mensageria-outbox.md`](mensageria-outbox.md).
