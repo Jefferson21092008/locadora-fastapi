@@ -12,10 +12,15 @@ from sqlalchemy import (
 from modulos.alugueis import (
     Aluguel,
 )
+from modulos.concorrencia import (
+    buscar_por_id_para_atualizacao,
+)
 from modulos.consultas import ResultadoPaginado
+from modulos.excecoes import ConflitoConcorrencia
 from modulos.models.aluguel_model import (
     AluguelModel,
 )
+from modulos.models.reserva_model import ReservaModel
 from modulos.models.veiculo_model import (
     VeiculoModel,
 )
@@ -302,7 +307,8 @@ class AluguelRepository:
             .criar_sessao()
         ) as sessao:
             try:
-                model_veiculo = sessao.get(
+                model_veiculo = buscar_por_id_para_atualizacao(
+                    sessao,
                     VeiculoModel,
                     dados_veiculo["id"],
                 )
@@ -311,6 +317,49 @@ class AluguelRepository:
                     raise RuntimeError(
                         "Veículo não encontrado "
                         "durante o aluguel."
+                    )
+
+                # O estado é revalidado depois do lock. Duas requisições
+                # podem ter lido o mesmo veículo como disponível antes
+                # de chegar ao repository. Apenas a primeira prossegue.
+                if (
+                    model_veiculo.status != "disponivel"
+                    or not model_veiculo.ativo
+                ):
+                    raise ConflitoConcorrencia(
+                        "O estado do veículo mudou enquanto o aluguel "
+                        "era processado. Atualize a tela e tente novamente."
+                    )
+
+                aluguel_ativo = sessao.scalar(
+                    select(AluguelModel.id).where(
+                        AluguelModel.veiculo_id
+                        == dados_aluguel["veiculo_id"],
+                        AluguelModel.status == "ativo",
+                    )
+                )
+
+                if aluguel_ativo is not None:
+                    raise ConflitoConcorrencia(
+                        "O veículo já possui um aluguel ativo."
+                    )
+
+                reserva_conflitante = sessao.scalar(
+                    select(ReservaModel.id).where(
+                        ReservaModel.veiculo_id
+                        == dados_aluguel["veiculo_id"],
+                        ReservaModel.status == "ativa",
+                        ReservaModel.data_inicio
+                        < dados_aluguel["data_prevista"],
+                        ReservaModel.data_fim
+                        > dados_aluguel["data_inicio"],
+                    )
+                )
+
+                if reserva_conflitante is not None:
+                    raise ConflitoConcorrencia(
+                        "Uma reserva foi criada enquanto o aluguel era "
+                        "processado. Atualize a tela e tente novamente."
                     )
 
                 sessao.add(
@@ -333,8 +382,8 @@ class AluguelRepository:
                     )
                 )
 
-                # Aluguel e alteração do veículo são
-                # confirmados na mesma transação.
+                # Aluguel e alteração do veículo são confirmados
+                # na mesma transação protegida pelo lock do veículo.
                 sessao.commit()
                 sessao.refresh(
                     model_aluguel
@@ -367,7 +416,22 @@ class AluguelRepository:
             .criar_sessao()
         ) as sessao:
             try:
-                model_aluguel = sessao.get(
+                # Mantemos a mesma ordem de lock usada nas demais
+                # operações do veículo para reduzir risco de deadlock.
+                model_veiculo = buscar_por_id_para_atualizacao(
+                    sessao,
+                    VeiculoModel,
+                    dados_veiculo["id"],
+                )
+
+                if model_veiculo is None:
+                    raise RuntimeError(
+                        "Veículo não encontrado "
+                        "durante a devolução."
+                    )
+
+                model_aluguel = buscar_por_id_para_atualizacao(
+                    sessao,
                     AluguelModel,
                     dados_aluguel["id"],
                 )
@@ -378,15 +442,15 @@ class AluguelRepository:
                         "durante a devolução."
                     )
 
-                model_veiculo = sessao.get(
-                    VeiculoModel,
-                    dados_veiculo["id"],
-                )
+                if model_aluguel.status != "ativo":
+                    raise ConflitoConcorrencia(
+                        "Esse aluguel já foi finalizado por outra "
+                        "operação."
+                    )
 
-                if model_veiculo is None:
-                    raise RuntimeError(
-                        "Veículo não encontrado "
-                        "durante a devolução."
+                if model_veiculo.status != "alugado":
+                    raise ConflitoConcorrencia(
+                        "O estado do veículo mudou antes da devolução."
                     )
 
                 model_aluguel.status = (

@@ -13,6 +13,7 @@ from modulos.clientes import (
 from modulos.database import (
     BancoSQLAlchemy,
 )
+from modulos.excecoes import ConflitoConcorrencia
 from modulos.models import (
     AluguelModel,
     Base,
@@ -427,3 +428,71 @@ def test_buscar_por_id_consulta_banco(
     assert encontrado is not None
     assert encontrado.id == aluguel.id
     assert encontrado.veiculo_id == veiculo.id
+
+
+def test_registrar_revalida_estado_do_veiculo_apos_lock(
+    contexto,
+):
+    repository, cliente, veiculo = contexto
+    registrar_aluguel_ativo(
+        repository,
+        cliente,
+        veiculo,
+    )
+
+    veiculo_desatualizado = Carro(
+        id_veiculo=veiculo.id,
+        modelo=veiculo.modelo,
+        ano=veiculo.ano,
+        diaria=veiculo.diaria,
+        preco_km=veiculo.preco_km,
+        quilometragem=veiculo.quilometragem,
+        status="disponivel",
+    )
+    assert veiculo_desatualizado.alugar(
+        cliente.usuario
+    ) is True
+
+    with pytest.raises(
+        ConflitoConcorrencia,
+        match="estado do veículo mudou",
+    ):
+        repository.registrar(
+            criar_aluguel(
+                cliente,
+                veiculo_desatualizado,
+            ),
+            veiculo_desatualizado,
+        )
+
+
+def test_devolucao_duplicada_e_rejeitada(
+    contexto,
+):
+    repository, cliente, veiculo = contexto
+    aluguel = registrar_aluguel_ativo(
+        repository,
+        cliente,
+        veiculo,
+    )
+    aluguel.finalizar(
+        km=10,
+        valor=200,
+        forma_pagamento="Pix",
+    )
+    veiculo.adicionar_quilometragem(10)
+    assert veiculo.devolver() is True
+
+    repository.registrar_devolucao(
+        aluguel,
+        veiculo,
+    )
+
+    with pytest.raises(
+        ConflitoConcorrencia,
+        match="já foi finalizado",
+    ):
+        repository.registrar_devolucao(
+            aluguel,
+            veiculo,
+        )

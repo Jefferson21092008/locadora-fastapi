@@ -68,7 +68,11 @@ class PagamentoRepositoryFake:
             None,
         )
 
-    def registrar(self, pagamento):
+    def registrar(
+        self,
+        pagamento,
+        limite_adicional=None,
+    ):
         pagamento.id = self.next_id
         self.next_id += 1
         self.items.append(pagamento)

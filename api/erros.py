@@ -9,6 +9,7 @@ from fastapi.responses import (
 )
 
 from modulos.excecoes import (
+    ConflitoConcorrencia,
     RecursoNaoEncontrado,
     RegraDeNegocio,
 )
@@ -38,12 +39,31 @@ async def tratar_regra_de_negocio(
     )
 
 
+async def tratar_conflito_concorrencia(
+    request: Request,
+    erro: ConflitoConcorrencia,
+):
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": erro.mensagem
+        },
+    )
+
+
 def registrar_handlers(
     app: FastAPI,
 ):
     app.add_exception_handler(
         RecursoNaoEncontrado,
         tratar_recurso_nao_encontrado,
+    )
+
+    # Conflitos concorrentes recebem 409 antes do handler genérico
+    # de RegraDeNegocio porque ConflitoConcorrencia herda dele.
+    app.add_exception_handler(
+        ConflitoConcorrencia,
+        tratar_conflito_concorrencia,
     )
 
     app.add_exception_handler(

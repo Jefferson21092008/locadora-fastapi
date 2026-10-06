@@ -20,6 +20,14 @@ class RegraDeNegocio(
     pass
 
 
+class ConflitoConcorrencia(
+    RegraDeNegocio
+):
+    """Operação rejeitada porque o estado mudou concorrentemente."""
+
+    pass
+
+
 class RecursoNaoEncontrado(
     ErroAplicacao
 ):

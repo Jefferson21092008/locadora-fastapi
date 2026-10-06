@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from modulos.excecoes import (
+    ConflitoConcorrencia,
     RecursoNaoEncontrado,
     RegraDeNegocio,
 )
@@ -301,7 +302,8 @@ class ReservaService:
             )
 
         self.reserva_repository.atualizar_status(
-            reserva
+            reserva,
+            status_esperado="ativa",
         )
         return reserva
 
@@ -409,7 +411,8 @@ class ReservaService:
             )
 
         self.reserva_repository.atualizar_status(
-            reserva
+            reserva,
+            status_esperado="ativa",
         )
         return reserva
 
@@ -423,6 +426,17 @@ class ReservaService:
         ):
             return
 
-        self.reserva_repository.atualizar_status(
-            reserva
-        )
+        try:
+            self.reserva_repository.atualizar_status(
+                reserva,
+                status_esperado="convertida",
+                exigir_sem_aluguel_ativo=True,
+            )
+        except ConflitoConcorrencia:
+            # Se outro fluxo já confirmou o aluguel, reativar a reserva
+            # recriaria um estado inválido. Nesse caso a restauração é
+            # deliberadamente abandonada e a exceção original do aluguel
+            # continua sendo a causa visível para o chamador.
+            return False
+
+        return True

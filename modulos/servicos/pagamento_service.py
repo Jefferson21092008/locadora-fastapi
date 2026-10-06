@@ -204,9 +204,17 @@ class PagamentoService:
                 "o saldo pendente."
             )
 
+        limite_adicional = self._arredondar(
+            resumo["pagamentos_adicionais"]
+            + resumo["saldo_pendente"]
+        )
+
         return (
             self.pagamento_repository
-            .registrar(pagamento)
+            .registrar(
+                pagamento,
+                limite_adicional=limite_adicional,
+            )
         )
 
     def estornar_pagamento(

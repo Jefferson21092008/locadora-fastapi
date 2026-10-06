@@ -2,8 +2,10 @@ from sqlalchemy import (
     CheckConstraint,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
+    text,
 )
 
 from sqlalchemy.orm import (
@@ -28,6 +30,17 @@ class AluguelModel(Base):
     __tablename__ = "alugueis"
 
     __table_args__ = (
+        Index(
+            "idx_aluguel_ativo_veiculo",
+            "veiculo_id",
+            unique=True,
+            sqlite_where=text(
+                "status = 'ativo'"
+            ),
+            postgresql_where=text(
+                "status = 'ativo'"
+            ),
+        ),
         CheckConstraint(
             "dias > 0",
             name="ck_alugueis_dias",

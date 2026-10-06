@@ -359,7 +359,7 @@ def test_upgrade_registra_revisao_atual(
                 )
             )
 
-        assert revisao == "20260930_0009"
+        assert revisao == "20261006_0010"
 
     finally:
         engine.dispose()

@@ -7,6 +7,7 @@ from sqlalchemy.exc import (
 from modulos.database import (
     BancoSQLAlchemy,
 )
+from modulos.excecoes import ConflitoConcorrencia
 from modulos.manutencoes import (
     Manutencao,
 )
@@ -337,8 +338,8 @@ def test_registrar_faz_rollback_se_veiculo_nao_estiver_disponivel(
     )
 
     with pytest.raises(
-        RuntimeError,
-        match="Não foi possível alterar",
+        ConflitoConcorrencia,
+        match="estado do veículo mudou",
     ):
         repository.registrar(
             manutencao,

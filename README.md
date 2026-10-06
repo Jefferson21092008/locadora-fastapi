@@ -1422,7 +1422,7 @@ Etapa 19 continua protegida porque está no PostgreSQL.
 
 O runbook completo, incluindo recovery drill e cuidados específicos com
 Neon/Render, está em `docs/backup-recuperacao.md`. Não há migration nova nesta
-etapa; o Alembic head continua em `20260930_0009_background_jobs`.
+etapa; posteriormente a Etapa 25 avança o Alembic head para `20261006_0010_consistencia_concorrencia`.
 
 
 ## Ambientes dev / staging / prod
@@ -1444,3 +1444,22 @@ Credenciais de carga são lidas de variáveis de ambiente e não entram nos
 resultados. O procedimento completo está em `docs/testes-carga-otimizacao.md`.
 A regra desta etapa é medir antes de otimizar e comparar a mesma carga antes e
 depois de cada mudança.
+
+
+## Trilha principal — concorrência e consistência transacional
+
+A Etapa 25 protege as principais mutações contra race conditions sem elevar
+globalmente o isolamento do banco. Reservas, aluguéis, manutenção, devoluções e
+pagamentos revalidam o estado dentro da própria transação depois de adquirir
+locks de linha com `SELECT ... FOR UPDATE` no PostgreSQL.
+
+A linha de `veiculos` é usada como ponto comum de serialização para operações
+que disputam o mesmo veículo. Pagamentos serializam pela linha do aluguel. Uma
+segunda operação que chega com estado desatualizado recebe
+`ConflitoConcorrencia`, exposto pela API como HTTP `409 Conflict`.
+
+A migration `20261006_0010_consistencia_concorrencia` adiciona também o índice
+parcial único `idx_aluguel_ativo_veiculo`, impedindo no próprio banco mais de um
+aluguel ativo por veículo. O runbook e a estratégia de testes PostgreSQL estão
+documentados em
+[`docs/concorrencia-consistencia.md`](docs/concorrencia-consistencia.md).

@@ -1,4 +1,7 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, timedelta
+from threading import Barrier
 
 import pytest
 
@@ -17,15 +20,28 @@ from sqlalchemy.exc import (
     OperationalError,
 )
 
+from modulos.alugueis import Aluguel
 from modulos.container import (
     Container,
 )
 from modulos.database import (
     BancoSQLAlchemy,
 )
+from modulos.excecoes import ConflitoConcorrencia
+from modulos.models import (
+    AluguelModel,
+    ClienteModel,
+    VeiculoModel,
+)
+from modulos.pagamentos import PagamentoFinanceiro
+from modulos.repositories.aluguel_repository import AluguelRepository
+from modulos.repositories.pagamento_repository import PagamentoRepository
+from modulos.repositories.reserva_repository import ReservaRepository
+from modulos.reservas import Reserva
 from modulos.usuarios import (
     Role,
 )
+from modulos.veiculos import Carro
 
 
 load_dotenv()
@@ -207,7 +223,7 @@ def test_alembic_cria_schema_postgresql_completo(
             )
         )
 
-    assert revisao == "20260930_0009"
+    assert revisao == "20261006_0010"
 
     fks_clientes = (
         inspetor.get_foreign_keys(
@@ -345,3 +361,258 @@ def test_container_e_repository_funcionam_no_postgresql(
 
     assert administrador is not None
     assert administrador.role == Role.ADMIN
+
+
+def _semear_cliente_e_veiculo(
+    banco,
+    *,
+    cliente_id=1,
+    veiculo_id=10,
+):
+    with banco.criar_sessao() as sessao:
+        sessao.add(
+            ClienteModel(
+                id=cliente_id,
+                nome="Cliente Concorrência",
+                usuario=f"concorrencia-{cliente_id}",
+                email=f"concorrencia-{cliente_id}@example.com",
+                senha_hash="",
+                ativo=True,
+                usuario_id=None,
+            )
+        )
+        sessao.add(
+            VeiculoModel(
+                id=veiculo_id,
+                tipo="Carro",
+                modelo="Civic Concorrência",
+                ano=date.today().year,
+                diaria=150,
+                preco_km=1.5,
+                quilometragem=1000,
+                status="disponivel",
+                disponivel=True,
+                alugado_por=None,
+                ativo=True,
+            )
+        )
+        sessao.commit()
+
+
+def test_indice_permite_apenas_um_aluguel_ativo_por_veiculo(
+    banco_postgresql,
+):
+    _semear_cliente_e_veiculo(
+        banco_postgresql
+    )
+
+    def novo_aluguel():
+        return AluguelModel(
+            cliente_id=1,
+            veiculo_id=10,
+            cliente_usuario="concorrencia-1",
+            cliente_nome="Cliente Concorrência",
+            veiculo_tipo="Carro",
+            veiculo_modelo="Civic Concorrência",
+            dias=2,
+            status="ativo",
+            km=0,
+            pagamento=None,
+            valor=0,
+            data_inicio=date.today().isoformat(),
+            data_prevista=(
+                date.today()
+                + timedelta(days=2)
+            ).isoformat(),
+            data_fim=None,
+            dias_atraso=0,
+            multa=0,
+        )
+
+    with banco_postgresql.criar_sessao() as sessao:
+        sessao.add(novo_aluguel())
+        sessao.commit()
+
+    with pytest.raises(IntegrityError):
+        with banco_postgresql.criar_sessao() as sessao:
+            sessao.add(novo_aluguel())
+            sessao.commit()
+
+
+def test_reservas_sobrepostas_concorrentes_sao_serializadas(
+    banco_postgresql,
+):
+    _semear_cliente_e_veiculo(
+        banco_postgresql
+    )
+    repository = ReservaRepository(
+        banco_postgresql
+    )
+    inicio = date.today() + timedelta(days=20)
+    fim = inicio + timedelta(days=4)
+    barreira = Barrier(2)
+
+    def tentar(indice):
+        reserva = Reserva(
+            id_reserva=0,
+            cliente_id=1,
+            cliente_usuario="concorrencia-1",
+            cliente_nome="Cliente Concorrência",
+            veiculo_id=10,
+            veiculo_tipo="Carro",
+            veiculo_modelo="Civic Concorrência",
+            data_inicio=(
+                inicio + timedelta(days=indice)
+            ).isoformat(),
+            data_fim=(
+                fim + timedelta(days=indice)
+            ).isoformat(),
+        )
+        barreira.wait()
+        try:
+            repository.registrar(reserva)
+            return "ok"
+        except ConflitoConcorrencia:
+            return "conflito"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        resultados = list(
+            executor.map(tentar, [0, 1])
+        )
+
+    assert sorted(resultados) == [
+        "conflito",
+        "ok",
+    ]
+    assert len(repository.listar_colecao()) == 1
+
+
+def test_alugueis_concorrentes_nao_duplicam_veiculo(
+    banco_postgresql,
+):
+    _semear_cliente_e_veiculo(
+        banco_postgresql
+    )
+    repository = AluguelRepository(
+        banco_postgresql
+    )
+    barreira = Barrier(2)
+
+    def tentar(indice):
+        veiculo = Carro(
+            id_veiculo=10,
+            modelo="Civic Concorrência",
+            ano=date.today().year,
+            diaria=150,
+            preco_km=1.5,
+            quilometragem=1000,
+            status="disponivel",
+        )
+        assert veiculo.alugar(
+            "concorrencia-1"
+        ) is True
+        aluguel = Aluguel(
+            id_aluguel=0,
+            cliente_id=1,
+            cliente_usuario="concorrencia-1",
+            cliente_nome="Cliente Concorrência",
+            veiculo_id=10,
+            veiculo_tipo="Carro",
+            veiculo_modelo="Civic Concorrência",
+            dias=2 + indice,
+        )
+        barreira.wait()
+        try:
+            repository.registrar(
+                aluguel,
+                veiculo,
+            )
+            return "ok"
+        except ConflitoConcorrencia:
+            return "conflito"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        resultados = list(
+            executor.map(tentar, [0, 1])
+        )
+
+    assert sorted(resultados) == [
+        "conflito",
+        "ok",
+    ]
+    assert len(repository.listar_ativos()) == 1
+
+
+def test_pagamentos_concorrentes_nao_ultrapassam_limite(
+    banco_postgresql,
+):
+    _semear_cliente_e_veiculo(
+        banco_postgresql
+    )
+    with banco_postgresql.criar_sessao() as sessao:
+        aluguel = AluguelModel(
+            cliente_id=1,
+            veiculo_id=10,
+            cliente_usuario="concorrencia-1",
+            cliente_nome="Cliente Concorrência",
+            veiculo_tipo="Carro",
+            veiculo_modelo="Civic Concorrência",
+            dias=2,
+            status="finalizado",
+            km=50,
+            pagamento="Pix",
+            valor=300,
+            data_inicio=date.today().isoformat(),
+            data_prevista=(
+                date.today()
+                + timedelta(days=2)
+            ).isoformat(),
+            data_fim=date.today().isoformat(),
+            dias_atraso=0,
+            multa=0,
+        )
+        sessao.add(aluguel)
+        sessao.commit()
+        aluguel_id = aluguel.id
+
+    repository = PagamentoRepository(
+        banco_postgresql
+    )
+    barreira = Barrier(2)
+
+    def tentar(indice):
+        pagamento = PagamentoFinanceiro(
+            id_pagamento=0,
+            aluguel_id=aluguel_id,
+            valor=70,
+            forma="pix",
+            observacoes=f"concorrente-{indice}",
+        )
+        barreira.wait()
+        try:
+            repository.registrar(
+                pagamento,
+                limite_adicional=100,
+            )
+            return "ok"
+        except ConflitoConcorrencia:
+            return "conflito"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        resultados = list(
+            executor.map(tentar, [0, 1])
+        )
+
+    assert sorted(resultados) == [
+        "conflito",
+        "ok",
+    ]
+    confirmados = [
+        pagamento
+        for pagamento in repository.listar_por_aluguel(
+            aluguel_id
+        )
+        if pagamento.confirmado
+    ]
+    assert len(confirmados) == 1
+    assert confirmados[0].valor == 70
