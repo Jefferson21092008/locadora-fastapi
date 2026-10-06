@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import (
     String,
@@ -9,15 +9,20 @@ from sqlalchemy import (
     select,
 )
 
+from modulos.concorrencia import (
+    buscar_por_id_para_atualizacao,
+)
 from modulos.consultas import (
     ResultadoPaginado,
 )
+from modulos.excecoes import ConflitoConcorrencia
 from modulos.manutencoes import (
     Manutencao,
 )
 from modulos.models.manutencao_model import (
     ManutencaoModel,
 )
+from modulos.models.reserva_model import ReservaModel
 from modulos.models.veiculo_model import (
     VeiculoModel,
 )
@@ -76,6 +81,52 @@ class ManutencaoRepository:
             )
             for model in models
         ]
+
+    @staticmethod
+    def _buscar_reserva_conflitante(
+        sessao,
+        veiculo_id,
+        data_prevista,
+    ):
+        hoje = date.today()
+
+        primeira = sessao.scalar(
+            select(ReservaModel)
+            .where(
+                ReservaModel.veiculo_id == veiculo_id,
+                ReservaModel.status == "ativa",
+                ReservaModel.data_fim > hoje.isoformat(),
+            )
+            .order_by(
+                ReservaModel.data_inicio,
+                ReservaModel.id,
+            )
+        )
+
+        if primeira is None:
+            return None
+
+        if not data_prevista:
+            return primeira
+
+        fim_manutencao = (
+            date.fromisoformat(data_prevista)
+            + timedelta(days=1)
+        ).isoformat()
+
+        return sessao.scalar(
+            select(ReservaModel)
+            .where(
+                ReservaModel.veiculo_id == veiculo_id,
+                ReservaModel.status == "ativa",
+                ReservaModel.data_inicio < fim_manutencao,
+                ReservaModel.data_fim > hoje.isoformat(),
+            )
+            .order_by(
+                ReservaModel.data_inicio,
+                ReservaModel.id,
+            )
+        )
 
     def buscar_por_id(
         self,
@@ -554,61 +605,49 @@ class ManutencaoRepository:
             .criar_sessao()
         ) as sessao:
             try:
-                model_veiculo = sessao.get(
+                model_veiculo = buscar_por_id_para_atualizacao(
+                    sessao,
                     VeiculoModel,
-                    dados_veiculo[
-                        "id"
-                    ],
+                    dados_veiculo["id"],
                 )
 
                 if model_veiculo is None:
                     raise RuntimeError(
-                        "Veículo não encontrado "
-                        "durante a manutenção."
+                        "Veículo não encontrado durante a manutenção."
                     )
 
-                if (
-                    model_veiculo.status
-                    != "disponivel"
-                ):
-                    raise RuntimeError(
-                        "Não foi possível alterar "
-                        "o veículo para manutenção."
+                if model_veiculo.status != "disponivel":
+                    raise ConflitoConcorrencia(
+                        "O estado do veículo mudou enquanto a manutenção "
+                        "era aberta. Atualize a tela e tente novamente."
                     )
 
-                sessao.add(
-                    model_manutencao
+                conflito_reserva = self._buscar_reserva_conflitante(
+                    sessao,
+                    dados_veiculo["id"],
+                    dados_manutencao.get("data_prevista"),
                 )
-
-                model_veiculo.status = (
-                    dados_veiculo[
-                        "status"
-                    ]
-                )
-                model_veiculo.disponivel = (
-                    dados_veiculo[
-                        "disponivel"
-                    ]
-                )
-                model_veiculo.alugado_por = (
-                    dados_veiculo.get(
-                        "alugado_por"
+                if conflito_reserva is not None:
+                    if not dados_manutencao.get("data_prevista"):
+                        raise ConflitoConcorrencia(
+                            "Uma reserva futura foi criada. Informe uma "
+                            "previsão de conclusão antes de abrir a manutenção."
+                        )
+                    raise ConflitoConcorrencia(
+                        "Uma reserva futura passou a conflitar com a "
+                        "manutenção enquanto a operação era processada."
                     )
-                )
-                model_veiculo.ativo = (
-                    dados_veiculo[
-                        "ativo"
-                    ]
-                )
+
+                sessao.add(model_manutencao)
+                model_veiculo.status = dados_veiculo["status"]
+                model_veiculo.disponivel = dados_veiculo["disponivel"]
+                model_veiculo.alugado_por = dados_veiculo.get("alugado_por")
+                model_veiculo.ativo = dados_veiculo["ativo"]
 
                 sessao.flush()
-                novo_id = (
-                    model_manutencao.id
-                )
+                novo_id = model_manutencao.id
                 sessao.commit()
-
                 return novo_id
-
             except Exception:
                 sessao.rollback()
                 raise
@@ -617,59 +656,61 @@ class ManutencaoRepository:
         self,
         manutencao,
     ):
-        dados = (
-            manutencao.to_dict()
-        )
+        dados = manutencao.to_dict()
 
-        with (
-            self.banco_sqlalchemy
-            .criar_sessao()
-        ) as sessao:
+        with self.banco_sqlalchemy.criar_sessao() as sessao:
             try:
-                model = sessao.get(
+                existente = sessao.get(ManutencaoModel, dados["id"])
+                if existente is None:
+                    raise RuntimeError("Manutenção não encontrada.")
+
+                model_veiculo = buscar_por_id_para_atualizacao(
+                    sessao,
+                    VeiculoModel,
+                    existente.veiculo_id,
+                )
+                if model_veiculo is None:
+                    raise RuntimeError("Veículo não encontrado.")
+
+                model = buscar_por_id_para_atualizacao(
+                    sessao,
                     ManutencaoModel,
                     dados["id"],
                 )
-
                 if model is None:
-                    raise RuntimeError(
-                        "Manutenção não encontrada."
-                    )
-
+                    raise RuntimeError("Manutenção não encontrada.")
                 if model.status != "ativa":
-                    raise RuntimeError(
-                        "Apenas manutenções ativas "
-                        "podem ser editadas."
+                    raise ConflitoConcorrencia(
+                        "A manutenção foi finalizada por outra operação."
                     )
 
-                model.motivo = dados[
-                    "motivo"
-                ]
-                model.tipo = dados[
-                    "tipo"
-                ]
-                model.prioridade = dados[
-                    "prioridade"
-                ]
-                model.fornecedor = dados.get(
-                    "fornecedor"
+                conflito_reserva = self._buscar_reserva_conflitante(
+                    sessao,
+                    model.veiculo_id,
+                    dados.get("data_prevista"),
                 )
-                model.custo_estimado = dados[
-                    "custo_estimado"
-                ]
-                model.data_prevista = dados.get(
-                    "data_prevista"
-                )
-                model.observacoes = dados.get(
-                    "observacoes"
-                )
+                if conflito_reserva is not None:
+                    if not dados.get("data_prevista"):
+                        raise ConflitoConcorrencia(
+                            "Há reserva futura ativa; mantenha uma previsão "
+                            "de conclusão para a manutenção."
+                        )
+                    raise ConflitoConcorrencia(
+                        "Uma reserva futura passou a conflitar com a "
+                        "nova previsão da manutenção."
+                    )
 
+                model.motivo = dados["motivo"]
+                model.tipo = dados["tipo"]
+                model.prioridade = dados["prioridade"]
+                model.fornecedor = dados.get("fornecedor")
+                model.custo_estimado = dados["custo_estimado"]
+                model.data_prevista = dados.get("data_prevista")
+                model.observacoes = dados.get("observacoes")
                 sessao.commit()
-
             except Exception:
                 sessao.rollback()
                 raise
-
         return None
 
     def registrar_finalizacao(
@@ -677,93 +718,51 @@ class ManutencaoRepository:
         manutencao,
         veiculo,
     ):
-        dados_manutencao = (
-            manutencao.to_dict()
-        )
-        dados_veiculo = (
-            veiculo.to_dict()
-        )
+        dados_manutencao = manutencao.to_dict()
+        dados_veiculo = veiculo.to_dict()
 
-        with (
-            self.banco_sqlalchemy
-            .criar_sessao()
-        ) as sessao:
+        with self.banco_sqlalchemy.criar_sessao() as sessao:
             try:
-                model_manutencao = sessao.get(
-                    ManutencaoModel,
-                    dados_manutencao[
-                        "id"
-                    ],
-                )
-
-                if (
-                    model_manutencao is None
-                    or model_manutencao.status
-                    != "ativa"
-                ):
-                    raise RuntimeError(
-                        "Manutenção ativa "
-                        "não encontrada."
-                    )
-
-                model_veiculo = sessao.get(
+                model_veiculo = buscar_por_id_para_atualizacao(
+                    sessao,
                     VeiculoModel,
-                    dados_veiculo[
-                        "id"
-                    ],
+                    dados_veiculo["id"],
                 )
-
-                if (
-                    model_veiculo is None
-                    or model_veiculo.status
-                    != "manutencao"
-                ):
+                if model_veiculo is None:
                     raise RuntimeError(
-                        "Veículo em manutenção "
-                        "não encontrado."
+                        "Veículo em manutenção não encontrado."
                     )
 
-                model_manutencao.custo = (
-                    dados_manutencao[
-                        "custo"
-                    ]
+                model_manutencao = buscar_por_id_para_atualizacao(
+                    sessao,
+                    ManutencaoModel,
+                    dados_manutencao["id"],
                 )
-                model_manutencao.data_fim = (
-                    dados_manutencao.get(
-                        "data_fim"
+                if model_manutencao is None:
+                    raise RuntimeError(
+                        "Manutenção ativa não encontrada."
                     )
-                )
-                model_manutencao.status = (
-                    dados_manutencao[
-                        "status"
-                    ]
-                )
 
-                model_veiculo.status = (
-                    dados_veiculo[
-                        "status"
-                    ]
-                )
-                model_veiculo.disponivel = (
-                    dados_veiculo[
-                        "disponivel"
-                    ]
-                )
-                model_veiculo.alugado_por = (
-                    dados_veiculo.get(
-                        "alugado_por"
+                if model_manutencao.status != "ativa":
+                    raise ConflitoConcorrencia(
+                        "A manutenção já foi finalizada por outra operação."
                     )
-                )
-                model_veiculo.ativo = (
-                    dados_veiculo[
-                        "ativo"
-                    ]
-                )
+                if model_veiculo.status != "manutencao":
+                    raise ConflitoConcorrencia(
+                        "O estado do veículo mudou antes da finalização "
+                        "da manutenção."
+                    )
 
+                model_manutencao.custo = dados_manutencao["custo"]
+                model_manutencao.data_fim = dados_manutencao.get("data_fim")
+                model_manutencao.status = dados_manutencao["status"]
+
+                model_veiculo.status = dados_veiculo["status"]
+                model_veiculo.disponivel = dados_veiculo["disponivel"]
+                model_veiculo.alugado_por = dados_veiculo.get("alugado_por")
+                model_veiculo.ativo = dados_veiculo["ativo"]
                 sessao.commit()
-
             except Exception:
                 sessao.rollback()
                 raise
-
         return None

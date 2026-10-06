@@ -82,6 +82,7 @@ class ReservaRepositoryFake:
     def atualizar_status(
         self,
         reserva,
+        **_kwargs,
     ):
         return None
 

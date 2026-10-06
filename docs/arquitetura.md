@@ -783,3 +783,39 @@ produção e ferramentas de benchmark.
 Os resultados locais são gravados em `performance-results/` e não são
 versionados. O fluxo recomendado é baseline -> hipótese -> mudança pequena ->
 mesma carga -> comparação, evitando otimizações sem evidência.
+
+
+## Concorrência e consistência transacional
+
+A Etapa 25 adiciona serialização pessimista apenas nos caminhos de escrita que
+compartilham recursos críticos. No PostgreSQL, repositories usam `FOR UPDATE` e
+revalidam o estado persistido antes de aplicar alterações.
+
+```text
+Reserva / Aluguel / Manutenção / Devolução
+                 ↓
+        lock da linha do veículo
+                 ↓
+          revalidação no banco
+                 ↓
+          escrita + commit único
+
+Pagamento / Estorno
+        ↓
+lock da linha do aluguel
+        ↓
+revalidação de saldo/estado
+        ↓
+ escrita + commit único
+```
+
+O banco mantém uma segunda linha de defesa: o índice parcial único
+`idx_aluguel_ativo_veiculo` garante no máximo um aluguel ativo por veículo. A
+migration atual é `20261006_0010_consistencia_concorrencia`.
+
+`ConflitoConcorrencia` representa uma operação que perdeu uma corrida para outra
+requisição e é convertida pela API em HTTP 409. SQLite continua adequado para
+desenvolvimento e testes comuns, mas os testes de concorrência real usam
+PostgreSQL porque `FOR UPDATE` não possui a mesma semântica no SQLite.
+
+Detalhes operacionais e invariantes: `docs/concorrencia-consistencia.md`.

@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import (
     case,
@@ -7,8 +7,15 @@ from sqlalchemy import (
     select,
 )
 
+from modulos.concorrencia import (
+    buscar_por_id_para_atualizacao,
+)
 from modulos.consultas import ResultadoPaginado
+from modulos.excecoes import ConflitoConcorrencia
+from modulos.models.aluguel_model import AluguelModel
+from modulos.models.manutencao_model import ManutencaoModel
 from modulos.models.reserva_model import ReservaModel
+from modulos.models.veiculo_model import VeiculoModel
 from modulos.reservas import Reserva
 
 
@@ -72,6 +79,97 @@ class ReservaRepository:
 
         with self.banco_sqlalchemy.criar_sessao() as sessao:
             try:
+                # A linha do veículo funciona como ponto único de
+                # serialização para reserva, aluguel e manutenção.
+                veiculo = buscar_por_id_para_atualizacao(
+                    sessao,
+                    VeiculoModel,
+                    dados["veiculo_id"],
+                )
+
+                if veiculo is None:
+                    raise ConflitoConcorrencia(
+                        "O veículo não existe mais."
+                    )
+
+                if not veiculo.ativo:
+                    raise ConflitoConcorrencia(
+                        "O veículo foi desativado enquanto a reserva "
+                        "era processada."
+                    )
+
+                reserva_conflitante = sessao.scalar(
+                    select(ReservaModel).where(
+                        ReservaModel.veiculo_id
+                        == dados["veiculo_id"],
+                        ReservaModel.status == "ativa",
+                        ReservaModel.data_inicio < dados["data_fim"],
+                        ReservaModel.data_fim > dados["data_inicio"],
+                    )
+                )
+
+                if reserva_conflitante is not None:
+                    raise ConflitoConcorrencia(
+                        "O veículo recebeu outra reserva para esse "
+                        "período. Atualize a tela e tente novamente."
+                    )
+
+                aluguel_conflitante = sessao.scalar(
+                    select(AluguelModel).where(
+                        AluguelModel.veiculo_id
+                        == dados["veiculo_id"],
+                        AluguelModel.status == "ativo",
+                        AluguelModel.data_inicio < dados["data_fim"],
+                        AluguelModel.data_prevista > dados["data_inicio"],
+                    )
+                )
+
+                if aluguel_conflitante is not None:
+                    raise ConflitoConcorrencia(
+                        "O veículo entrou em aluguel e passou a "
+                        "conflitar com esse período."
+                    )
+
+                manutencao = sessao.scalar(
+                    select(ManutencaoModel).where(
+                        ManutencaoModel.veiculo_id
+                        == dados["veiculo_id"],
+                        ManutencaoModel.status == "ativa",
+                    )
+                )
+
+                if manutencao is not None:
+                    if not manutencao.data_prevista:
+                        raise ConflitoConcorrencia(
+                            "O veículo entrou em manutenção sem "
+                            "previsão de conclusão."
+                        )
+
+                    fim_manutencao = (
+                        date.fromisoformat(
+                            manutencao.data_prevista
+                        )
+                        + timedelta(days=1)
+                    )
+                    inicio_manutencao = date.fromisoformat(
+                        manutencao.data_inicio
+                    )
+                    inicio_reserva = date.fromisoformat(
+                        dados["data_inicio"]
+                    )
+                    fim_reserva = date.fromisoformat(
+                        dados["data_fim"]
+                    )
+
+                    if (
+                        inicio_manutencao < fim_reserva
+                        and fim_manutencao > inicio_reserva
+                    ):
+                        raise ConflitoConcorrencia(
+                            "O veículo entrou em manutenção e passou "
+                            "a conflitar com esse período."
+                        )
+
                 sessao.add(model)
                 sessao.flush()
                 novo_id = model.id
@@ -209,12 +307,32 @@ class ReservaRepository:
                 or 0
             ) > 0
 
-    def atualizar_status(self, reserva):
+    def atualizar_status(
+        self,
+        reserva,
+        status_esperado=None,
+        exigir_sem_aluguel_ativo=False,
+    ):
         dados = reserva.to_dict()
 
         with self.banco_sqlalchemy.criar_sessao() as sessao:
             try:
-                model = sessao.get(
+                existente = sessao.get(
+                    ReservaModel,
+                    dados["id"],
+                )
+                if existente is None:
+                    raise RuntimeError(
+                        "Reserva não encontrada."
+                    )
+
+                buscar_por_id_para_atualizacao(
+                    sessao,
+                    VeiculoModel,
+                    existente.veiculo_id,
+                )
+                model = buscar_por_id_para_atualizacao(
+                    sessao,
                     ReservaModel,
                     dados["id"],
                 )
@@ -223,6 +341,49 @@ class ReservaRepository:
                     raise RuntimeError(
                         "Reserva não encontrada."
                     )
+
+                if (
+                    status_esperado is not None
+                    and model.status != status_esperado
+                ):
+                    raise ConflitoConcorrencia(
+                        "O estado da reserva mudou enquanto a operação "
+                        "era processada."
+                    )
+
+                if exigir_sem_aluguel_ativo:
+                    aluguel_ativo = sessao.scalar(
+                        select(AluguelModel.id).where(
+                            AluguelModel.veiculo_id
+                            == model.veiculo_id,
+                            AluguelModel.status == "ativo",
+                        )
+                    )
+                    if aluguel_ativo is not None:
+                        raise ConflitoConcorrencia(
+                            "A reserva não pode ser reativada porque o "
+                            "veículo já possui aluguel ativo."
+                        )
+
+                if (
+                    dados["status"] == "ativa"
+                    and model.status == "convertida"
+                ):
+                    outra_reserva = sessao.scalar(
+                        select(ReservaModel.id).where(
+                            ReservaModel.veiculo_id
+                            == model.veiculo_id,
+                            ReservaModel.status == "ativa",
+                            ReservaModel.id != model.id,
+                            ReservaModel.data_inicio < model.data_fim,
+                            ReservaModel.data_fim > model.data_inicio,
+                        )
+                    )
+                    if outra_reserva is not None:
+                        raise ConflitoConcorrencia(
+                            "A reserva não pode ser reativada porque outra "
+                            "reserva ocupa o mesmo período."
+                        )
 
                 model.status = dados["status"]
                 model.cancelada_em = dados.get(

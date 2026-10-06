@@ -3,6 +3,7 @@ from datetime import date, timedelta
 import pytest
 
 from modulos.database import BancoSQLAlchemy
+from modulos.excecoes import ConflitoConcorrencia
 from modulos.models import (
     Base,
     ClienteModel,
@@ -262,3 +263,89 @@ def test_consulta_paginada_retorna_resumo(
     assert resultado.resumo["total"] == 2
     assert resultado.resumo["ativas"] == 1
     assert resultado.resumo["canceladas"] == 1
+
+
+def test_registrar_revalida_conflito_dentro_da_transacao(
+    repository,
+):
+    inicio = date.today() + timedelta(days=15)
+    fim = inicio + timedelta(days=4)
+    repository.registrar(
+        criar_reserva(
+            inicio.isoformat(),
+            fim.isoformat(),
+        )
+    )
+
+    with pytest.raises(
+        ConflitoConcorrencia,
+        match="outra reserva",
+    ):
+        repository.registrar(
+            criar_reserva(
+                (inicio + timedelta(days=1)).isoformat(),
+                (fim + timedelta(days=1)).isoformat(),
+            )
+        )
+
+
+def test_conversao_rejeita_snapshot_desatualizado(
+    repository,
+):
+    inicio = date.today() + timedelta(days=25)
+    reserva = criar_reserva(
+        inicio.isoformat(),
+        (inicio + timedelta(days=3)).isoformat(),
+    )
+    reserva.id = repository.registrar(reserva)
+    primeira = repository.buscar_por_id(reserva.id)
+    segunda = repository.buscar_por_id(reserva.id)
+
+    assert primeira.converter()[0] is True
+    repository.atualizar_status(
+        primeira,
+        status_esperado="ativa",
+    )
+
+    assert segunda.converter()[0] is True
+    with pytest.raises(
+        ConflitoConcorrencia,
+        match="estado da reserva mudou",
+    ):
+        repository.atualizar_status(
+            segunda,
+            status_esperado="ativa",
+        )
+
+
+def test_restauracao_nao_recria_reserva_sobreposta(
+    repository,
+):
+    inicio = date.today() + timedelta(days=30)
+    original = criar_reserva(
+        inicio.isoformat(),
+        (inicio + timedelta(days=4)).isoformat(),
+    )
+    original.id = repository.registrar(original)
+    assert original.converter()[0] is True
+    repository.atualizar_status(
+        original,
+        status_esperado="ativa",
+    )
+
+    concorrente = criar_reserva(
+        (inicio + timedelta(days=1)).isoformat(),
+        (inicio + timedelta(days=3)).isoformat(),
+    )
+    repository.registrar(concorrente)
+
+    assert original.restaurar_ativa() is True
+    with pytest.raises(
+        ConflitoConcorrencia,
+        match="outra reserva ocupa",
+    ):
+        repository.atualizar_status(
+            original,
+            status_esperado="convertida",
+            exigir_sem_aluguel_ativo=True,
+        )

@@ -1,6 +1,7 @@
 import pytest
 
 from modulos.database import BancoSQLAlchemy
+from modulos.excecoes import ConflitoConcorrencia
 from modulos.models import (
     AluguelModel,
     Base,
@@ -112,3 +113,57 @@ def test_repository_registra_lista_e_estorna(
 
     assert atualizado.status == "estornado"
     assert atualizado.estornado_em is not None
+
+
+def test_repository_rejeita_pagamento_que_estoura_limite_concorrente(
+    ambiente,
+):
+    repository, aluguel_id = ambiente
+    primeiro = PagamentoFinanceiro(
+        id_pagamento=0,
+        aluguel_id=aluguel_id,
+        valor=70,
+        forma="pix",
+    )
+    segundo = PagamentoFinanceiro(
+        id_pagamento=0,
+        aluguel_id=aluguel_id,
+        valor=70,
+        forma="pix",
+    )
+
+    repository.registrar(
+        primeiro,
+        limite_adicional=100,
+    )
+
+    with pytest.raises(
+        ConflitoConcorrencia,
+        match="alterou o saldo pendente",
+    ):
+        repository.registrar(
+            segundo,
+            limite_adicional=100,
+        )
+
+
+def test_repository_rejeita_estorno_duplicado(
+    ambiente,
+):
+    repository, aluguel_id = ambiente
+    pagamento = repository.registrar(
+        PagamentoFinanceiro(
+            id_pagamento=0,
+            aluguel_id=aluguel_id,
+            valor=50,
+            forma="pix",
+        )
+    )
+    pagamento.estornar()
+    repository.atualizar(pagamento)
+
+    with pytest.raises(
+        ConflitoConcorrencia,
+        match="já foi estornado",
+    ):
+        repository.atualizar(pagamento)
