@@ -132,3 +132,18 @@ def test_render_producao_declara_ambiente_e_namespace_redis():
     assert "LOCADORA_AMBIENTE" in conteudo
     assert "value: production" in conteudo
     assert "value: locadora:production" in conteudo
+
+
+def test_render_habilita_mensageria_outbox_em_producao():
+    conteudo = ler_render_yaml()
+
+    assert "LOCADORA_MENSAGERIA_ENABLED" in conteudo
+    trecho = conteudo.split(
+        "- key: LOCADORA_MENSAGERIA_ENABLED",
+        1,
+    )[1].split(
+        "- key: LOCADORA_MENSAGERIA_INTERVALO_SEGUNDOS",
+        1,
+    )[0]
+    assert 'value: "true"' in trecho
+    assert "LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS" in conteudo

@@ -25,6 +25,9 @@ from modulos.repositories.manutencao_repository import (
 from modulos.repositories.notificacao_repository import (
     NotificacaoRepository,
 )
+from modulos.repositories.outbox_repository import (
+    OutboxRepository,
+)
 from modulos.repositories.pagamento_repository import (
     PagamentoRepository,
 )
@@ -82,6 +85,9 @@ from modulos.servicos.manutencao_service import (
 )
 from modulos.servicos.notificacao_service import (
     NotificacaoService,
+)
+from modulos.servicos.outbox_service import (
+    OutboxService,
 )
 from modulos.servicos.pagamento_service import (
     PagamentoService,
@@ -178,7 +184,9 @@ class Container:
             ),
         )
 
-        self.evento_barramento = BarramentoEventos()
+        self.evento_barramento = BarramentoEventos(
+            despacho_imediato=False
+        )
         self._criar_repositories()
         self._criar_services()
         self._registrar_event_handlers()
@@ -214,6 +222,14 @@ class Container:
 
         self.background_job_repository = (
             BackgroundJobRepository(
+                banco_sqlalchemy=(
+                    self.banco_sqlalchemy
+                ),
+            )
+        )
+
+        self.outbox_repository = (
+            OutboxRepository(
                 banco_sqlalchemy=(
                     self.banco_sqlalchemy
                 ),
@@ -522,6 +538,27 @@ class Container:
                 ),
                 notificacao_service=(
                     self.notificacao_service
+                ),
+            )
+        )
+
+        self.outbox_service = (
+            OutboxService(
+                outbox_repository=(
+                    self.outbox_repository
+                ),
+                barramento=(
+                    self.evento_barramento
+                ),
+                retry_base_segundos=getattr(
+                    self.config,
+                    "mensageria_retry_base_segundos",
+                    5,
+                ),
+                retry_max_segundos=getattr(
+                    self.config,
+                    "mensageria_retry_max_segundos",
+                    300,
                 ),
             )
         )

@@ -82,6 +82,10 @@ from modulos.background_worker import (
     background_jobs_habilitados_por_ambiente,
     criar_worker_do_container,
 )
+from modulos.outbox_worker import (
+    criar_worker_outbox_do_container,
+    mensageria_habilitada_por_ambiente,
+)
 
 
 # ================================================================
@@ -212,19 +216,33 @@ configurar_logs()
 
 @asynccontextmanager
 async def lifespan(app):
-    worker = None
+    background_worker = None
+    outbox_worker = None
+    container = None
+
+    if (
+        background_jobs_habilitados_por_ambiente()
+        or mensageria_habilitada_por_ambiente()
+    ):
+        container = get_container()
 
     if background_jobs_habilitados_por_ambiente():
-        container = get_container()
-        worker = criar_worker_do_container(container)
-        worker.iniciar()
-        app.state.background_worker = worker
+        background_worker = criar_worker_do_container(container)
+        background_worker.iniciar()
+        app.state.background_worker = background_worker
+
+    if mensageria_habilitada_por_ambiente():
+        outbox_worker = criar_worker_outbox_do_container(container)
+        outbox_worker.iniciar()
+        app.state.outbox_worker = outbox_worker
 
     try:
         yield
     finally:
-        if worker is not None:
-            worker.parar()
+        if outbox_worker is not None:
+            outbox_worker.parar()
+        if background_worker is not None:
+            background_worker.parar()
 
 
 app = FastAPI(

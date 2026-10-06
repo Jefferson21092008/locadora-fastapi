@@ -3,6 +3,7 @@ from sqlalchemy import func, select
 from modulos.concorrencia import (
     buscar_por_id_para_atualizacao,
 )
+from modulos.outbox import persistir_eventos_outbox
 from modulos.excecoes import ConflitoConcorrencia
 from modulos.models.aluguel_model import AluguelModel
 from modulos.models.pagamento_model import (
@@ -124,6 +125,11 @@ class PagamentoRepository:
                     estornado_em=pagamento.estornado_em,
                 )
                 sessao.add(model)
+                sessao.flush()
+                persistir_eventos_outbox(
+                    sessao,
+                    {"pagamento_id": model.id},
+                )
                 sessao.commit()
                 sessao.refresh(model)
                 return self._para_entidade(model)
@@ -174,6 +180,7 @@ class PagamentoRepository:
                 model.status = pagamento.status
                 model.estornado_em = pagamento.estornado_em
 
+                persistir_eventos_outbox(sessao)
                 sessao.commit()
                 sessao.refresh(model)
                 return self._para_entidade(model)

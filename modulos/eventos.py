@@ -59,6 +59,7 @@ class ResultadoPublicacao:
     handlers_encontrados: int
     handlers_executados: int
     falhas: tuple[str, ...] = ()
+    adiado: bool = False
 
     @property
     def sucesso(self):
@@ -76,9 +77,10 @@ class BarramentoEventos:
 
     CORINGA = "*"
 
-    def __init__(self):
+    def __init__(self, despacho_imediato=True):
         self._handlers = {}
         self._lock = threading.RLock()
+        self.despacho_imediato = bool(despacho_imediato)
 
     def assinar(self, nome_evento, handler):
         nome_evento = str(nome_evento or "").strip()
@@ -110,11 +112,20 @@ class BarramentoEventos:
             coringa = list(self._handlers.get(self.CORINGA, ()))
         return exatos + coringa
 
-    def publicar(self, evento):
+    def publicar(self, evento, forcar=False):
         if not isinstance(evento, EventoAplicacao):
             raise TypeError("O barramento aceita apenas EventoAplicacao.")
 
         handlers = self._handlers_para(evento.nome)
+
+        if not self.despacho_imediato and not forcar:
+            return ResultadoPublicacao(
+                handlers_encontrados=len(handlers),
+                handlers_executados=0,
+                falhas=(),
+                adiado=True,
+            )
+
         executados = 0
         falhas = []
 

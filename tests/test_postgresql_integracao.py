@@ -28,6 +28,8 @@ from modulos.database import (
     BancoSQLAlchemy,
 )
 from modulos.excecoes import ConflitoConcorrencia
+from modulos.eventos import EventoAplicacao
+from modulos.outbox import operacao_com_outbox, persistir_eventos_outbox
 from modulos.models import (
     AluguelModel,
     ClienteModel,
@@ -36,6 +38,7 @@ from modulos.models import (
 from modulos.pagamentos import PagamentoFinanceiro
 from modulos.repositories.aluguel_repository import AluguelRepository
 from modulos.repositories.pagamento_repository import PagamentoRepository
+from modulos.repositories.outbox_repository import OutboxRepository
 from modulos.repositories.reserva_repository import ReservaRepository
 from modulos.reservas import Reserva
 from modulos.usuarios import (
@@ -64,6 +67,7 @@ TABELAS_ESPERADAS = {
     "pagamentos_financeiros",
     "notificacoes",
     "tarefas_background",
+    "eventos_outbox",
     "sessoes",
     "tokens_recuperacao_senha",
     "usuarios",
@@ -223,7 +227,7 @@ def test_alembic_cria_schema_postgresql_completo(
             )
         )
 
-    assert revisao == "20261006_0010"
+    assert revisao == "20261006_0011"
 
     fks_clientes = (
         inspetor.get_foreign_keys(
@@ -616,3 +620,33 @@ def test_pagamentos_concorrentes_nao_ultrapassam_limite(
     ]
     assert len(confirmados) == 1
     assert confirmados[0].valor == 70
+
+
+def test_outbox_concorrente_nao_reserva_mesmo_evento_duas_vezes(
+    banco_postgresql,
+):
+    evento = EventoAplicacao(nome="aluguel.finalizado")
+
+    with operacao_com_outbox(None, evento) as lote:
+        with banco_postgresql.criar_sessao() as sessao:
+            persistir_eventos_outbox(sessao)
+            sessao.commit()
+        lote.materializar()
+
+    repository = OutboxRepository(banco_postgresql)
+    barreira = Barrier(2)
+
+    def reservar(_indice):
+        barreira.wait()
+        mensagem = repository.reservar_proxima()
+        return (
+            mensagem.evento.id_evento
+            if mensagem is not None
+            else None
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        resultados = list(executor.map(reservar, [0, 1]))
+
+    assert resultados.count(evento.id_evento) == 1
+    assert resultados.count(None) == 1

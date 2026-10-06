@@ -15,6 +15,7 @@ from modulos.concorrencia import (
 from modulos.consultas import (
     ResultadoPaginado,
 )
+from modulos.outbox import persistir_eventos_outbox
 from modulos.excecoes import ConflitoConcorrencia
 from modulos.manutencoes import (
     Manutencao,
@@ -646,6 +647,10 @@ class ManutencaoRepository:
 
                 sessao.flush()
                 novo_id = model_manutencao.id
+                persistir_eventos_outbox(
+                    sessao,
+                    {"manutencao_id": novo_id},
+                )
                 sessao.commit()
                 return novo_id
             except Exception:
@@ -707,6 +712,7 @@ class ManutencaoRepository:
                 model.custo_estimado = dados["custo_estimado"]
                 model.data_prevista = dados.get("data_prevista")
                 model.observacoes = dados.get("observacoes")
+                persistir_eventos_outbox(sessao)
                 sessao.commit()
             except Exception:
                 sessao.rollback()
@@ -761,6 +767,7 @@ class ManutencaoRepository:
                 model_veiculo.disponivel = dados_veiculo["disponivel"]
                 model_veiculo.alugado_por = dados_veiculo.get("alugado_por")
                 model_veiculo.ativo = dados_veiculo["ativo"]
+                persistir_eventos_outbox(sessao)
                 sessao.commit()
             except Exception:
                 sessao.rollback()

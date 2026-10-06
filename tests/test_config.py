@@ -216,3 +216,26 @@ def test_configuracao_redis_e_opcional(monkeypatch):
     assert configuracao.redis_url is None
     assert configuracao.redis_prefixo == "locadora:test"
     assert configuracao.cache_dashboard_ttl_segundos == 30
+
+
+def test_configuracao_mensageria_outbox(monkeypatch):
+    monkeypatch.setenv("LOCADORA_ADMIN_SENHA", "senha-de-teste")
+    monkeypatch.setenv("LOCADORA_JWT_SECRET", "segredo-de-teste")
+    monkeypatch.setenv("LOCADORA_MENSAGERIA_ENABLED", "true")
+    monkeypatch.setenv("LOCADORA_MENSAGERIA_INTERVALO_SEGUNDOS", "3")
+    monkeypatch.setenv("LOCADORA_MENSAGERIA_LOTE", "25")
+    monkeypatch.setenv(
+        "LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS",
+        "90",
+    )
+    monkeypatch.setenv("LOCADORA_MENSAGERIA_RETRY_BASE_SEGUNDOS", "7")
+    monkeypatch.setenv("LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS", "120")
+
+    configuracao = Configuracao()
+
+    assert configuracao.mensageria_enabled is True
+    assert configuracao.mensageria_intervalo_segundos == 3
+    assert configuracao.mensageria_lote == 25
+    assert configuracao.mensageria_timeout_bloqueio_segundos == 90
+    assert configuracao.mensageria_retry_base_segundos == 7
+    assert configuracao.mensageria_retry_max_segundos == 120

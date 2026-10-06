@@ -1483,6 +1483,35 @@ já foi commitada. Mensageria persistente e garantia entre processos ficam para 
 etapa seguinte.
 
 Detalhes do envelope, catálogo de eventos e limitações estão em
-[`docs/arquitetura-eventos.md`](docs/arquitetura-eventos.md). Não há migration
-nova nesta etapa; o Alembic head continua
-`20261006_0010_consistencia_concorrencia`.
+[`docs/arquitetura-eventos.md`](docs/arquitetura-eventos.md). Na Etapa 26 não houve migration nova. A Etapa 27 avança o Alembic head para
+`20261006_0011_eventos_outbox`.
+
+## Trilha principal — mensageria durável / transactional outbox
+
+A Etapa 27 evolui os eventos da Etapa 26 para uma fila durável sem introduzir um
+broker externo. Reservas, aluguéis, manutenções e pagamentos registram seus
+`EventoAplicacao` em `eventos_outbox` **antes do mesmo commit** da alteração de
+negócio.
+
+```text
+mutação + evento outbox
+        ↓ commit único
+  eventos_outbox
+        ↓
+   OutboxWorker
+        ↓
+ BarramentoEventos
+        ↓
+      handlers
+```
+
+O worker possui retry com backoff, recuperação de locks expirados e reserva
+concorrente com `FOR UPDATE SKIP LOCKED` no PostgreSQL. A entrega é at-least-once
+e handlers duráveis precisam ser idempotentes.
+
+A migration `20261006_0011_eventos_outbox` cria a persistência. O `Container`
+usa o barramento em modo adiado para que efeitos secundários sejam executados a
+partir da mensagem durável, e não duplicados no caminho síncrono da requisição.
+
+Configuração e operação estão em
+[`docs/mensageria-outbox.md`](docs/mensageria-outbox.md).

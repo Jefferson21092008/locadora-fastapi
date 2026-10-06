@@ -3,7 +3,8 @@ from datetime import date, timedelta
 from modulos.alugueis import Aluguel
 from modulos.pagamentos import Pagamento
 
-from modulos.eventos import publicar_evento
+from modulos.eventos import EventoAplicacao
+from modulos.outbox import operacao_com_outbox
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
@@ -198,14 +199,53 @@ class AluguelService:
             dias=dias,
         )
 
-        try:
-            novo_id = (
-                self.aluguel_repository
-                .registrar(
-                    aluguel,
-                    veiculo,
+        fabricas_eventos = [
+            lambda contexto: EventoAplicacao(
+                nome="aluguel.criado",
+                agregado_tipo="aluguel",
+                agregado_id=contexto["aluguel_id"],
+                dados={
+                    "cliente_id": aluguel.cliente_id,
+                    "veiculo_id": aluguel.veiculo_id,
+                    "dias": aluguel.dias,
+                },
+            )
+        ]
+
+        if reserva_para_converter is not None:
+            fabricas_eventos.append(
+                lambda contexto: EventoAplicacao(
+                    nome="reserva.convertida",
+                    agregado_tipo="reserva",
+                    agregado_id=getattr(
+                        reserva_para_converter,
+                        "id",
+                        None,
+                    ),
+                    dados={
+                        "aluguel_id": contexto["aluguel_id"],
+                        "veiculo_id": aluguel.veiculo_id,
+                        "cliente_id": aluguel.cliente_id,
+                    },
                 )
             )
+
+        try:
+            with operacao_com_outbox(
+                self.evento_barramento,
+                *fabricas_eventos,
+            ) as lote_eventos:
+                novo_id = (
+                    self.aluguel_repository
+                    .registrar(
+                        aluguel,
+                        veiculo,
+                    )
+                )
+                aluguel.id = novo_id
+                lote_eventos.materializar(
+                    {"aluguel_id": novo_id}
+                )
 
         except Exception:
             # O banco fez rollback. Também desfazemos o estado
@@ -221,33 +261,6 @@ class AluguelService:
                 )
 
             raise
-
-        aluguel.id = novo_id
-
-        publicar_evento(
-            self.evento_barramento,
-            "aluguel.criado",
-            agregado_tipo="aluguel",
-            agregado_id=aluguel.id,
-            dados={
-                "cliente_id": aluguel.cliente_id,
-                "veiculo_id": aluguel.veiculo_id,
-                "dias": aluguel.dias,
-            },
-        )
-
-        if reserva_para_converter is not None:
-            publicar_evento(
-                self.evento_barramento,
-                "reserva.convertida",
-                agregado_tipo="reserva",
-                agregado_id=getattr(reserva_para_converter, "id", None),
-                dados={
-                    "aluguel_id": aluguel.id,
-                    "veiculo_id": aluguel.veiculo_id,
-                    "cliente_id": aluguel.cliente_id,
-                },
-            )
 
         return aluguel
 
@@ -368,13 +381,29 @@ class AluguelService:
         veiculo.devolver()
 
         try:
-            (
-                self.aluguel_repository
-                .registrar_devolucao(
-                    aluguel,
-                    veiculo,
+            with operacao_com_outbox(
+                self.evento_barramento,
+                EventoAplicacao(
+                    nome="aluguel.finalizado",
+                    agregado_tipo="aluguel",
+                    agregado_id=aluguel.id,
+                    dados={
+                        "cliente_id": aluguel.cliente_id,
+                        "veiculo_id": aluguel.veiculo_id,
+                        "valor": aluguel.valor,
+                        "dias_atraso": aluguel.dias_atraso,
+                        "multa": aluguel.multa,
+                    },
+                ),
+            ) as lote_eventos:
+                (
+                    self.aluguel_repository
+                    .registrar_devolucao(
+                        aluguel,
+                        veiculo,
+                    )
                 )
-            )
+                lote_eventos.materializar()
 
         except Exception:
             aluguel.__dict__.clear()
@@ -388,20 +417,6 @@ class AluguelService:
             )
 
             raise
-
-        publicar_evento(
-            self.evento_barramento,
-            "aluguel.finalizado",
-            agregado_tipo="aluguel",
-            agregado_id=aluguel.id,
-            dados={
-                "cliente_id": aluguel.cliente_id,
-                "veiculo_id": aluguel.veiculo_id,
-                "valor": aluguel.valor,
-                "dias_atraso": aluguel.dias_atraso,
-                "multa": aluguel.multa,
-            },
-        )
 
         return {
             "aluguel": aluguel,

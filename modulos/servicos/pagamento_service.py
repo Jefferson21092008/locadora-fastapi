@@ -1,5 +1,6 @@
 from modulos.consultas import ResultadoPaginado
-from modulos.eventos import publicar_evento
+from modulos.eventos import EventoAplicacao
+from modulos.outbox import operacao_com_outbox
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
@@ -212,25 +213,30 @@ class PagamentoService:
             + resumo["saldo_pendente"]
         )
 
-        pagamento_registrado = (
-            self.pagamento_repository
-            .registrar(
-                pagamento,
-                limite_adicional=limite_adicional,
-            )
-        )
-
-        publicar_evento(
+        with operacao_com_outbox(
             self.evento_barramento,
-            "pagamento.registrado",
-            agregado_tipo="pagamento",
-            agregado_id=pagamento_registrado.id,
-            dados={
-                "aluguel_id": id_aluguel,
-                "valor": pagamento_registrado.valor,
-                "forma": pagamento_registrado.forma,
-            },
-        )
+            lambda contexto: EventoAplicacao(
+                nome="pagamento.registrado",
+                agregado_tipo="pagamento",
+                agregado_id=contexto["pagamento_id"],
+                dados={
+                    "aluguel_id": id_aluguel,
+                    "valor": pagamento.valor,
+                    "forma": pagamento.forma,
+                },
+            ),
+        ) as lote_eventos:
+            pagamento_registrado = (
+                self.pagamento_repository
+                .registrar(
+                    pagamento,
+                    limite_adicional=limite_adicional,
+                )
+            )
+            lote_eventos.materializar(
+                {"pagamento_id": pagamento_registrado.id}
+            )
+
         return pagamento_registrado
 
     def estornar_pagamento(
@@ -256,26 +262,29 @@ class PagamentoService:
                 mensagem
             )
 
-        atualizado = (
-            self.pagamento_repository
-            .atualizar(pagamento)
-        )
-
-        if atualizado is None:
-            raise RecursoNaoEncontrado(
-                "Pagamento não encontrado."
+        with operacao_com_outbox(
+            self.evento_barramento,
+            EventoAplicacao(
+                nome="pagamento.estornado",
+                agregado_tipo="pagamento",
+                agregado_id=pagamento.id,
+                dados={
+                    "aluguel_id": pagamento.aluguel_id,
+                    "valor": pagamento.valor,
+                },
+            ),
+        ) as lote_eventos:
+            atualizado = (
+                self.pagamento_repository
+                .atualizar(pagamento)
             )
 
-        publicar_evento(
-            self.evento_barramento,
-            "pagamento.estornado",
-            agregado_tipo="pagamento",
-            agregado_id=atualizado.id,
-            dados={
-                "aluguel_id": atualizado.aluguel_id,
-                "valor": atualizado.valor,
-            },
-        )
+            if atualizado is None:
+                raise RecursoNaoEncontrado(
+                    "Pagamento não encontrado."
+                )
+            lote_eventos.materializar()
+
         return atualizado
 
     def consultar_contas(

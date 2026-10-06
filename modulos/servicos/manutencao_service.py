@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
-from modulos.eventos import publicar_evento
+from modulos.eventos import EventoAplicacao
+from modulos.outbox import operacao_com_outbox
 from modulos.excecoes import (
     RecursoNaoEncontrado,
     RegraDeNegocio,
@@ -213,13 +214,30 @@ class ManutencaoService:
             )
 
         try:
-            novo_id = (
-                self.manutencao_repository
-                .registrar(
-                    manutencao,
-                    veiculo,
+            with operacao_com_outbox(
+                self.evento_barramento,
+                lambda contexto: EventoAplicacao(
+                    nome="manutencao.aberta",
+                    agregado_tipo="manutencao",
+                    agregado_id=contexto["manutencao_id"],
+                    dados={
+                        "veiculo_id": manutencao.veiculo_id,
+                        "tipo": manutencao.tipo,
+                        "prioridade": manutencao.prioridade,
+                    },
+                ),
+            ) as lote_eventos:
+                novo_id = (
+                    self.manutencao_repository
+                    .registrar(
+                        manutencao,
+                        veiculo,
+                    )
                 )
-            )
+                manutencao.id = novo_id
+                lote_eventos.materializar(
+                    {"manutencao_id": novo_id}
+                )
 
         except Exception:
             veiculo.__dict__.clear()
@@ -228,19 +246,6 @@ class ManutencaoService:
             )
             raise
 
-        manutencao.id = novo_id
-
-        publicar_evento(
-            self.evento_barramento,
-            "manutencao.aberta",
-            agregado_tipo="manutencao",
-            agregado_id=manutencao.id,
-            dados={
-                "veiculo_id": manutencao.veiculo_id,
-                "tipo": manutencao.tipo,
-                "prioridade": manutencao.prioridade,
-            },
-        )
         return manutencao
 
     def atualizar(
@@ -289,9 +294,22 @@ class ManutencaoService:
             raise
 
         try:
-            self.manutencao_repository.atualizar(
-                manutencao
-            )
+            with operacao_com_outbox(
+                self.evento_barramento,
+                EventoAplicacao(
+                    nome="manutencao.atualizada",
+                    agregado_tipo="manutencao",
+                    agregado_id=manutencao.id,
+                    dados={
+                        "veiculo_id": manutencao.veiculo_id,
+                        "campos": sorted(alteracoes),
+                    },
+                ),
+            ) as lote_eventos:
+                self.manutencao_repository.atualizar(
+                    manutencao
+                )
+                lote_eventos.materializar()
         except Exception:
             manutencao.__dict__.clear()
             manutencao.__dict__.update(
@@ -299,16 +317,6 @@ class ManutencaoService:
             )
             raise
 
-        publicar_evento(
-            self.evento_barramento,
-            "manutencao.atualizada",
-            agregado_tipo="manutencao",
-            agregado_id=manutencao.id,
-            dados={
-                "veiculo_id": manutencao.veiculo_id,
-                "campos": sorted(alteracoes),
-            },
-        )
         return manutencao
 
     def finalizar(
@@ -382,10 +390,24 @@ class ManutencaoService:
             )
 
         try:
-            self.manutencao_repository.registrar_finalizacao(
-                manutencao,
-                veiculo,
-            )
+            with operacao_com_outbox(
+                self.evento_barramento,
+                EventoAplicacao(
+                    nome="manutencao.finalizada",
+                    agregado_tipo="manutencao",
+                    agregado_id=manutencao.id,
+                    dados={
+                        "veiculo_id": manutencao.veiculo_id,
+                        "custo": manutencao.custo,
+                        "data_fim": manutencao.data_fim,
+                    },
+                ),
+            ) as lote_eventos:
+                self.manutencao_repository.registrar_finalizacao(
+                    manutencao,
+                    veiculo,
+                )
+                lote_eventos.materializar()
 
         except Exception:
             manutencao.__dict__.clear()
@@ -399,17 +421,6 @@ class ManutencaoService:
             )
             raise
 
-        publicar_evento(
-            self.evento_barramento,
-            "manutencao.finalizada",
-            agregado_tipo="manutencao",
-            agregado_id=manutencao.id,
-            dados={
-                "veiculo_id": manutencao.veiculo_id,
-                "custo": manutencao.custo,
-                "data_fim": manutencao.data_fim,
-            },
-        )
         return manutencao
 
     def consultar_manutencoes(

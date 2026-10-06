@@ -269,6 +269,45 @@ class Configuracao:
         )
 
         # ============================================================
+        # MENSAGERIA / TRANSACTIONAL OUTBOX
+        # ============================================================
+
+        self.mensageria_enabled = _env_bool(
+            "LOCADORA_MENSAGERIA_ENABLED",
+            False,
+        )
+
+        self.mensageria_intervalo_segundos = _env_int(
+            "LOCADORA_MENSAGERIA_INTERVALO_SEGUNDOS",
+            5,
+            minimo=1,
+        )
+
+        self.mensageria_lote = _env_int(
+            "LOCADORA_MENSAGERIA_LOTE",
+            100,
+            minimo=1,
+        )
+
+        self.mensageria_timeout_bloqueio_segundos = _env_int(
+            "LOCADORA_MENSAGERIA_TIMEOUT_BLOQUEIO_SEGUNDOS",
+            60,
+            minimo=10,
+        )
+
+        self.mensageria_retry_base_segundos = _env_int(
+            "LOCADORA_MENSAGERIA_RETRY_BASE_SEGUNDOS",
+            5,
+            minimo=1,
+        )
+
+        self.mensageria_retry_max_segundos = _env_int(
+            "LOCADORA_MENSAGERIA_RETRY_MAX_SEGUNDOS",
+            300,
+            minimo=1,
+        )
+
+        # ============================================================
         # VALIDAÇÕES OBRIGATÓRIAS
         # ============================================================
 

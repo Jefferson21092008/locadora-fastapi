@@ -65,6 +65,7 @@ def test_base_registra_primeiros_models():
     assert "pagamentos_financeiros" in Base.metadata.tables
     assert "notificacoes" in Base.metadata.tables
     assert "tarefas_background" in Base.metadata.tables
+    assert "eventos_outbox" in Base.metadata.tables
 
     assert (
         "tokens_recuperacao_senha"
@@ -94,6 +95,7 @@ def test_models_criam_tabelas_esperadas(
     assert "pagamentos_financeiros" in tabelas
     assert "notificacoes" in tabelas
     assert "tarefas_background" in tabelas
+    assert "eventos_outbox" in tabelas
 
     assert (
         "tokens_recuperacao_senha"
